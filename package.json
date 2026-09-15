@@ -1,0 +1,27 @@
+{
+	"name": "scribe",
+	"description": "The works half. Catalogue, documents, and reading. Scaffolding for now.",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite --host --port 4572",
+		"build": "tsc -b && vite build",
+		"preview": "vite preview",
+		"lint": "eslint .",
+		"format": "prettier --write .",
+		"deploy": "npm run build && wrangler pages deploy dist"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20260915.1",
+		"@eslint/js": "^9.39.1",
+		"@types/node": "^24.10.1",
+		"eslint": "^9.39.1",
+		"eslint-config-prettier": "^10.1.8",
+		"prettier": "^3.6.2",
+		"typescript": "~5.9.3",
+		"typescript-eslint": "^8.47.0",
+		"vite": "^7.2.4",
+		"wrangler": "^4.90.0"
+	}
+}
