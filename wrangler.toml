@@ -3,23 +3,11 @@ name = "scribe"
 pages_build_output_dir = "dist"
 compatibility_date = "2025-08-24"
 
-# The project does not exist yet. Create it once:
+# Branch main deploys production at scribe.socialeating.studio, from CI on
+# push; see .github/workflows. There is no staging environment yet.
 #
-#   npx wrangler pages project create scribe
-#   npx wrangler pages deploy dist --project-name scribe
-#   npx wrangler pages domain add scribe.socialeating.studio --project-name scribe
-#
-# Then add scribe.socialeating.studio to the EXISTING Cloudflare Access
-# application, the one that already covers anti.socialeating.studio. Adding a
-# hostname to it leaves POLICY_AUD unchanged, so alexandria needs no secret
-# rotation and no redeploy. A new application — a wildcard one, say — would
-# mint a new aud and force exactly that.
-#
-# Environment variables:
-#   WORKER_URL - the alexandria worker the Pages Function proxies to.
-#     https://alexandria.socialeating.studio
-#
-#   npx wrangler pages secret put WORKER_URL --project=scribe
+# WORKER_URL is set on the Pages project, not here:
+#   production  https://alexandria.socialeating.studio
 #
 # For local development, run alexandria on :8787 and vite proxies to it.
 # Point somewhere else with VITE_API_TARGET.
