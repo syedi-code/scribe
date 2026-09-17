@@ -25,7 +25,12 @@ export function Apparatus({
 
 	if (live) {
 		return (
-			<div className="font-app text-small text-ink-soft mb-3">
+			// Named steps are the only signal that anything is happening, so
+			// they are announced rather than only shown.
+			<div
+				aria-live="polite"
+				className="font-app text-small text-ink-soft mb-3"
+			>
 				{work.map((step) => (
 					<div
 						key={step.id}

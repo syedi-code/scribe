@@ -29,7 +29,9 @@ export function AnswerFooter({
 
 	return (
 		<div className="font-app text-small text-ink-faint mt-4 flex flex-wrap items-baseline gap-x-3.5 gap-y-1">
-			<span>
+			{/* The tally is the result of the check, so it is announced when
+			    it lands rather than left for a reader to notice. */}
+			<span role="status">
 				{total === 0
 					? COPY.noCitations
 					: checking
