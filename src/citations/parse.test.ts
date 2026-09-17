@@ -4,6 +4,7 @@ import {
 	markersFor,
 	parseCitations,
 	segmentAnswer,
+	trimHalfWrittenCitation,
 } from './parse';
 import type { AnswerCitation } from '../api/types';
 
@@ -179,5 +180,77 @@ describe('segmentAnswer', () => {
 			.join('');
 		expect(text).not.toContain('P7');
 		expect(text).toContain('the will to truth');
+	});
+});
+
+describe('a citation that repeats what the prose just quoted', () => {
+	const QUOTE =
+		'that unconditional will to truth, is faith in the ascetic ideal';
+	const text = `He writes: "However, the compulsion towards it, ${QUOTE}, even if as an unconscious imperative" [P1 "${QUOTE}"]. That is his claim.`;
+
+	const only = () => {
+		const [paragraph] = segmentAnswer(text, parseCitations(text));
+		const nodes = paragraph.flatMap((sentence) => sentence.nodes);
+		const citation = nodes.find((node) => node.kind === 'citation');
+		if (citation?.kind !== 'citation') throw new Error('no citation');
+		return { nodes, citation };
+	};
+
+	it('shows the passage once, not twice', () => {
+		const { nodes } = only();
+		const shown = nodes
+			.map((node) => ('text' in node ? node.text : node.quote))
+			.join('');
+		expect(shown.split(QUOTE)).toHaveLength(2);
+	});
+
+	it('keeps the model’s own wording of the passage', () => {
+		expect(only().citation.quote).toContain('However, the compulsion');
+	});
+
+	it('marks exactly the words the server checked', () => {
+		const { citation } = only();
+		const [from, to] = citation.checked;
+		expect(citation.quote.slice(from, to)).toBe(QUOTE);
+	});
+
+	it('leaves the prose that introduced it in place', () => {
+		const { nodes } = only();
+		expect(nodes[0].kind).toBe('text');
+		expect('text' in nodes[0] ? nodes[0].text : '').toContain('He writes:');
+	});
+
+	it('does not fold in a quotation that is a different passage', () => {
+		const other =
+			'He writes: "something else entirely here" [P1 "a quote of five words"].';
+		const [paragraph] = segmentAnswer(other, parseCitations(other));
+		const nodes = paragraph.flatMap((sentence) => sentence.nodes);
+		const citation = nodes.find((node) => node.kind === 'citation');
+		expect(citation?.kind === 'citation' && citation.quote).toBe(
+			'a quote of five words'
+		);
+	});
+});
+
+describe('trimHalfWrittenCitation', () => {
+	it.each([
+		'The claim stands [',
+		'The claim stands [P',
+		'The claim stands [P7',
+		'The claim stands [P7 "the will to',
+		'The claim stands [P7: “the will to truth',
+	])('holds back %j until it is finished', (text) => {
+		expect(trimHalfWrittenCitation(text)).toBe('The claim stands');
+	});
+
+	it('leaves a finished citation alone', () => {
+		const done = 'The claim stands [P7 "the will to truth"]';
+		expect(trimHalfWrittenCitation(done)).toBe(done);
+	});
+
+	it('leaves ordinary brackets alone', () => {
+		expect(trimHalfWrittenCitation('an aside (of sorts)')).toBe(
+			'an aside (of sorts)'
+		);
 	});
 });

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { COPY } from '../copy';
 import { AddPanel } from '../add/AddPanel';
 import { AskPanel } from '../ask/AskPanel';
 import { useConversation } from '../chat/context';
+import { useDismiss } from '../lib/useDismiss';
 import { RunningModel } from '../models/RunningModel';
 import { PageView } from '../page/PageView';
 import { focusComposer } from '../state/composer';
@@ -14,9 +15,11 @@ import { Wordmark } from './Wordmark';
  * The shell: the header, the rail, and whichever panel is showing.
  *
  * The layout responds to this element's own width through container queries
- * rather than the viewport's, which is what makes the phone frame exercise the
- * real mobile layout rather than a simulation of it. There is no `isMobile`
- * anywhere in the tree, and no second layout component for small screens.
+ * rather than the viewport's. There is no `isMobile` anywhere in the tree, and
+ * no second layout component for small screens.
+ *
+ * The header sits in its own stacking context above everything, because the
+ * model switcher hangs out of it over whatever is below.
  */
 
 type Tab = 'ask' | 'add';
@@ -26,15 +29,13 @@ function TabBar({
 	onTab,
 	onRail,
 	railable,
-	phone,
-	onPhone,
+	railOpen,
 }: {
 	tab: Tab;
 	onTab: (tab: Tab) => void;
 	onRail: () => void;
 	railable: boolean;
-	phone: boolean;
-	onPhone: () => void;
+	railOpen: boolean;
 }) {
 	const tabClass = (which: Tab) =>
 		`font-read text-ui leading-tight transition-colors ${
@@ -47,9 +48,13 @@ function TabBar({
 				<button
 					type="button"
 					onClick={onRail}
-					className="font-app text-ui text-ink-faint hover:text-ink hidden @max-compact:block"
+					aria-expanded={railOpen}
+					data-rail-toggle
+					className={`font-app text-ui hidden transition-colors @max-compact:block ${
+						railOpen ? 'text-ink' : 'text-ink-faint hover:text-ink'
+					}`}
 				>
-					Questions
+					{COPY.sessions}
 				</button>
 			)}
 			<button
@@ -70,55 +75,27 @@ function TabBar({
 			>
 				{COPY.tabs.add}
 			</button>
-			<button
-				type="button"
-				onClick={onPhone}
-				title={COPY.phoneFrame}
-				aria-label={COPY.phoneFrame}
-				aria-pressed={phone}
-				className={`flex transition-colors ${phone ? 'text-ink' : 'text-ink-faint hover:text-ink'}`}
-			>
-				<svg
-					width="11"
-					height="16"
-					viewBox="0 0 11 16"
-					fill="none"
-					aria-hidden
-				>
-					<rect
-						x="0.6"
-						y="0.6"
-						width="9.8"
-						height="14.8"
-						rx="2"
-						stroke="currentColor"
-						strokeWidth="1.2"
-					/>
-					<line
-						x1="4"
-						y1="13"
-						x2="7"
-						y2="13"
-						stroke="currentColor"
-						strokeWidth="1.2"
-					/>
-				</svg>
-			</button>
 		</div>
 	);
 }
 
-export function AppFrame({
-	phone,
-	onPhone,
-}: {
-	phone: boolean;
-	onPhone: () => void;
-}) {
-	const { atHome, threads } = useConversation();
+export function AppFrame() {
+	const { atHome, threads, newQuestion } = useConversation();
 	const [tab, setTab] = useState<Tab>('ask');
 	const [railOpen, setRailOpen] = useState(false);
 	const hasThreads = threads.length > 0;
+	const rail = useRef<HTMLDivElement>(null);
+
+	// Clicking away from the rail closes it — including on the button that
+	// opened it, which would otherwise reopen it on the same tap.
+	const closeRail = useCallback((event: Event) => {
+		const target = event.target as Element | null;
+		// The tap that closes must not be the tap that reopens; Escape has no
+		// element to make an exception for.
+		if (target?.closest?.('[data-rail-toggle]')) return;
+		setRailOpen(false);
+	}, []);
+	useDismiss(rail, railOpen, closeRail);
 
 	// `/` to write, `c` to dim everything uncited. Escape belongs to whatever
 	// is open, and handles itself.
@@ -149,14 +126,10 @@ export function AppFrame({
 		<div
 			// The drawer parks itself just off the right edge, so the shell
 			// clips: nothing of the app may widen the page.
-			className={`bg-paper relative grid h-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden @container ${
-				phone
-					? 'w-phone h-[min(844px,100%)] rounded-[26px] border border-edge shadow-[0_40px_70px_-50px_rgba(36,31,26,0.8)]'
-					: ''
-			}`}
+			className="bg-paper relative grid h-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden @container"
 		>
 			<header
-				className={`flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
+				className={`relative z-40 flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
 					atHome && tab === 'ask'
 						? 'border-transparent'
 						: 'border-paper-deep'
@@ -168,7 +141,20 @@ export function AppFrame({
 					<span />
 				) : (
 					<div className="animate-settle grid gap-0.5">
-						<Wordmark className="text-[17px]" />
+						{/* The mark is the way back: it returns to the home
+						    screen, which writes itself out again. */}
+						<button
+							type="button"
+							onClick={() => {
+								setTab('ask');
+								newQuestion();
+							}}
+							title={COPY.home}
+							aria-label={COPY.home}
+							className="justify-self-start"
+						>
+							<Wordmark className="text-[17px]" />
+						</button>
 						<RunningModel />
 					</div>
 				)}
@@ -177,26 +163,38 @@ export function AppFrame({
 					onTab={setTab}
 					onRail={() => setRailOpen((was) => !was)}
 					railable={hasThreads}
-					phone={phone}
-					onPhone={onPhone}
+					railOpen={railOpen}
 				/>
 			</header>
 
 			<main
-				className={`grid min-h-0 ${
+				className={`relative grid min-h-0 ${
 					hasThreads
 						? 'grid-cols-[var(--container-rail)_minmax(0,1fr)] @max-compact:grid-cols-1'
 						: 'grid-cols-1'
 				}`}
 			>
 				{hasThreads && (
-					<div
-						className={`min-h-0 @max-compact:bg-paper @max-compact:absolute @max-compact:inset-y-0 @max-compact:left-0 @max-compact:z-20 @max-compact:w-rail @max-compact:shadow-[8px_0_24px_-24px_rgba(36,31,26,0.9)] ${
-							railOpen ? '' : '@max-compact:hidden'
-						}`}
-					>
-						<ThreadRail onNavigate={() => setRailOpen(false)} />
-					</div>
+					<>
+						{/* Narrow, the rail is an overlay, and an overlay says
+						    so: the page behind it dims and a tap anywhere on it
+						    puts the rail away. */}
+						{railOpen && (
+							<div
+								aria-hidden
+								onClick={() => setRailOpen(false)}
+								className="bg-ink/15 absolute inset-0 z-20 hidden @max-compact:block"
+							/>
+						)}
+						<div
+							ref={rail}
+							className={`min-h-0 @max-compact:bg-paper @max-compact:absolute @max-compact:inset-y-0 @max-compact:left-0 @max-compact:z-20 @max-compact:w-rail @max-compact:shadow-[8px_0_24px_-20px_rgba(36,31,26,0.9)] ${
+								railOpen ? '' : '@max-compact:hidden'
+							}`}
+						>
+							<ThreadRail onNavigate={() => setRailOpen(false)} />
+						</div>
+					</>
 				)}
 
 				{tab === 'ask' ? <AskPanel /> : <AddPanel />}

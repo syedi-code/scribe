@@ -10,6 +10,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { api, describeApiError } from '../api/client';
 import { useModels } from '../models/context';
+import { closePage } from '../state/reader';
 import { ChatContext, type ChatState } from './context';
 import type { Conversation } from '../api/types';
 import type { ScribeMessage } from './message';
@@ -128,9 +129,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			target.current.id = id;
 			setActiveId(id);
 			setMessages([]);
-			// Last conversation's failure is not this one's.
+			// Last conversation's failure is not this one's, and neither is
+			// the page left open over it.
 			clearError();
 			setFailure(null);
+			closePage();
 			api.get<{ conversation: Conversation; messages: ScribeMessage[] }>(
 				`/conversations/${id}`
 			)
@@ -154,6 +157,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 		setMessages([]);
 		clearError();
 		setFailure(null);
+		closePage();
 	}, [clearError, setMessages]);
 
 	const value = useMemo<ChatState>(

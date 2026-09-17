@@ -1,5 +1,9 @@
 # Merging into `main` deploys production. That is the whole rule. scribe has no
 # staging environment until it needs one.
+#
+# The tests run here as well as on the pull request. Branch protection needs a
+# paid plan on a private repository, so a red pull request can still be merged;
+# it cannot reach scribe.socialeating.studio.
 name: Deploy → Production
 
 on:
@@ -22,6 +26,9 @@ jobs:
                   node-version-file: '.nvmrc'
                   cache: 'npm'
             - run: npm ci
+
+            # A failing test stops the deploy, whatever the merge said.
+            - run: npm test
             - run: npm run build
 
             - name: Deploy

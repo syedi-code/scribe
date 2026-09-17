@@ -4,6 +4,18 @@ import { useDismiss } from '../lib/useDismiss';
 import { useModels } from './context';
 
 /**
+ * The one place a provider's own colour appears. Everywhere else in the app
+ * colour means how the evidence came back, and nothing else; inside this menu
+ * a dot per provider is worth more than the rule costs, and it is the whole of
+ * the exception.
+ */
+const PROVIDER_DOT: Record<string, string> = {
+	anthropic: 'bg-anthropic',
+	openai: 'bg-openai',
+	google: 'bg-google',
+};
+
+/**
  * `running Claude Haiku 4.5 ▾` — the one line that says which model is
  * answering, and the only place a model is chosen.
  *
@@ -34,9 +46,9 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 					aria-expanded={open}
 					disabled={!selected}
 					onClick={() => setOpen((was) => !was)}
-					className="text-ink border-b border-transparent leading-tight hover:border-paper-deep disabled:cursor-default"
+					className="text-ink inline-flex max-w-[min(15rem,60cqw)] items-baseline border-b border-transparent leading-tight hover:border-paper-deep disabled:cursor-default"
 				>
-					{label}
+					<span className="truncate">{label}</span>
 					<span
 						aria-hidden
 						className={`ml-1 inline-block text-[0.8em] transition-transform duration-200 ease-paper ${
@@ -50,7 +62,9 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 				<div
 					role="menu"
 					hidden={!open}
-					className="absolute top-6 left-0 z-25 w-62 rounded-xl border border-paper-deep bg-paper-lift py-1 shadow-[0_16px_34px_-28px_rgba(36,31,26,0.9)]"
+					// Wide enough for the longest label and its note side by
+					// side, and never wider than the app.
+					className="border-paper-deep bg-paper-lift absolute top-6 left-0 z-50 w-[19rem] overflow-hidden whitespace-normal max-w-[calc(100cqw-2rem)] rounded-xl border py-1 shadow-[0_16px_34px_-24px_rgba(36,31,26,0.9)]"
 				>
 					{choices.map((model) => {
 						const inUse = model.id === selected?.id;
@@ -64,10 +78,20 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 									select(model.id);
 									close();
 								}}
-								className="font-app text-ui flex w-full items-baseline justify-between gap-2 px-3 py-1 text-left enabled:hover:bg-paper-deep disabled:cursor-default disabled:text-ink-faint"
+								className="font-app text-ui flex w-full items-baseline justify-between gap-3 px-3 py-1.5 text-left enabled:hover:bg-paper-deep disabled:cursor-default disabled:text-ink-faint"
 							>
-								<span>{model.label}</span>
-								<span className="text-tiny text-ink-faint">
+								<span className="flex min-w-0 items-baseline gap-2">
+									<span
+										aria-hidden
+										className={`size-1.5 shrink-0 translate-y-[-0.1em] rounded-full ${PROVIDER_DOT[model.provider] ?? 'bg-ink-faint'} ${
+											model.available ? '' : 'opacity-40'
+										}`}
+									/>
+									<span className="truncate">
+										{model.label}
+									</span>
+								</span>
+								<span className="text-tiny text-ink-faint shrink-0 whitespace-nowrap">
 									{!model.available
 										? COPY.noKey
 										: inUse

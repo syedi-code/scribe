@@ -70,6 +70,13 @@ export function Answer({
 										/>
 									);
 								}
+								if (node.kind === 'title') {
+									return (
+										<cite key={at} className="not-italic">
+											<em>{node.text}</em>
+										</cite>
+									);
+								}
 								if (node.kind === 'emphasis') {
 									return (
 										<em
@@ -89,6 +96,7 @@ export function Answer({
 										key={at}
 										index={node.index}
 										quote={node.quote}
+										checked={node.checked}
 										citation={
 											node.index < resolved
 												? citations[node.index]

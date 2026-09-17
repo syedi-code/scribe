@@ -15,6 +15,7 @@ import type { AnswerCitation } from '../api/types';
 export function Citation({
 	index,
 	quote,
+	checked,
 	citation,
 	lit,
 	onLight,
@@ -22,6 +23,8 @@ export function Citation({
 }: {
 	index: number;
 	quote: string;
+	/** The part of the quotation the server checked. */
+	checked: [number, number];
 	citation: AnswerCitation | null;
 	lit: boolean;
 	onLight: (index: number | null) => void;
@@ -30,6 +33,12 @@ export function Citation({
 	const { page } = useCitedPage(citation);
 	const open = (element: HTMLElement) =>
 		citation && openPage(citation, element);
+
+	// When the model wrote the passage out and then cited a few words of it,
+	// only those few words were checked — so only those carry the weight.
+	const before = quote.slice(0, checked[0]);
+	const evidence = quote.slice(checked[0], checked[1]);
+	const after = quote.slice(checked[1]);
 
 	return (
 		<span
@@ -48,13 +57,15 @@ export function Citation({
 			onMouseLeave={() => onLight(null)}
 			onFocus={() => onLight(index)}
 			onBlur={() => onLight(null)}
-			className={`group/cite quote-mark hover:bg-bubble cursor-pointer rounded-[3px] font-normal transition-colors duration-200 ${
+			className={`group/cite quote-mark hover:bg-bubble cursor-pointer rounded-[3px] font-light transition-colors duration-200 ${
 				lit ? 'bg-bubble' : ''
 			}`}
 		>
-			<span className="text-ink-faint font-light">“</span>
-			{quote}
-			<span className="text-ink-faint font-light">”</span>
+			<span className="text-ink-faint">“</span>
+			{before}
+			<span className="font-normal">{evidence}</span>
+			{after}
+			<span className="text-ink-faint">”</span>
 			<Stamp citation={citation} page={page} />
 		</span>
 	);

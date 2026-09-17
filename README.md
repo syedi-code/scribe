@@ -39,6 +39,12 @@ Nothing is ever optimistic, faked, or inferred on the client.
 answer, or `c`) fades every sentence no citation supports. On a good answer it
 changes little; on a bad one the paragraph nearly empties.
 
+**The passage appears once.** A model asked to cite as `[P7 "…"]` writes the
+passage out in its prose first and cites a few words of it after, so the
+renderer folds the citation back into the quotation the model already wrote: the
+reader sees it once, with the checked words set one weight heavier inside it.
+The stamp still reports only what the server checked.
+
 **What is not the answer.** An assistant message holds the text of _every_ step,
 and models narrate between tool calls however firmly the instructions ask them
 not to. The answer is the text after the final `step-start`; everything before

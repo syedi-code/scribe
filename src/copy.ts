@@ -13,7 +13,7 @@ const plural = (count: number, one: string, many: string) =>
 export const COPY = {
 	/* ---- chrome ---- */
 	tabs: { ask: 'Ask', add: 'Add a book' },
-	phoneFrame: 'Preview at phone width',
+	sessions: 'Sessions',
 	running: 'running',
 	newQuestion: 'New question',
 	naming: 'naming…',
@@ -23,11 +23,34 @@ export const COPY = {
 	modelNote:
 		'Whichever providers have a key on the worker. Earlier answers keep the model that wrote them.',
 
-	/* ---- home ---- */
+	/* ---- home ----
+	   Questions worth asking of this library in particular, and answerable
+	   from it: every one names something the shelves actually hold. Two are
+	   drawn at random each time the home screen is seen, so the same two do
+	   not become the only two anyone asks. */
+	/** The first is always offered; the second is drawn from the rest. */
 	suggestions: [
 		'Does Nietzsche think the will to truth is itself a kind of faith?',
-		"Is Kierkegaard's knight of faith making a claim anyone else could check?",
+		'What does Fanon say colonialism does to the mind of the colonised?',
+		'How does Foucault get from the design of a prison to the shape of a soul?',
+		'Is Said’s Orientalism a claim about scholarship, or about power?',
+		'What does al-Ghazālī doubt, and what finally stops the doubting?',
+		'Where does Iqbal part from Nietzsche on the self?',
+		'Does Kuhn think a paradigm can be refuted, or only abandoned?',
+		'What work does the general will do for Rousseau that consent cannot?',
+		'How does Butler describe power turning inward?',
+		'Why does Plato distrust writing in the Phaedrus?',
+		'What does Marx mean by the fetishism of commodities?',
+		'Is Wittgenstein saying that ethics cannot be spoken, or only that he cannot speak it?',
+		'What does Arendt think philosophy owes politics?',
+		'Does Baudrillard mean the map replaced the territory, or that there never was one?',
+		'What does Hume allow us to know about tomorrow?',
+		'How does Césaire answer the claim that colonialism civilised anyone?',
 	],
+	howManySuggestions: 2,
+	library: (works: number) =>
+		works === 1 ? 'with one work' : `with ${works} works`,
+	home: 'Back to the home screen',
 
 	/* ---- composer ---- */
 	askPlaceholder: 'Ask about the library',
@@ -35,21 +58,29 @@ export const COPY = {
 	stop: 'Stop',
 	hint: 'Every quote is checked against the page it names. / to write, c to dim everything uncited.',
 
-	/* ---- the work behind an answer ---- */
-	thinking: 'thinking',
-	searching: (query: string) => `searching pages — “${query}”`,
-	searched: (hits: number, works: number) =>
-		`${hits} ${plural(hits, 'page', 'pages')} across ${works} ${plural(works, 'work', 'works')}`,
-	listingWorks: 'listing the library',
-	reading: (from: number, to: number) =>
-		from === to
-			? `reading PDF p. ${from}`
-			: `reading PDF pp. ${from}–${to}`,
-	readingWork: (work: string, from: number, to: number) =>
-		from === to
-			? `reading ${work}, PDF p. ${from}`
-			: `reading ${work}, PDF pp. ${from}–${to}`,
-	viewing: (handle: string) => `looking at the scan of ${handle}`,
+	/* ---- the work behind an answer ----
+	   Tool calls, not narration: a search and a read are facts and they stay
+	   on screen once they have happened. What the model said to itself between
+	   them is not shown at all. */
+	thinking: 'looking for something to read',
+	work: {
+		searched: 'searched',
+		read: 'read',
+		looked: 'looked at',
+		listed: 'listed',
+		library: 'the library',
+		page: (page: number) => `PDF p. ${page}`,
+		pages: (from: number, to: number) => `PDF pp. ${from}–${to}`,
+		hits: (hits: number, works: number) =>
+			`${hits} ${plural(hits, 'page', 'pages')} in ${works} ${plural(works, 'work', 'works')}`,
+		gotPages: (count: number) =>
+			`${count} ${plural(count, 'page', 'pages')}`,
+		works: (count: number) => `${count} ${plural(count, 'work', 'works')}`,
+		nothing: 'nothing',
+		scan: 'the scan',
+		done: 'done',
+		failed: 'came back empty',
+	},
 	workSummary: (searches: number, pages: number, works: number) =>
 		[
 			searches > 0 &&
@@ -59,6 +90,7 @@ export const COPY = {
 		]
 			.filter(Boolean)
 			.join(', ') || 'answered without searching',
+	showWork: 'what it did',
 
 	/* ---- verdicts. The whole product is in these seven lines. ---- */
 	verdict: {
