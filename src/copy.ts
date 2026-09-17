@@ -25,31 +25,139 @@ export const COPY = {
 
 	/* ---- home ----
 	   Questions worth asking of this library in particular, and answerable
-	   from it: every one names something the shelves actually hold. Two are
-	   drawn at random each time the home screen is seen, so the same two do
-	   not become the only two anyone asks. */
-	/** The first is always offered; the second is drawn from the rest. */
+	   from it: every one names a work the shelves actually hold, and says
+	   which, so a reader can see what they are about to be answered from.
+	   Three are dealt at a time and the hand turns over, so the library never
+	   looks like it holds three books. */
 	suggestions: [
-		'Does Nietzsche think the will to truth is itself a kind of faith?',
-		'What does Fanon say colonialism does to the mind of the colonised?',
-		'How does Foucault get from the design of a prison to the shape of a soul?',
-		'Is Said’s Orientalism a claim about scholarship, or about power?',
-		'What does al-Ghazālī doubt, and what finally stops the doubting?',
-		'Where does Iqbal part from Nietzsche on the self?',
-		'Does Kuhn think a paradigm can be refuted, or only abandoned?',
-		'What work does the general will do for Rousseau that consent cannot?',
-		'How does Butler describe power turning inward?',
-		'Why does Plato distrust writing in the Phaedrus?',
-		'What does Marx mean by the fetishism of commodities?',
-		'Is Wittgenstein saying that ethics cannot be spoken, or only that he cannot speak it?',
-		'What does Arendt think philosophy owes politics?',
-		'Does Baudrillard mean the map replaced the territory, or that there never was one?',
-		'What does Hume allow us to know about tomorrow?',
-		'How does Césaire answer the claim that colonialism civilised anyone?',
+		{
+			question:
+				'Does Nietzsche think the will to truth is itself a kind of faith?',
+			work: 'Nietzsche · The Gay Science',
+		},
+		{
+			question:
+				'What does Fanon say colonialism does to the mind of the colonised?',
+			work: 'Fanon · Black Skin, White Masks',
+		},
+		{
+			question:
+				'How does Foucault get from the design of a prison to the shape of a soul?',
+			work: 'Foucault · Discipline and Punish',
+		},
+		{
+			question:
+				'Is Said’s Orientalism a claim about scholarship, or about power?',
+			work: 'Said · Orientalism',
+		},
+		{
+			question:
+				'What does al-Ghazālī doubt, and what finally stops the doubting?',
+			work: 'al-Ghazālī · Deliverance from Error',
+		},
+		{
+			question: 'Where does Iqbal part from Nietzsche on the self?',
+			work: 'Iqbal · The Secrets of the Self',
+		},
+		{
+			question:
+				'Does Kuhn think a paradigm can be refuted, or only abandoned?',
+			work: 'Kuhn · The Structure of Scientific Revolutions',
+		},
+		{
+			question:
+				'What work does the general will do for Rousseau that consent cannot?',
+			work: 'Rousseau · The Social Contract',
+		},
+		{
+			question: 'How does Butler describe power turning inward?',
+			work: 'Butler · The Psychic Life of Power',
+		},
+		{
+			question: 'What does Marx mean by the fetishism of commodities?',
+			work: 'Marx · Capital, Volume 1',
+		},
+		{
+			question:
+				'Is Wittgenstein saying that ethics cannot be spoken, or only that he cannot speak it?',
+			work: 'Wittgenstein · Tractatus Logico-Philosophicus',
+		},
+		{
+			question:
+				'What does Arendt think loneliness has to do with terror?',
+			work: 'Arendt · The Origins of Totalitarianism',
+		},
+		{
+			question:
+				'Does Baudrillard mean the map replaced the territory, or that there never was one?',
+			work: 'Baudrillard · Simulacra and Simulation',
+		},
+		{
+			question: 'What does Hume allow us to know about tomorrow?',
+			work: 'Hume · An Enquiry Concerning Human Understanding',
+		},
+		{
+			question:
+				'How does Césaire answer the claim that colonialism civilised anyone?',
+			work: 'Césaire · Discourse on Colonialism',
+		},
+		{
+			question:
+				'What does Angela Davis say the prison is for, if not for crime?',
+			work: 'Davis · Are Prisons Obsolete?',
+		},
+		{
+			question:
+				'Why can a Hobbesian sovereign never be accused of breaking the covenant?',
+			work: 'Hobbes · Leviathan',
+		},
+		{
+			question:
+				'Does Machiavelli advise cruelty, or only the appearance of it?',
+			work: 'Machiavelli · The Prince',
+		},
+		{
+			question: 'Why does Plato put the poets out of the city?',
+			work: 'Plato · Republic',
+		},
+		{
+			question:
+				'On what grounds does Aristotle call some people slaves by nature?',
+			work: 'Aristotle · Politics',
+		},
+		{
+			question:
+				'What did Darwin admit his own theory could not yet explain?',
+			work: 'Darwin · On the Origin of Species',
+		},
+		{
+			question:
+				'How does enlightenment turn back into myth for Adorno and Horkheimer?',
+			work: 'Adorno & Horkheimer · Dialectic of Enlightenment',
+		},
+		{
+			question:
+				'What survives Descartes’ doubt, and why does he think it must?',
+			work: 'Descartes · Meditations on First Philosophy',
+		},
+		{
+			question:
+				'What does Hartman mean by calling emancipation a burdened freedom?',
+			work: 'Hartman · Scenes of Subjection',
+		},
+		{
+			question:
+				'Where does King say the civil rights movement stopped being cheap?',
+			work: 'King · Where Do We Go From Here',
+		},
 	],
-	howManySuggestions: 2,
-	library: (works: number) =>
-		works === 1 ? 'with one work' : `with ${works} works`,
+	howManySuggestions: 3,
+	/** Split, because the count is the claim and is set apart in the line. */
+	library: (works: number) => ({
+		before: 'with ',
+		count: works === 1 ? 'one' : String(works),
+		after: works === 1 ? ' work' : ' works',
+	}),
 	home: 'Back to the home screen',
 
 	/* ---- composer ---- */

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { renderApp, stubFetch, verified } from '../test/harness';
 import { closePage, openPage } from '../state/reader';
@@ -84,6 +84,26 @@ describe('the page view', () => {
 		act(() => openPage(other));
 		expect(screen.getByText('Thus Spoke Zarathustra')).toBeTruthy();
 		expect(screen.queryByText('Beyond Good and Evil')).toBeNull();
+	});
+
+	// Focus scrolls what it lands on into view, and the drawer is still parked
+	// off the right edge when it takes it: on a phone that carried the whole app
+	// off the left of the screen, with the drawer behind it and Close out of reach.
+	it('takes focus without scrolling anything to reach it', () => {
+		stubFetch();
+		const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+		renderApp(<PageView />);
+		act(() => openPage(citation));
+
+		const drawer = screen.getByRole('dialog');
+		const taken = focus.mock.calls.filter(
+			(_call, index) => focus.mock.instances[index] === drawer
+		);
+		expect(taken.length).toBeGreaterThan(0);
+		for (const [options] of taken) {
+			expect(options).toEqual({ preventScroll: true });
+		}
+		focus.mockRestore();
 	});
 
 	it('says how the quote came back, in words', () => {

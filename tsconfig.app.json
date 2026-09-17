@@ -6,7 +6,8 @@
 		"module": "esnext",
 		"moduleResolution": "bundler",
 		"lib": ["esnext", "dom", "dom.iterable"],
-		"types": ["vite/client"],
+		// `node` for the tests under src/, which read a source file back.
+		"types": ["vite/client", "node"],
 		"jsx": "react-jsx",
 		"noEmit": true,
 		"strict": true,

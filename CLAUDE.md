@@ -82,9 +82,10 @@ are positioned or stacked.
 
 **Every reported bug has a test.** `src/**/*.test.tsx` covers the parser and the
 handful of behaviours that have broken in front of a reader: the drawer closing,
-the rail closing, the switcher's stacking, the duplicated quotation. CI runs
-them on every pull request, and they are the reason the next change does not
-bring one of them back.
+the rail closing, the switcher's stacking, the duplicated quotation, the drawer
+belonging to `main` rather than the shell, and the body never taking the
+document scroller away from a phone. CI runs them on every pull request, and
+they are the reason the next change does not bring one of them back.
 
 **Never re-check, retry or soften a citation.** Verification is the server's,
 and it happens after the answer. Nothing renders as checked before
