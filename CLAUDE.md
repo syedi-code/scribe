@@ -47,6 +47,19 @@ all come from `CITATION_STATUS` in `citations/status.ts`. A colour written
 inline in a component is a bug: the next status would be added in four places
 and shown in three.
 
+**A citation that repeats the prose is folded into it.** Models write the
+passage out and _then_ cite a few words of it, which printed the same sentence
+twice and made good answers read as gibberish. `absorbQuotation()` in
+`citations/parse.ts` drops the duplicate and sets only the checked words one
+weight heavier inside the quotation the model wrote. The instruction that asks
+the model not to do it in the first place is in alexandria's
+`conversations/instructions.ts`; the client does not rely on it.
+
+**The apparatus is tool calls, never narration.** A search and a read are facts
+and stay on screen once they have happened; narration is the model talking to
+itself, it rewrites itself as the model changes its mind, and it is not shown at
+all. A failed call says so and says why, rather than disappearing.
+
 **One citation regex.** `citations/parse.ts` mirrors alexandria's
 `conversations/citations.ts` and the two have to agree forever. Nothing else in
 the app looks for a citation, and `parse.test.ts` holds the awkward cases. When
@@ -58,12 +71,20 @@ scattered across components drifts.
 
 **Tokens, not values.** Every colour, face, size and width is a `@theme`
 variable in `styles/theme.css`. No arbitrary hex in a component, ever. Three
-status inks and nothing else is coloured, so colour always means the same thing.
+status inks and nothing else is coloured, so colour always means the same thing
+— with one deliberate exception, a provider dot inside the model switcher, which
+never appears on the reading surface.
 
 **No mobile fork.** One component tree, container queries on the app shell.
 Never `isMobile` inside a component, and never a second layout component for
 small screens. The one thing JavaScript asks the CSS is whether the margin notes
 are positioned or stacked.
+
+**Every reported bug has a test.** `src/**/*.test.tsx` covers the parser and the
+handful of behaviours that have broken in front of a reader: the drawer closing,
+the rail closing, the switcher's stacking, the duplicated quotation. CI runs
+them on every pull request, and they are the reason the next change does not
+bring one of them back.
 
 **Never re-check, retry or soften a citation.** Verification is the server's,
 and it happens after the answer. Nothing renders as checked before

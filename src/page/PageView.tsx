@@ -200,12 +200,23 @@ export function PageView() {
 	const drawer = useRef<HTMLDivElement>(null);
 	const opener = useRef<HTMLElement | null>(null);
 	const { page } = useCitedPage(open?.citation ?? null);
+	const showing = open !== null;
 
-	// The drawer takes focus, and gives it back to whatever opened it.
+	// The drawer takes focus, and gives it back to whatever opened it — on the
+	// way *out* only. Opening a second citation over the first must not throw
+	// focus back to the first on its way past.
 	useEffect(() => {
-		if (!open) return;
-		opener.current = open.opener;
+		if (!showing) return;
 		drawer.current?.focus();
+		return () => opener.current?.focus();
+	}, [showing]);
+
+	useEffect(() => {
+		if (open) opener.current = open.opener;
+	}, [open]);
+
+	useEffect(() => {
+		if (!showing) return;
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') closePage();
 			if (event.key !== 'Tab' || !drawer.current) return;
@@ -224,71 +235,82 @@ export function PageView() {
 			}
 		};
 		document.addEventListener('keydown', onKeyDown);
-		return () => {
-			document.removeEventListener('keydown', onKeyDown);
-			opener.current?.focus();
-		};
-	}, [open]);
+		return () => document.removeEventListener('keydown', onKeyDown);
+	}, [showing]);
 
 	const citation = open?.citation ?? null;
 
 	return (
-		<aside
-			ref={drawer}
-			tabIndex={-1}
-			role="dialog"
-			aria-modal="false"
-			aria-hidden={!open}
-			aria-label={page?.work_title ?? COPY.pageView.close}
-			className={`bg-paper-lift border-paper-deep absolute inset-y-0 right-0 z-30 flex w-drawer max-w-full flex-col border-l transition-transform duration-[380ms] ease-paper @max-compact:w-full @max-compact:border-l-0 ${
-				open ? 'translate-x-0' : 'translate-x-[101%]'
-			}`}
-		>
-			{citation && (
-				<>
-					<header className="border-paper-deep flex items-start justify-between gap-4 border-b px-5 pt-4 pb-3">
-						<div>
-							<h3 className="m-0 text-[17px] leading-tight font-normal italic">
-								{page?.work_title ?? citation.handle}
-							</h3>
-							<p className="font-app text-small text-ink-soft mt-0.5">
-								{page
-									? `${page.creator} — ${locatePage(page)} — handle ${citation.handle}`
-									: citation.handle}
-							</p>
-							<p
-								className={`font-app text-small mt-0.5 ${presentationOf(citation).ink}`}
-							>
-								{presentationOf(citation).verdict}
-							</p>
-						</div>
-						<button
-							type="button"
-							onClick={closePage}
-							className="font-app text-small text-ink-soft hover:text-ink"
-						>
-							{COPY.pageView.close}
-						</button>
-					</header>
-
-					<div className="text-ask overflow-y-auto px-5 py-4 leading-relaxed">
-						<Body citation={citation} />
-					</div>
-
-					<footer className="border-paper-deep mt-auto flex gap-4 border-t px-5 pt-3 pb-3.5">
-						{page && page.viewable ? (
-							<Scan
-								documentId={page.document_id}
-								pageNo={page.page_no}
-							/>
-						) : (
-							<span className="font-app text-small text-ink-soft">
-								{COPY.pageView.noScan}
-							</span>
-						)}
-					</footer>
-				</>
+		<>
+			{/* The page is over the answer, not beside it: a tap on what it
+			    covers puts it away. */}
+			{showing && (
+				<div
+					aria-hidden
+					onClick={closePage}
+					className="bg-ink/10 absolute inset-0 z-[25]"
+				/>
 			)}
-		</aside>
+			<aside
+				ref={drawer}
+				tabIndex={-1}
+				role="dialog"
+				aria-modal={showing}
+				aria-hidden={!showing}
+				aria-label={page?.work_title ?? COPY.pageView.close}
+				className={`bg-paper-lift border-paper-deep absolute inset-y-0 right-0 z-30 flex w-drawer max-w-full flex-col border-l transition-transform duration-[380ms] ease-paper @max-compact:w-full @max-compact:border-l-0 ${
+					showing ? 'translate-x-0' : 'translate-x-[101%]'
+				}`}
+			>
+				{citation && (
+					<>
+						<header className="border-paper-deep flex items-start justify-between gap-4 border-b px-5 pt-4 pb-3">
+							<div>
+								<h3 className="m-0 text-[17px] leading-tight font-normal italic">
+									{page?.work_title ?? citation.handle}
+								</h3>
+								<p className="font-app text-small text-ink-soft mt-0.5">
+									{page
+										? `${page.creator} — ${locatePage(page)} — handle ${citation.handle}`
+										: citation.handle}
+								</p>
+								<p
+									className={`font-app text-small mt-0.5 ${presentationOf(citation).ink}`}
+								>
+									{presentationOf(citation).verdict}
+								</p>
+							</div>
+							<button
+								type="button"
+								onClick={closePage}
+								className="font-app text-small text-ink-soft hover:text-ink -mt-1 -mr-2 shrink-0 px-2 py-1"
+							>
+								{COPY.pageView.close}
+							</button>
+						</header>
+
+						<div className="text-ask overflow-y-auto px-5 py-4 leading-relaxed">
+							<Body
+								key={`${citation.handle}:${citation.ref?.page_no ?? ''}:${citation.quote.slice(0, 24)}`}
+								citation={citation}
+							/>
+						</div>
+
+						<footer className="border-paper-deep mt-auto flex gap-4 border-t px-5 pt-3 pb-3.5">
+							{page && page.viewable ? (
+								<Scan
+									documentId={page.document_id}
+									pageNo={page.page_no}
+								/>
+							) : (
+								<span className="font-app text-small text-ink-soft">
+									{COPY.pageView.noScan}
+								</span>
+							)}
+						</footer>
+					</>
+				)}
+			</aside>
+		</>
 	);
 }

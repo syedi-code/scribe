@@ -1,16 +1,52 @@
 import { useState } from 'react';
+import { COPY } from '../copy';
 import type { WorkStep } from '../chat/message';
 
 /**
  * What the model did, as against what it said.
  *
- * While it searches, this line is live and specific — *searching pages — “will
- * to truth”*, *reading Beyond Good and Evil, PDF pp. 19–23* — because watching a
- * good search is reassuring and watching a bad one is diagnostic. Once the
- * answer starts it collapses to one line, which anyone who wants to audit the
- * search can open again. There is no typing indicator of three dots: the
- * apparatus says what is happening, by name.
+ * Every tool call is a row, and a row stays once it exists: a search and a
+ * read are facts, and a list that rewrites itself as the model changes its
+ * mind is the opposite of the reassurance it is meant to give. The model's
+ * narration is not shown at all — it is the model talking to itself.
+ *
+ * Colour is not used here. Three inks mean *how the evidence came back* and
+ * nothing else in the app is coloured, so the hierarchy is carried by weight
+ * and position: what it did, then to what, then what came back. A step still
+ * running trails a sweeping rule — motion, not a fourth colour.
  */
+
+function Step({ step }: { step: WorkStep }) {
+	return (
+		<li className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-baseline gap-x-2 py-[3px] @max-compact:grid-cols-1 @max-compact:gap-x-0">
+			<span
+				className={`text-ink-soft ${step.state === 'running' ? 'doing' : ''}`}
+			>
+				{step.action}
+			</span>
+			<span className="min-w-0">
+				<span className="text-ink">{step.subject}</span>
+				{step.result && (
+					<>
+						<span aria-hidden className="text-ink-faint px-1.5">
+							·
+						</span>
+						<span
+							className={
+								step.state === 'failed'
+									? 'text-ink-soft italic'
+									: 'text-ink-faint'
+							}
+						>
+							{step.result}
+						</span>
+					</>
+				)}
+			</span>
+		</li>
+	);
+}
+
 export function Apparatus({
 	work,
 	summary,
@@ -20,34 +56,28 @@ export function Apparatus({
 	summary: string;
 	live: boolean;
 }) {
-	const [open, setOpen] = useState(false);
-	if (work.length === 0) return null;
-
-	if (live) {
-		return (
-			// Named steps are the only signal that anything is happening, so
-			// they are announced rather than only shown.
-			<div
+	const [opened, setOpened] = useState(false);
+	if (work.length === 0) {
+		return live ? (
+			<p
 				aria-live="polite"
-				className="font-app text-small text-ink-soft mb-3"
+				className="font-app text-small text-ink-soft doing mb-3"
 			>
-				{work.map((step) => (
-					<div
-						key={step.id}
-						className={`animate-rise py-px ${step.running ? 'doing' : ''}`}
-					>
-						{step.label}
-					</div>
-				))}
-			</div>
-		);
+				{COPY.thinking}
+			</p>
+		) : null;
 	}
 
+	// While the model is working the steps are the whole story, so they stay
+	// open. Once the answer is there they fold away, unless the reader has
+	// asked to keep them.
+	const open = live || opened;
+
 	return (
-		<div className="font-app text-small text-ink-soft mb-3">
+		<div className="font-app text-small mb-3">
 			<button
 				type="button"
-				onClick={() => setOpen((was) => !was)}
+				onClick={() => setOpened((was) => !was)}
 				aria-expanded={open}
 				className="text-ink-faint hover:text-ink inline-flex items-baseline gap-1.5 transition-colors"
 			>
@@ -59,14 +89,18 @@ export function Apparatus({
 				>
 					▾
 				</span>
-				<span>{summary}</span>
+				<span>{live ? COPY.showWork : summary}</span>
 			</button>
+
 			{open && (
-				<div className="border-paper-deep mt-1.5 border-l pt-1 pl-3">
+				<ul
+					aria-live="polite"
+					className="border-paper-deep mt-1.5 list-none border-l pl-3"
+				>
 					{work.map((step) => (
-						<div key={step.id}>{step.label}</div>
+						<Step key={step.id} step={step} />
 					))}
-				</div>
+				</ul>
 			)}
 		</div>
 	);

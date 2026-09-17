@@ -39,7 +39,7 @@ export function Stamp({
 			role="img"
 			aria-label={label}
 			title={label}
-			className={`mr-[0.26em] ml-[0.34em] inline-block h-[0.66em] w-[0.66em] border-2 align-[-0.02em] transition-[background-color,border-color,transform] duration-300 ease-paper group-hover/cite:scale-115 ${stamp}`}
+			className={`mr-[0.1em] ml-[0.3em] inline-block h-[0.66em] w-[0.66em] border-2 align-[-0.02em] transition-[background-color,border-color,transform] duration-300 ease-paper group-hover/cite:scale-115 ${stamp}`}
 		/>
 	);
 }

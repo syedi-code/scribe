@@ -1,6 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { COPY } from '../copy';
-import { alignCitations, markersFor, segmentAnswer } from '../citations/parse';
+import {
+	alignCitations,
+	markersFor,
+	segmentAnswer,
+	trimHalfWrittenCitation,
+} from '../citations/parse';
 import { useStaggeredResolve } from '../citations/useResolve';
 import { readMessage, type ScribeMessage } from '../chat/message';
 import { useModels } from '../models/context';
@@ -51,14 +56,24 @@ export function Turn({
 	);
 
 	const { markers, paragraphs, citations } = useMemo(() => {
-		const answer = read?.answer ?? '';
+		const written = read?.answer ?? '';
+		// Nothing half-written is shown: a citation appears whole or not yet.
+		const answer = streaming ? trimHalfWrittenCitation(written) : written;
 		const markers = markersFor(answer, read?.citations);
+		const titles = [
+			...new Set(
+				(read?.citations ?? []).flatMap((citation) =>
+					citation.page?.work_title ? [citation.page.work_title] : []
+				)
+			),
+		].sort((a, b) => b.length - a.length);
+
 		return {
 			markers,
-			paragraphs: segmentAnswer(answer, markers),
+			paragraphs: segmentAnswer(answer, markers, titles),
 			citations: alignCitations(markers, read?.citations),
 		};
-	}, [read]);
+	}, [read, streaming]);
 
 	const resolved = useStaggeredResolve(
 		markers.length,

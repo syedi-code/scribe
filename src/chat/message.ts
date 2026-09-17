@@ -13,6 +13,11 @@ import type { AnswerCitation } from '../api/types';
  *
  *     The answer is the text after the final `step-start`.
  *     Everything before it is apparatus.
+ *
+ * The apparatus is the model's *tool calls*, not its narration. Narration
+ * appears and disappears as the model changes its mind about what it is doing,
+ * which is the opposite of the reassurance it is supposed to give; a search and
+ * a read are facts, and they stay on screen once they have happened.
  */
 
 export type ScribeMessage = UIMessage<
@@ -32,14 +37,21 @@ interface ToolPart {
 		| 'output-error';
 	input?: unknown;
 	output?: unknown;
+	errorText?: string;
 }
 
-/** One line of the apparatus: what the model did, named. */
+/**
+ * One line of the apparatus: what the model did, to what, and what came back.
+ * Three columns rather than one sentence, so a reader can scan down a search
+ * and see the shape of it.
+ */
 export interface WorkStep {
 	id: string;
-	label: string;
-	/** The last step is live while the model is still working. */
-	running: boolean;
+	action: string;
+	subject: string;
+	/** What came back, once it has. */
+	result: string | null;
+	state: 'running' | 'done' | 'failed';
 }
 
 export interface ReadMessage {
@@ -59,6 +71,7 @@ const isTool = (part: Part): part is Part & ToolPart =>
 const toolName = (part: ToolPart) => part.type.slice('tool-'.length);
 
 const ready = (part: ToolPart) => part.state === 'output-available';
+const failed = (part: ToolPart) => part.state === 'output-error';
 
 /** Groups parts by the step boundaries between them. */
 function steps(parts: readonly Part[]): Part[][] {
@@ -70,77 +83,100 @@ function steps(parts: readonly Part[]): Part[][] {
 	return grouped;
 }
 
-interface SearchInput {
+interface ToolInput {
 	query?: string;
-}
-interface ReadInput {
 	from?: number;
 	to?: number;
-}
-interface ViewInput {
 	page?: string;
+	document_id?: string;
+	filter?: string;
 }
+
 interface PageResult {
 	work_title?: string;
 	work_id?: string;
+	title?: string;
+	ref?: { document_id: string; page_no: number };
 }
 
-/** What a tool call says it is doing, in the reader's words rather than the wire's. */
-function describeTool(part: ToolPart): string[] {
-	const input = (part.input ?? {}) as SearchInput & ReadInput & ViewInput;
+const pages = (from: number, to: number) =>
+	from === to ? COPY.work.page(from) : COPY.work.pages(from, to);
+
+/** What a tool call is doing, in the reader's words rather than the wire's. */
+function describeTool(part: ToolPart): Omit<WorkStep, 'id' | 'state'> {
+	const input = (part.input ?? {}) as ToolInput;
 	const output = Array.isArray(part.output)
 		? (part.output as PageResult[])
 		: [];
+	const count = output.length;
 
 	switch (toolName(part)) {
 		case 'search_pages': {
-			const searching = COPY.searching(input.query ?? '');
-			if (!ready(part)) return [searching];
-			const works = new Set(output.map((hit) => hit.work_id));
-			return [searching, COPY.searched(output.length, works.size)];
+			const works = new Set(output.map((hit) => hit.work_id)).size;
+			return {
+				action: COPY.work.searched,
+				subject: `“${input.query ?? ''}”`,
+				result: ready(part)
+					? count === 0
+						? COPY.work.nothing
+						: COPY.work.hits(count, works)
+					: null,
+			};
 		}
 		case 'read_pages': {
 			const from = input.from ?? 0;
 			const to = input.to ?? from;
 			const work = output[0]?.work_title;
-			return [
-				work
-					? COPY.readingWork(work, from, to)
-					: COPY.reading(from, to),
-			];
+			return {
+				action: COPY.work.read,
+				subject: work ? `${work}, ${pages(from, to)}` : pages(from, to),
+				result: ready(part) ? COPY.work.gotPages(count) : null,
+			};
 		}
 		case 'view_page':
-			return [COPY.viewing(input.page ?? '')];
+			return {
+				action: COPY.work.looked,
+				subject: input.page ?? '',
+				result: ready(part) ? COPY.work.scan : null,
+			};
 		case 'list_works':
-			return [COPY.listingWorks];
+			return {
+				action: COPY.work.listed,
+				subject: input.filter
+					? `${COPY.work.library} — “${input.filter}”`
+					: COPY.work.library,
+				result: ready(part) ? COPY.work.works(count) : null,
+			};
 		default:
-			return [toolName(part).replace(/_/g, ' ')];
+			return {
+				action: toolName(part).replace(/_/g, ' '),
+				subject: '',
+				result: ready(part) ? COPY.work.done : null,
+			};
 	}
 }
 
-/** Narration is apparatus too, but it is the model's voice, so it is kept whole. */
-const narration = (text: string) => text.trim().replace(/\s+/g, ' ');
+/** Why a tool call came back empty-handed, briefly. */
+const whyFailed = (part: ToolPart) =>
+	(part.errorText ?? '').split('\n')[0].slice(0, 90) || COPY.work.failed;
 
-function summarise(parts: readonly Part[]): string {
-	const tools = parts.filter(isTool);
-	const searches = tools.filter(
-		(part) => toolName(part) === 'search_pages'
+function summarise(work: readonly WorkStep[], parts: readonly Part[]): string {
+	const searches = work.filter(
+		(step) => step.action === COPY.work.searched
 	).length;
 
-	const pages = new Set<string>();
+	const seen = new Set<string>();
 	const works = new Set<string>();
-	for (const part of tools) {
-		if (toolName(part) !== 'read_pages' || !ready(part)) continue;
-		for (const page of (part.output ?? []) as {
-			ref?: { document_id: string; page_no: number };
-			work_id?: string;
-		}[]) {
+	for (const part of parts) {
+		if (!isTool(part) || toolName(part) !== 'read_pages' || !ready(part))
+			continue;
+		for (const page of (part.output ?? []) as PageResult[]) {
 			if (page.ref)
-				pages.add(`${page.ref.document_id}#${page.ref.page_no}`);
+				seen.add(`${page.ref.document_id}#${page.ref.page_no}`);
 			if (page.work_id) works.add(page.work_id);
 		}
 	}
-	return COPY.workSummary(searches, pages.size, works.size);
+	return COPY.workSummary(searches, seen.size, works.size);
 }
 
 export function readMessage(
@@ -149,33 +185,25 @@ export function readMessage(
 ): ReadMessage {
 	const grouped = steps(message.parts);
 	const answerParts = grouped[grouped.length - 1] ?? [];
-	const before = grouped.slice(0, -1).flat();
 
-	const work: WorkStep[] = [];
-	before.forEach((part, index) => {
-		if (isText(part) && narration(part.text)) {
-			work.push({
-				id: `${index}`,
-				label: narration(part.text),
-				running: false,
-			});
-		} else if (isTool(part)) {
-			for (const [line, label] of describeTool(part).entries()) {
-				work.push({
-					id: `${part.toolCallId}:${line}`,
-					label,
-					running: false,
-				});
-			}
-		}
+	// A step is only in progress while the stream is open; a closed stream
+	// leaves nothing running, however it ended.
+	const stateOf = (part: ToolPart): WorkStep['state'] =>
+		failed(part)
+			? 'failed'
+			: ready(part) || !streaming
+				? 'done'
+				: 'running';
+
+	const work: WorkStep[] = message.parts.filter(isTool).map((part) => {
+		const described = describeTool(part);
+		return {
+			id: part.toolCallId,
+			...described,
+			result: failed(part) ? whyFailed(part) : described.result,
+			state: stateOf(part),
+		};
 	});
-
-	// Only the very last thing the model did is still happening, and only while
-	// the stream is open. A finished answer has no live line.
-	const last = work[work.length - 1];
-	if (last && streaming && answerParts.every((part) => !isText(part))) {
-		last.running = true;
-	}
 
 	const citations = message.parts.find(
 		(
@@ -184,14 +212,16 @@ export function readMessage(
 			part.type === 'data-citations'
 	)?.data;
 
+	const answer = answerParts
+		.filter(isText)
+		.map((part) => part.text)
+		.join('\n')
+		.trim();
+
 	return {
-		answer: answerParts
-			.filter(isText)
-			.map((part) => part.text)
-			.join('\n')
-			.trim(),
+		answer,
 		work,
-		summary: summarise(message.parts),
+		summary: summarise(work, message.parts),
 		citations,
 		modelId: message.metadata?.model_id,
 	};

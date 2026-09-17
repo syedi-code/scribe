@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { describeApiError, openSession } from './api/client';
 import { ChatProvider } from './chat/ChatProvider';
 import { useAsync } from './lib/useAsync';
@@ -15,7 +14,6 @@ import { Wordmark } from './ui/Wordmark';
  */
 export function App() {
 	const session = useAsync(() => openSession(), []);
-	const [phone, setPhone] = useState(false);
 
 	if (session.loading) return <div className="bg-paper h-full" />;
 
@@ -33,18 +31,7 @@ export function App() {
 	return (
 		<ModelProvider>
 			<ChatProvider>
-				<div
-					className={
-						phone
-							? 'bg-frame grid h-full place-items-center p-4'
-							: 'h-full'
-					}
-				>
-					<AppFrame
-						phone={phone}
-						onPhone={() => setPhone((was) => !was)}
-					/>
-				</div>
+				<AppFrame />
 			</ChatProvider>
 		</ModelProvider>
 	);

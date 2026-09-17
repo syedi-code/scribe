@@ -86,8 +86,12 @@
 	--color-rubric: #9b2c21;
 	--color-slate: #7c7789;
 
+	/* Provider marks, used only as a dot in the model switcher. */
+	--color-anthropic: #cc785c;
+	--color-openai: #3d7f6a;
+	--color-google: #4a6fa5;
+
 	--color-edge: #cfc4ab;
-	--color-frame: #e3dbc9;
 	--color-highlight: #e4ddc6;
 
 	--font-read: 'GT Alpina', 'Iowan Old Style', Georgia, serif;
@@ -117,7 +121,6 @@
 	--container-drawer: 33rem;
 	--container-compact: 35rem; /* 560px: the rail goes, the header compresses */
 	--container-fold: 65rem; /* 1040px: the margin folds into footnotes */
-	--container-phone: 390px;
 
 	--animate-rise: rise 0.35s var(--ease-paper) both;
 	--animate-settle: settle 0.5s var(--ease-paper) both;
