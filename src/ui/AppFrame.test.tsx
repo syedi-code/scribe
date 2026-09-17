@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
-import { chat, renderApp, stubFetch, thread, verified } from '../test/harness';
+import {
+	chat,
+	models,
+	renderApp,
+	stubFetch,
+	thread,
+	verified,
+} from '../test/harness';
 import { closePage, openPage } from '../state/reader';
 import { AppFrame } from './AppFrame';
 
@@ -48,9 +55,9 @@ describe('the header', () => {
 		fireEvent.click(screen.getByRole('button', { name: /Claude/ }));
 		const header = container.querySelector('header');
 		const menu = screen.getByRole('menu');
-		expect(header?.className).toContain('z-40');
+		expect(header?.className).toContain('z-(--z-header)');
 		expect(header?.contains(menu)).toBe(true);
-		expect(menu.className).toContain('z-50');
+		expect(menu.className).toContain('z-(--z-menu)');
 	});
 
 	it('lets the model menu wrap rather than run out of its box', () => {
@@ -60,6 +67,77 @@ describe('the header', () => {
 		expect(screen.getByRole('menu').className).toContain(
 			'whitespace-normal'
 		);
+	});
+});
+
+describe('the tabs', () => {
+	it('shows Add a book struck through, and will not open it', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: withThreads() });
+		const add = screen.getByRole('tab', { name: 'Add a book' });
+
+		expect(add.hasAttribute('disabled')).toBe(true);
+		expect(add.className).toContain('line-through');
+
+		fireEvent.click(add);
+		expect(screen.queryByText(/Drop a PDF here/)).toBeNull();
+	});
+
+	it('opens the shelves, and leaves the reading surface alone', () => {
+		stubFetch({ works: [] });
+		renderApp(<AppFrame />, { state: withThreads() });
+		fireEvent.click(screen.getByRole('tab', { name: 'Books' }));
+		expect(screen.getByRole('searchbox')).toBeTruthy();
+	});
+});
+
+describe('the model switcher', () => {
+	const roster = {
+		...models,
+		choices: [
+			...models.choices,
+			{
+				id: 'claude-opus-5',
+				label: 'Claude Opus 5',
+				provider: 'anthropic' as const,
+				acceptsFiles: true,
+				available: false,
+				suspended: true,
+			},
+		],
+	};
+
+	// A model held back is a decision, and reads as one: `no key set` would
+	// have said the deployment was misconfigured.
+	it('says a held-back model is disabled, not keyless', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: withThreads(), roster });
+		fireEvent.click(screen.getByRole('button', { name: /Claude Haiku/ }));
+
+		const opus = screen.getByRole('menuitem', { name: /Claude Opus 5/ });
+		expect(opus.textContent).toContain('temporarily disabled');
+		expect(opus.textContent).not.toContain('no key set');
+		expect(opus.hasAttribute('disabled')).toBe(true);
+	});
+});
+
+describe('the rail, naming', () => {
+	it('says naming only while the server is being asked', () => {
+		stubFetch();
+		renderApp(<AppFrame />, {
+			state: chat({
+				threads: [thread('c1', null), thread('c2', null)],
+				naming: ['c1'],
+				activeId: 'c1',
+				atHome: false,
+			}),
+		});
+		fireEvent.click(screen.getByRole('button', { name: 'Sessions' }));
+
+		expect(screen.getByText('naming…')).toBeTruthy();
+		// The one nobody is naming any more says what it is, and stops
+		// promising a title that is not coming.
+		expect(screen.getByText('untitled')).toBeTruthy();
 	});
 });
 

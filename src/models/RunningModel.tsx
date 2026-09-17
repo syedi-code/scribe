@@ -66,7 +66,7 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 					// side, and never wider than the app. Under the wordmark the
 					// line is centred, so the menu is too — hung from its left
 					// edge it ran off the right of a phone.
-					className={`border-paper-deep bg-paper-lift absolute top-6 z-50 w-[19rem] overflow-hidden whitespace-normal max-w-[calc(100cqw-2rem)] rounded-xl border py-1 shadow-[0_16px_34px_-24px_rgba(36,31,26,0.9)] ${
+					className={`border-paper-deep bg-paper-lift absolute top-6 z-(--z-menu) w-[19rem] overflow-hidden whitespace-normal max-w-[calc(100cqw-2rem)] rounded-xl border py-1 shadow-[0_16px_34px_-24px_rgba(36,31,26,0.9)] ${
 						hero ? 'left-1/2 -translate-x-1/2' : 'left-0'
 					}`}
 				>
@@ -91,16 +91,20 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 											model.available ? '' : 'opacity-40'
 										}`}
 									/>
-									<span className="truncate">
+									<span
+										className={`truncate ${model.suspended ? 'line-through' : ''}`}
+									>
 										{model.label}
 									</span>
 								</span>
 								<span className="text-tiny text-ink-faint shrink-0 whitespace-nowrap">
-									{!model.available
-										? COPY.noKey
-										: inUse
-											? COPY.inUse
-											: ''}
+									{model.suspended
+										? COPY.suspended
+										: !model.available
+											? COPY.noKey
+											: inUse
+												? COPY.inUse
+												: ''}
 								</span>
 							</button>
 						);

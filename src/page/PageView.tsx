@@ -252,7 +252,7 @@ export function PageView() {
 				<div
 					aria-hidden
 					onClick={closePage}
-					className="bg-ink/10 absolute inset-0 z-[25]"
+					className="bg-ink/10 absolute inset-0 z-(--z-drawer)"
 				/>
 			)}
 			<aside
@@ -262,7 +262,7 @@ export function PageView() {
 				aria-modal={showing}
 				aria-hidden={!showing}
 				aria-label={page?.work_title ?? COPY.pageView.close}
-				className={`bg-paper-lift border-paper-deep absolute inset-y-0 right-0 z-30 flex w-drawer max-w-full flex-col border-l transition-transform duration-[380ms] ease-paper @max-compact:w-full @max-compact:border-l-0 ${
+				className={`bg-paper-lift border-paper-deep absolute inset-y-0 right-0 z-(--z-drawer) flex w-drawer max-w-full flex-col border-l transition-transform duration-[380ms] ease-paper @max-compact:w-full @max-compact:border-l-0 ${
 					showing ? 'translate-x-0' : 'translate-x-[101%]'
 				}`}
 			>

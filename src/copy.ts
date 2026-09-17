@@ -12,13 +12,18 @@ const plural = (count: number, one: string, many: string) =>
 
 export const COPY = {
 	/* ---- chrome ---- */
-	tabs: { ask: 'Ask', add: 'Add a book' },
+	tabs: { ask: 'Ask', books: 'Books', add: 'Add a book' },
+	/** The tab is shown struck through rather than removed: it is coming back. */
+	addLater: 'not yet — Scribe reads the library, it does not fill it',
 	sessions: 'Sessions',
 	running: 'running',
 	newQuestion: 'New question',
+	/** Only while the server is actually being asked what it called this one. */
 	naming: 'naming…',
+	unnamed: 'untitled',
 	modelsEmpty: 'no models available',
 	noKey: 'no key set',
+	suspended: 'temporarily disabled',
 	inUse: 'in use',
 	modelNote:
 		'Whichever providers have a key on the worker. Earlier answers keep the model that wrote them.',
@@ -220,6 +225,8 @@ export const COPY = {
 	tally: (found: number, total: number) =>
 		`${found} of ${total} ${plural(total, 'quote', 'quotes')} found on the page it named`,
 	noCitations: 'nothing in this answer is cited to a page',
+	/** A turn that searched and read and then stopped without writing anything. */
+	noAnswer: 'Scribe stopped before it wrote an answer.',
 	onlyCited: "Only what's cited",
 	onlyCitedHint: 'Fade every sentence no citation supports',
 
@@ -262,6 +269,22 @@ export const COPY = {
 	offline: 'Scribe could not reach alexandria. Check your connection.',
 	answerFailed: 'Scribe could not finish this answer.',
 	retry: 'Ask again',
+
+	/* ---- the shelves ----
+	   What the library holds, by whoever wrote it. No covers, no counts of
+	   anything but works: a bibliography is a list, and this one is the list
+	   the answers are drawn from. */
+	books: {
+		search: 'Search the shelves',
+		clear: 'Clear',
+		nothing: (term: string) => `Nothing on the shelves matches “${term}”.`,
+		unreachable: 'The shelves could not be fetched just now.',
+		loading: 'reading the shelves…',
+		tally: (works: number, creators: number) =>
+			`${works} ${plural(works, 'work', 'works')} · ${creators} ${plural(creators, 'name', 'names')}`,
+		pages: (count: number) => `${count} ${plural(count, 'page', 'pages')}`,
+		unsearchable: 'scan only',
+	},
 
 	/* ---- add a book ---- */
 	add: {

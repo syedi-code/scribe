@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { COPY } from '../copy';
-import { AddPanel } from '../add/AddPanel';
 import { AskPanel } from '../ask/AskPanel';
+import { BooksPanel } from '../books/BooksPanel';
 import { useConversation } from '../chat/context';
 import { useDismiss } from '../lib/useDismiss';
 import { RunningModel } from '../models/RunningModel';
@@ -28,7 +28,9 @@ import { Wordmark } from './Wordmark';
  * scrolled the whole app sideways under it.
  */
 
-type Tab = 'ask' | 'add';
+// `add` is not here: the tab is shown struck through and cannot be reached
+// until there is an ingestion behind it. `add/AddPanel.tsx` waits for it.
+type Tab = 'ask' | 'books';
 
 function TabBar({
 	tab,
@@ -44,12 +46,12 @@ function TabBar({
 	railOpen: boolean;
 }) {
 	const tabClass = (which: Tab) =>
-		`font-read text-ui leading-tight transition-colors ${
+		`font-read text-ui leading-tight whitespace-nowrap transition-colors ${
 			tab === which ? 'text-ink' : 'text-ink-faint hover:text-ink'
 		}`;
 
 	return (
-		<div className="flex items-center gap-4">
+		<div className="flex items-center gap-4 @max-compact:gap-3">
 			{railable && (
 				<button
 					type="button"
@@ -75,9 +77,19 @@ function TabBar({
 			<button
 				type="button"
 				role="tab"
-				aria-selected={tab === 'add'}
-				onClick={() => onTab('add')}
-				className={tabClass('add')}
+				aria-selected={tab === 'books'}
+				onClick={() => onTab('books')}
+				className={tabClass('books')}
+			>
+				{COPY.tabs.books}
+			</button>
+			<button
+				type="button"
+				role="tab"
+				disabled
+				aria-selected={false}
+				title={COPY.addLater}
+				className="font-read text-ui text-ink-faint leading-tight whitespace-nowrap line-through opacity-60 disabled:cursor-default"
 			>
 				{COPY.tabs.add}
 			</button>
@@ -135,7 +147,7 @@ export function AppFrame() {
 			className="bg-paper relative grid h-full grid-rows-[auto_minmax(0,1fr)] overflow-clip @container"
 		>
 			<header
-				className={`relative z-40 flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
+				className={`relative z-(--z-header) flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
 					atHome && tab === 'ask'
 						? 'border-transparent'
 						: 'border-paper-deep'
@@ -189,12 +201,12 @@ export function AppFrame() {
 							<div
 								aria-hidden
 								onClick={() => setRailOpen(false)}
-								className="bg-ink/15 absolute inset-0 z-20 hidden @max-compact:block"
+								className="bg-ink/15 absolute inset-0 z-(--z-rail) hidden @max-compact:block"
 							/>
 						)}
 						<div
 							ref={rail}
-							className={`min-h-0 @max-compact:bg-paper @max-compact:absolute @max-compact:inset-y-0 @max-compact:left-0 @max-compact:z-20 @max-compact:w-rail @max-compact:shadow-[8px_0_24px_-20px_rgba(36,31,26,0.9)] ${
+							className={`min-h-0 @max-compact:bg-paper @max-compact:absolute @max-compact:inset-y-0 @max-compact:left-0 @max-compact:z-(--z-rail) @max-compact:w-rail @max-compact:shadow-[8px_0_24px_-20px_rgba(36,31,26,0.9)] ${
 								railOpen ? '' : '@max-compact:hidden'
 							}`}
 						>
@@ -203,7 +215,7 @@ export function AppFrame() {
 					</>
 				)}
 
-				{tab === 'ask' ? <AskPanel /> : <AddPanel />}
+				{tab === 'ask' ? <AskPanel /> : <BooksPanel />}
 
 				<PageView />
 			</main>

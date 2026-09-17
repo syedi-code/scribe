@@ -9,9 +9,13 @@ import { useConversation } from '../chat/context';
  * created and titled a beat later, because the server names it after reading
  * its first question; the row is the same height either way, so nothing jumps
  * when the title lands.
+ *
+ * `naming…` is said only while the server is actually being asked. A row that
+ * is still untitled after that says so, rather than promising a name that is
+ * no longer coming.
  */
 export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
-	const { threads, activeId, openThread, newQuestion, busy } =
+	const { threads, naming, activeId, openThread, newQuestion, busy } =
 		useConversation();
 
 	return (
@@ -48,7 +52,10 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 							: 'text-ink-faint italic'
 					}`}
 				>
-					{thread.title ?? COPY.naming}
+					{thread.title ??
+						(naming.includes(thread.id)
+							? COPY.naming
+							: COPY.unnamed)}
 				</button>
 			))}
 		</nav>

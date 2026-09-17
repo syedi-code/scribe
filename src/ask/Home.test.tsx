@@ -16,11 +16,7 @@ const showing = () =>
 		.filter((suggestion) => screen.queryByText(suggestion.question))
 		.map((suggestion) => suggestion.question);
 
-const TURN_MS = 8000;
-
-/** The block the reader's pointer rests on, which holds the hand where it is. */
-const block = () =>
-	screen.getAllByRole('button')[1].parentElement!.parentElement!;
+const MINUTE = 60_000;
 
 afterEach(() => vi.useRealTimers());
 
@@ -41,36 +37,16 @@ describe('the home screen', () => {
 		}
 	});
 
-	it('deals the whole library before any question comes round again', () => {
+	// They used to turn over every eight seconds, which moved text about
+	// beside the thing a reader was trying to type into.
+	it('leaves the questions where they were drawn', () => {
 		vi.useFakeTimers();
 		stubFetch(LIBRARY);
 		renderApp(<Home composerSlot={() => {}} />);
+		const drawn = showing();
 
-		// Twenty-five questions, three at a time: eight hands come off one
-		// shuffle, and none of the twenty-four repeats.
-		const dealt = showing();
-		for (let turn = 1; turn < 8; turn++) {
-			act(() => vi.advanceTimersByTime(TURN_MS));
-			dealt.push(...showing());
-		}
-
-		expect(dealt).toHaveLength(24);
-		expect(new Set(dealt).size).toBe(24);
-	});
-
-	it('holds the hand while a reader is reading it', () => {
-		vi.useFakeTimers();
-		stubFetch(LIBRARY);
-		renderApp(<Home composerSlot={() => {}} />);
-		const before = showing();
-
-		fireEvent.mouseEnter(block());
-		act(() => vi.advanceTimersByTime(TURN_MS * 3));
-		expect(showing()).toEqual(before);
-
-		fireEvent.mouseLeave(block());
-		act(() => vi.advanceTimersByTime(TURN_MS));
-		expect(showing()).not.toEqual(before);
+		act(() => vi.advanceTimersByTime(MINUTE));
+		expect(showing()).toEqual(drawn);
 	});
 
 	it('asks the question that was clicked', () => {
@@ -102,12 +78,12 @@ describe('the home screen', () => {
 		const line = [...column.children].find((child) =>
 			child.contains(menu)
 		)!;
-		expect(line.className).toContain('z-20');
+		expect(line.className).toContain('z-(--z-lifted)');
 
 		// Every other child of the column sits at the default level, so the
 		// explicit one wins however the DOM is ordered.
 		for (const child of column.children) {
-			if (child !== line) expect(child.className).not.toMatch(/\bz-\d/);
+			if (child !== line) expect(child.className).not.toContain('z-(');
 		}
 	});
 });

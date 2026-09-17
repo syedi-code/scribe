@@ -127,6 +127,25 @@ export function Turn({
 					</>
 				)}
 
+				{/* Searched, read, and then stopped without writing anything —
+				    what a reader saw when the server ran out of steps in the
+				    middle of a tool call. An empty answer is a failed answer
+				    and says so. */}
+				{read && !answered && !streaming && !failure && (
+					<p className="font-app text-small text-rubric mt-2 flex flex-wrap items-baseline gap-3">
+						<span>{COPY.noAnswer}</span>
+						{onRetry && (
+							<button
+								type="button"
+								onClick={onRetry}
+								className="border-rubric text-rubric border-b"
+							>
+								{COPY.retry}
+							</button>
+						)}
+					</p>
+				)}
+
 				{failure && (
 					<p className="font-app text-small text-rubric mt-2 flex flex-wrap items-baseline gap-3">
 						<span>{failure}</span>

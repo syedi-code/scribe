@@ -67,7 +67,7 @@ export function Conversation() {
 									? describeStreamFailure(error)
 									: undefined
 							}
-							onRetry={last && error ? retry : undefined}
+							onRetry={last && !busy ? retry : undefined}
 						/>
 					);
 				})}

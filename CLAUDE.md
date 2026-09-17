@@ -75,6 +75,15 @@ status inks and nothing else is coloured, so colour always means the same thing
 — with one deliberate exception, a provider dot inside the model switcher, which
 never appears on the reading surface.
 
+**One stacking order.** `--z-lifted`, `--z-rail`, `--z-drawer`, `--z-header`,
+`--z-menu`, declared once in `styles/theme.css` and read as `z-(--z-rail)`. A
+number written in a component is a bug and `styles/theme.test.ts` fails on one:
+two things at `20` in two files is how the rail came up underneath the home
+screen's subtitle. A layer is a whole subtree, so the model menu is `--z-menu`
+above the header and no higher than `--z-lifted` when it hangs from the home
+screen's model line. A scrim and the panel it dims share a layer and are ordered
+by the DOM, scrim first.
+
 **No mobile fork.** One component tree, container queries on the app shell.
 Never `isMobile` inside a component, and never a second layout component for
 small screens. The one thing JavaScript asks the CSS is whether the margin notes
@@ -83,16 +92,35 @@ are positioned or stacked.
 **Every reported bug has a test.** `src/**/*.test.tsx` covers the parser and the
 handful of behaviours that have broken in front of a reader: the drawer closing,
 the rail closing, the switcher's stacking, the duplicated quotation, the drawer
-belonging to `main` rather than the shell, and the body never taking the
-document scroller away from a phone. CI runs them on every pull request, and
-they are the reason the next change does not bring one of them back.
+belonging to `main` rather than the shell, the body never taking the document
+scroller away from a phone, the stacking order being read from the scale, and a
+turn that never got to an answer saying so. CI runs them on every pull request,
+and they are the reason the next change does not bring one of them back.
 
 **Never re-check, retry or soften a citation.** Verification is the server's,
 and it happens after the answer. Nothing renders as checked before
 `data-citations` arrives.
 
 **scribe holds no data.** Every row lives in alexandria. If you find yourself
-adding a database here, stop.
+adding a database here, stop. The shelves in `books/` are `GET /catalogue`
+grouped in the browser — alexandria already returns it ordered by creator then
+title, and the search is done here so it never costs a second fetch.
+
+**An empty answer is a failed answer.** A turn that searched and read and then
+wrote nothing says so and offers to ask again. It is not a hypothetical: the
+server ran out of steps mid-tool-call in production and the reader was shown a
+list of everything it had read with nothing underneath it.
+
+**`naming…` is a claim about right now.** It is said only while `ChatProvider`
+is actually polling for a title. A conversation that is still untitled after
+that is `untitled` — promising a name that is not coming is how `naming…` came
+to sit in the rail for ever.
+
+**Two models are held back.** `SUSPENDED` in `models/ModelProvider.tsx`, shown
+struck through and _temporarily disabled_ rather than hidden, which is a
+different claim from _no key set_. `Add a book` is held back the same way: the
+tab is struck through and disabled, and `add/AddPanel.tsx` waits for an
+ingestion to exist behind it.
 
 **Do not copy components out of stylus.** The duplication between the two
 frontends is deliberate: sharing UI would anchor scribe to Vue and to stylus's

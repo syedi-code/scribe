@@ -122,6 +122,21 @@
 	--container-compact: 35rem; /* 560px: the rail goes, the header compresses */
 	--container-fold: 65rem; /* 1040px: the margin folds into footnotes */
 
+	/* The stacking order of the whole app, written once. A number inline in a
+	   component is a bug: two things at 20 in two files is how the rail came
+	   up underneath the home screen's subtitle.
+
+	   A layer is a whole subtree, not one element. Anything inside a layer
+	   stacks within it — the model menu is `--z-menu` over the header, and the
+	   same menu under the wordmark is only ever as high as the `--z-lifted`
+	   line it hangs from. A scrim and the panel it dims share a layer and are
+	   ordered by the DOM, scrim first. */
+	--z-lifted: 10; /* off the reading surface: the home screen's model line */
+	--z-rail: 20; /* the sessions rail, narrow, and the dim behind it */
+	--z-drawer: 30; /* the page behind a citation, and the dim behind it */
+	--z-header: 40; /* the header, over every panel */
+	--z-menu: 50; /* what hangs out of the header: the model switcher */
+
 	--animate-rise: rise 0.35s var(--ease-paper) both;
 	--animate-settle: settle 0.5s var(--ease-paper) both;
 	--animate-word: word 0.28s linear both;
