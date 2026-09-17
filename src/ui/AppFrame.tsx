@@ -157,10 +157,14 @@ export function AppFrame({
 		>
 			<header
 				className={`flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
-					atHome ? 'border-transparent' : 'border-paper-deep'
+					atHome && tab === 'ask'
+						? 'border-transparent'
+						: 'border-paper-deep'
 				}`}
 			>
-				{atHome ? (
+				{/* The home screen carries the wordmark itself; everywhere
+				    else it belongs in the header. */}
+				{atHome && tab === 'ask' ? (
 					<span />
 				) : (
 					<div className="animate-settle grid gap-0.5">

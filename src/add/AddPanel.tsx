@@ -27,9 +27,7 @@ export function AddPanel() {
 		const taken = [...files].map((file) => ({
 			id: nextId++,
 			name: file.name,
-			note: /\.pdf$/i.test(file.name)
-				? COPY.add.held
-				: COPY.add.notPdf(file.name),
+			note: /\.pdf$/i.test(file.name) ? COPY.add.held : COPY.add.notPdf,
 		}));
 		if (taken.length) setQueue((current) => [...taken, ...current]);
 	};
@@ -94,7 +92,7 @@ export function AddPanel() {
 							<span>
 								<b className="text-ink font-normal">
 									{step.lead}
-								</b>{' '}
+								</b>
 								{step.rest}
 							</span>
 						</li>

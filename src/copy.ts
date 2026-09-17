@@ -128,15 +128,15 @@ export const COPY = {
 		drop: 'Drop a PDF here',
 		or: 'or',
 		choose: 'choose a file',
-		notPdf: (name: string) => `${name} is not a PDF, so it was not taken.`,
+		notPdf: 'not a PDF, so it was not taken',
 		steps: [
 			{
 				lead: 'The file lands in Works',
-				rest: 'as a Document — one edition, with its own pagination.',
+				rest: ' as a Document — one edition, with its own pagination.',
 			},
 			{
 				lead: 'Its text layer is extracted',
-				rest: 'into pages, a few thousand rows a night.',
+				rest: ' into pages, a few thousand rows a night.',
 			},
 			{
 				lead: 'The pages are indexed',
