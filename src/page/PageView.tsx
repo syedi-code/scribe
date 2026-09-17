@@ -205,9 +205,13 @@ export function PageView() {
 	// The drawer takes focus, and gives it back to whatever opened it — on the
 	// way *out* only. Opening a second citation over the first must not throw
 	// focus back to the first on its way past.
+	//
+	// `preventScroll`, because the drawer is still parked off the right edge
+	// when it is focused, and scrolling to reach it carried the app off the
+	// left of a phone screen with the drawer behind it.
 	useEffect(() => {
 		if (!showing) return;
-		drawer.current?.focus();
+		drawer.current?.focus({ preventScroll: true });
 		return () => opener.current?.focus();
 	}, [showing]);
 

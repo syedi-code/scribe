@@ -19,7 +19,13 @@ import { Wordmark } from './Wordmark';
  * no second layout component for small screens.
  *
  * The header sits in its own stacking context above everything, because the
- * model switcher hangs out of it over whatever is below.
+ * model switcher hangs out of it over whatever is below. The page drawer lives
+ * inside `main` for the same reason from the other side: `inset-y-0` on the
+ * shell would have covered the header.
+ *
+ * The shell clips rather than hides: `overflow: hidden` is still a scroll
+ * container, and focusing the drawer while it was parked off the right edge
+ * scrolled the whole app sideways under it.
  */
 
 type Tab = 'ask' | 'add';
@@ -126,7 +132,7 @@ export function AppFrame() {
 		<div
 			// The drawer parks itself just off the right edge, so the shell
 			// clips: nothing of the app may widen the page.
-			className="bg-paper relative grid h-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden @container"
+			className="bg-paper relative grid h-full grid-rows-[auto_minmax(0,1fr)] overflow-clip @container"
 		>
 			<header
 				className={`relative z-40 flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
@@ -198,9 +204,9 @@ export function AppFrame() {
 				)}
 
 				{tab === 'ask' ? <AskPanel /> : <AddPanel />}
-			</main>
 
-			<PageView />
+				<PageView />
+			</main>
 		</div>
 	);
 }

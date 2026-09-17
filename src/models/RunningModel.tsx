@@ -63,8 +63,12 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 					role="menu"
 					hidden={!open}
 					// Wide enough for the longest label and its note side by
-					// side, and never wider than the app.
-					className="border-paper-deep bg-paper-lift absolute top-6 left-0 z-50 w-[19rem] overflow-hidden whitespace-normal max-w-[calc(100cqw-2rem)] rounded-xl border py-1 shadow-[0_16px_34px_-24px_rgba(36,31,26,0.9)]"
+					// side, and never wider than the app. Under the wordmark the
+					// line is centred, so the menu is too — hung from its left
+					// edge it ran off the right of a phone.
+					className={`border-paper-deep bg-paper-lift absolute top-6 z-50 w-[19rem] overflow-hidden whitespace-normal max-w-[calc(100cqw-2rem)] rounded-xl border py-1 shadow-[0_16px_34px_-24px_rgba(36,31,26,0.9)] ${
+						hero ? 'left-1/2 -translate-x-1/2' : 'left-0'
+					}`}
 				>
 					{choices.map((model) => {
 						const inUse = model.id === selected?.id;

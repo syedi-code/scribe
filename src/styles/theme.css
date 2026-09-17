@@ -206,9 +206,12 @@
 		height: 100%;
 	}
 
+	/* Nothing here scrolls — the shell is exactly the viewport and every
+	   scrolling region is inside it — but the document stays a plain,
+	   unscrolled root scroller rather than `overflow: hidden`, which is
+	   what takes pull-to-refresh away from a phone. */
 	body {
 		margin: 0;
-		overflow: hidden;
 		background: var(--color-paper);
 		color: var(--color-ink);
 		font-family: var(--font-read);

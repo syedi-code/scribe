@@ -1,12 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
-import { chat, renderApp, stubFetch, thread } from '../test/harness';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, screen } from '@testing-library/react';
+import { chat, renderApp, stubFetch, thread, verified } from '../test/harness';
+import { closePage, openPage } from '../state/reader';
 import { AppFrame } from './AppFrame';
 
 /**
- * The shell, and the four things reported broken on a phone: the rail would
- * not go away, the switcher opened behind the page, the phone-frame toggle was
- * still shipping, and the rail was called Questions.
+ * The shell, and the things reported broken on a phone: the rail would not go
+ * away, the switcher opened behind the page, the phone-frame toggle was still
+ * shipping, the rail was called Questions, and the drawer behind a citation
+ * came up over the header with the app carried off the side of the screen.
  */
 
 const withThreads = (over = {}) =>
@@ -58,6 +60,42 @@ describe('the header', () => {
 		expect(screen.getByRole('menu').className).toContain(
 			'whitespace-normal'
 		);
+	});
+});
+
+describe('the drawer behind a citation', () => {
+	afterEach(() => act(() => closePage()));
+
+	it('opens inside the page, never over the header', () => {
+		stubFetch();
+		const { container } = renderApp(<AppFrame />, {
+			state: withThreads(),
+		});
+		act(() => openPage(verified('P1', 'the will to truth')));
+
+		const drawer = screen.getByRole('dialog');
+		expect(container.querySelector('main')!.contains(drawer)).toBe(true);
+		expect(container.querySelector('header')!.contains(drawer)).toBe(false);
+	});
+
+	// `overflow: hidden` is still a scroll container, and focusing the drawer
+	// while it was parked off the right edge scrolled the app out from under it.
+	it('clips the shell rather than letting it scroll sideways', () => {
+		stubFetch();
+		const { container } = renderApp(<AppFrame />, {
+			state: withThreads(),
+		});
+		const shell = container.querySelector('header')!.parentElement!;
+		expect(shell.className).toContain('overflow-clip');
+		expect(shell.className).not.toContain('overflow-hidden');
+	});
+
+	it('closes from its own Close button', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: withThreads() });
+		act(() => openPage(verified('P1', 'the will to truth')));
+		fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+		expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
 	});
 });
 
