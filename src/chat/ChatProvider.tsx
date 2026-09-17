@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { api } from '../api/client';
+import { api, describeApiError } from '../api/client';
 import { useModels } from '../models/context';
 import { ChatContext, type ChatState } from './context';
 import type { Conversation } from '../api/types';
@@ -31,6 +31,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 	const { selected } = useModels();
 	const [threads, setThreads] = useState<Conversation[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
+	const [failure, setFailure] = useState<string | null>(null);
 
 	// The transport is built once; the conversation and the model are read at
 	// send time, so switching either never rebuilds the chat.
@@ -96,6 +97,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
 	const ask = useCallback(
 		(text: string) => {
+			setFailure(null);
 			const send = async () => {
 				let id = target.current.id;
 				if (!id) {
@@ -112,7 +114,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 				}
 				await sendMessage({ text });
 			};
-			void send();
+			// A conversation that could not be created is a question that never
+			// reached the model, and the reader is owed the reason.
+			void send().catch((error: unknown) =>
+				setFailure(describeApiError(error))
+			);
 		},
 		[pollTitle, sendMessage]
 	);
@@ -124,6 +130,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			setMessages([]);
 			// Last conversation's failure is not this one's.
 			clearError();
+			setFailure(null);
 			api.get<{ conversation: Conversation; messages: ScribeMessage[] }>(
 				`/conversations/${id}`
 			)
@@ -146,6 +153,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 		setActiveId(null);
 		setMessages([]);
 		clearError();
+		setFailure(null);
 	}, [clearError, setMessages]);
 
 	const value = useMemo<ChatState>(
@@ -155,6 +163,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			messages,
 			status,
 			error,
+			failure,
 			atHome: activeId === null && messages.length === 0,
 			busy: status === 'submitted' || status === 'streaming',
 			ask,
@@ -169,6 +178,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			messages,
 			status,
 			error,
+			failure,
 			ask,
 			openThread,
 			newQuestion,

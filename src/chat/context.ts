@@ -9,6 +9,8 @@ export interface ChatState {
 	messages: ScribeMessage[];
 	status: ChatStatus;
 	error: Error | undefined;
+	/** A question that never reached the model, and why. */
+	failure: string | null;
 	/** True until there is a conversation on screen. */
 	atHome: boolean;
 	busy: boolean;
