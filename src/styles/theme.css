@@ -1,0 +1,295 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   GT Alpina. One family, two widths: Standard for everything a person reads,
+   Condensed for the apparatus around it.
+   --------------------------------------------------------------------------- */
+
+@font-face {
+	font-family: 'GT Alpina';
+	src: url('/fonts/GT-Alpina-Standard-Light.woff2') format('woff2');
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'GT Alpina';
+	src: url('/fonts/GT-Alpina-Standard-Light-Italic.woff2') format('woff2');
+	font-weight: 300;
+	font-style: italic;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'GT Alpina';
+	src: url('/fonts/GT-Alpina-Standard-Regular.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'GT Alpina';
+	src: url('/fonts/GT-Alpina-Standard-Regular-Italic.woff2') format('woff2');
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'GT Alpina';
+	src: url('/fonts/GT-Alpina-Standard-Medium.woff2') format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'GT Alpina';
+	src: url('/fonts/GT-Alpina-Standard-Bold.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'GT Alpina';
+	src: url('/fonts/GT-Alpina-Standard-Bold-Italic.woff2') format('woff2');
+	font-weight: 700;
+	font-style: italic;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'GT Alpina Condensed';
+	src: url('/fonts/GT-Alpina-Condensed-Regular.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
+   Tokens. Every value the interface is allowed to use. A hex in a component is
+   a bug: the next status would be added in four places and shown in three.
+
+   Sizes are set against what the reference apps use — ChatGPT 16/24, Gemini
+   17/24 measured. A serif needs the larger of the two to carry the same
+   x-height, so prose is 17px and every line-height is tighter than a document
+   would take.
+   --------------------------------------------------------------------------- */
+
+@theme {
+	--color-paper: #f4efe3;
+	--color-paper-deep: #e8e0cd;
+	--color-paper-lift: #fbf8f1;
+	--color-bubble: #eae2d1;
+	--color-ink: #241f1a;
+	--color-ink-soft: #6e6358;
+	--color-ink-faint: #a0968a;
+
+	/* The only three coloured things in the app. Each one means a verdict. */
+	--color-verdigris: #2f5d53;
+	--color-rubric: #9b2c21;
+	--color-slate: #7c7789;
+
+	--color-edge: #cfc4ab;
+	--color-frame: #e3dbc9;
+	--color-highlight: #e4ddc6;
+
+	--font-read: 'GT Alpina', 'Iowan Old Style', Georgia, serif;
+	--font-app: 'GT Alpina Condensed', 'GT Alpina', Georgia, serif;
+
+	--text-prose: 17px;
+	--text-prose--line-height: 1.42;
+	--text-ask: 16px;
+	--text-ask--line-height: 1.45;
+	--text-ui: 14px;
+	--text-ui--line-height: 1.3;
+	--text-small: 13px;
+	--text-small--line-height: 1.35;
+	--text-tiny: 12px;
+	--text-tiny--line-height: 1.3;
+
+	--ease-paper: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+	/* Widths, and the two container breakpoints they imply. `--container-*`
+	   serves both `max-w-thread` and the `@max-fold:` variants, so a width and
+	   the width it folds at are never written twice. */
+	--container-rail: 12.5rem;
+	--container-thread: 38rem;
+	--container-margin: 15rem;
+	--container-spread: 55.25rem; /* thread + margin + 2.25rem gutter */
+	--container-doc: 44rem;
+	--container-drawer: 33rem;
+	--container-compact: 35rem; /* 560px: the rail goes, the header compresses */
+	--container-fold: 65rem; /* 1040px: the margin folds into footnotes */
+	--container-phone: 390px;
+
+	--animate-rise: rise 0.35s var(--ease-paper) both;
+	--animate-settle: settle 0.5s var(--ease-paper) both;
+	--animate-word: word 0.28s linear both;
+	--animate-blink: blink 1.05s steps(1) infinite;
+	--animate-breathe: breathe 1.3s var(--ease-paper) infinite;
+	--animate-sweep: sweep 1.1s var(--ease-paper) infinite;
+	--animate-draw: draw 0.32s var(--ease-paper) forwards;
+	--animate-nudge: nudge 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@keyframes settle {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@keyframes word {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+@keyframes blink {
+	50% {
+		opacity: 0;
+	}
+}
+@keyframes breathe {
+	50% {
+		opacity: 0.3;
+	}
+}
+@keyframes sweep {
+	0%,
+	100% {
+		transform: scaleX(0.1);
+		opacity: 0.4;
+	}
+	50% {
+		transform: scaleX(1);
+		opacity: 1;
+	}
+}
+@keyframes draw {
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+@keyframes nudge {
+	from {
+		transform: translateX(3px);
+	}
+	to {
+		transform: none;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+
+@layer base {
+	html,
+	body,
+	#root {
+		height: 100%;
+	}
+
+	body {
+		margin: 0;
+		overflow: hidden;
+		background: var(--color-paper);
+		color: var(--color-ink);
+		font-family: var(--font-read);
+		font-weight: 300;
+		font-size: var(--text-prose);
+		-webkit-font-smoothing: antialiased;
+		text-rendering: optimizeLegibility;
+	}
+
+	button {
+		font: inherit;
+		color: inherit;
+		cursor: pointer;
+	}
+
+	:focus-visible {
+		outline: 1.5px solid var(--color-verdigris);
+		outline-offset: 3px;
+	}
+
+	::placeholder {
+		color: var(--color-ink-faint);
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   The few things utilities cannot say
+   --------------------------------------------------------------------------- */
+
+/* The hairline between a quote and its note. Its length is measured in JS and
+   handed over as --len, because only the browser knows the path. */
+@utility tie-path {
+	fill: none;
+	stroke: var(--color-ink-faint);
+	stroke-width: 1;
+	stroke-dasharray: var(--len);
+	stroke-dashoffset: var(--len);
+	animation: var(--animate-draw);
+}
+
+/* Quoted words keep their background through a line break. */
+@utility quote-mark {
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+
+/* The matched passage inside a page. The rule under it is the verdict's ink,
+   which is why it is set here rather than on a <mark> default. */
+@utility passage-found {
+	background: var(--color-highlight);
+	color: inherit;
+	padding: 0.06em 0;
+	box-shadow: inset 0 -1.5px 0 var(--color-verdigris);
+}
+@utility passage-partial {
+	background: var(--color-highlight);
+	color: inherit;
+	padding: 0.06em 0;
+	box-shadow: inset 0 -1.5px 0 var(--color-rubric);
+}
+
+/* The live apparatus line trails a sweeping rule while a step is running. */
+@utility doing {
+	&::after {
+		content: '';
+		display: inline-block;
+		width: 2em;
+		height: 1px;
+		background: currentColor;
+		margin-left: 0.5em;
+		vertical-align: 0.28em;
+		transform-origin: left;
+		animation: var(--animate-sweep);
+	}
+}
+
+/* Reduced motion is honoured with a real branch in the code — the answer
+   prints whole and every stamp resolves at once. This is the backstop. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
