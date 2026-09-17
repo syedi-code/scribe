@@ -2,8 +2,10 @@ import { createContext, use } from 'react';
 import type { Model } from '../api/types';
 
 export interface ModelChoice extends Model {
-	/** Whether the worker has a key for this model's provider. */
+	/** Whether this model can be chosen: a key on the worker, and not held back. */
 	available: boolean;
+	/** Held back deliberately, which is a different thing from having no key. */
+	suspended: boolean;
 }
 
 export interface ModelState {

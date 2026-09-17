@@ -1,15 +1,46 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Two rules that can only be written here, both reported from a phone. The
- * stylesheet is read off disk because a test runner hands back an empty string
- * for a CSS import.
+ * Rules that can only be written in the stylesheet, and one that can only be
+ * checked across the whole tree. The stylesheet is read off disk because a
+ * test runner hands back an empty string for a CSS import.
  */
 const THEME = readFileSync('src/styles/theme.css', 'utf8');
 
 const rule = (selector: string) =>
 	THEME.slice(THEME.indexOf(`${selector} {`)).split('}')[0];
+
+function* sources(dir: string): Generator<string> {
+	for (const entry of readdirSync(dir, { withFileTypes: true })) {
+		const path = join(dir, entry.name);
+		if (entry.isDirectory()) yield* sources(path);
+		else if (
+			(entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+			!entry.name.includes('.test.')
+		) {
+			yield path;
+		}
+	}
+}
+
+/** Whatever a component wrote after `z-`, wherever it wrote one. */
+function stackingIn(source: string): string[] {
+	const written: string[] = [];
+	const heads = new Set([' ', '"', '`', ':', '\t', '\n']);
+	for (
+		let at = source.indexOf('z-');
+		at >= 0;
+		at = source.indexOf('z-', at + 2)
+	) {
+		// `z-` counts at the head of a class only, never inside `--z-rail`.
+		if (!heads.has(source[at - 1] ?? ' ')) continue;
+		const token = source.slice(at, at + 40);
+		written.push(token.split(' ')[0].split('"')[0].split('`')[0]);
+	}
+	return written;
+}
 
 describe('the base stylesheet', () => {
 	// `overflow: hidden` on the viewport is what takes pull-to-refresh away
@@ -22,5 +53,53 @@ describe('the base stylesheet', () => {
 
 	it('still holds the shell to the height of the viewport', () => {
 		expect(rule('#root')).toContain('height: 100%');
+	});
+});
+
+describe('the stacking order', () => {
+	const LAYERS = ['lifted', 'rail', 'drawer', 'header', 'menu'];
+
+	const heightOf = (layer: string) => {
+		const line = THEME.split('\n').find((text) =>
+			text.trim().startsWith(`--z-${layer}:`)
+		);
+		return line ? Number(line.split(':')[1].trim().split(';')[0]) : null;
+	};
+
+	it('names every layer once, in rising order', () => {
+		const heights = LAYERS.map(heightOf);
+		heights.forEach((height, index) =>
+			expect(
+				height,
+				`--z-${LAYERS[index]} is not declared`
+			).not.toBeNull()
+		);
+		expect(heights).toEqual([...heights].sort((a, b) => a! - b!));
+		expect(new Set(heights).size).toBe(heights.length);
+	});
+
+	// Two things written as 20 in two files is how the rail came up underneath
+	// the home screen's subtitle. A component reads the scale, or says nothing.
+	it('is never written as a number inside a component', () => {
+		const offenders: string[] = [];
+		for (const path of sources('src')) {
+			for (const written of stackingIn(readFileSync(path, 'utf8'))) {
+				if (!written.startsWith('z-(--z-')) {
+					offenders.push(`${path}: ${written}`);
+				}
+			}
+		}
+		expect(offenders).toEqual([]);
+	});
+
+	it('reads only layers the scale declares', () => {
+		const used = new Set<string>();
+		for (const path of sources('src')) {
+			for (const written of stackingIn(readFileSync(path, 'utf8'))) {
+				used.add(written.slice('z-(--z-'.length).split(')')[0]);
+			}
+		}
+		expect(used.size).toBeGreaterThan(0);
+		for (const layer of used) expect(LAYERS).toContain(layer);
 	});
 });

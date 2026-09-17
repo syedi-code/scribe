@@ -5,6 +5,8 @@ import type { ScribeMessage } from './message';
 
 export interface ChatState {
 	threads: Conversation[];
+	/** The conversations the server is being asked to name, right now. */
+	naming: string[];
 	activeId: string | null;
 	messages: ScribeMessage[];
 	status: ChatStatus;

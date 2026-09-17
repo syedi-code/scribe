@@ -33,6 +33,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 	const [threads, setThreads] = useState<Conversation[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [failure, setFailure] = useState<string | null>(null);
+	const [naming, setNaming] = useState<string[]>([]);
 
 	// The transport is built once; the conversation and the model are read at
 	// send time, so switching either never rebuilds the chat.
@@ -79,20 +80,32 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			.catch(() => setThreads([]));
 	}, []);
 
-	/** The server names a conversation after its first question, not before it. */
+	/**
+	 * The server names a conversation after its first question, not before it.
+	 *
+	 * The polling is what `naming…` in the rail means, and the rail says
+	 * something else the moment this gives up — a row that has stopped being
+	 * named is untitled, and claiming otherwise for the life of the tab is how
+	 * `naming…` came to sit there for ever.
+	 */
 	const pollTitle = useCallback(async (id: string) => {
-		for (let attempt = 0; attempt < TITLE_POLLS; attempt++) {
-			await new Promise((wake) => setTimeout(wake, TITLE_POLL_MS));
-			const { conversation } = await api
-				.get<{ conversation: Conversation }>(`/conversations/${id}`)
-				.catch(() => ({ conversation: null }));
-			if (!conversation?.title) continue;
-			setThreads((current) =>
-				current.map((thread) =>
-					thread.id === id ? conversation : thread
-				)
-			);
-			return;
+		setNaming((current) => [...current, id]);
+		try {
+			for (let attempt = 0; attempt < TITLE_POLLS; attempt++) {
+				await new Promise((wake) => setTimeout(wake, TITLE_POLL_MS));
+				const { conversation } = await api
+					.get<{ conversation: Conversation }>(`/conversations/${id}`)
+					.catch(() => ({ conversation: null }));
+				if (!conversation?.title) continue;
+				setThreads((current) =>
+					current.map((thread) =>
+						thread.id === id ? conversation : thread
+					)
+				);
+				return;
+			}
+		} finally {
+			setNaming((current) => current.filter((waiting) => waiting !== id));
 		}
 	}, []);
 
@@ -163,6 +176,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 	const value = useMemo<ChatState>(
 		() => ({
 			threads,
+			naming,
 			activeId,
 			messages,
 			status,
@@ -178,6 +192,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 		}),
 		[
 			threads,
+			naming,
 			activeId,
 			messages,
 			status,

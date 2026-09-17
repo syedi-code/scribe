@@ -15,6 +15,13 @@ import type { Model, ModelsResponse } from '../api/types';
  * run if it were configured for it.
  */
 
+/**
+ * Held back from the switcher for now, and shown as held back rather than
+ * quietly dropped: a reader can see what Scribe could run, and that the reason
+ * it is not running is a decision rather than a missing key.
+ */
+const SUSPENDED = new Set(['claude-sonnet-5', 'claude-opus-5']);
+
 /** Cheapest model first while the interface is being built. One line to change. */
 export const PREFERRED_MODEL_ID = 'claude-haiku-4-5-20251001';
 
@@ -62,14 +69,19 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 		const choices: ModelChoice[] = [
 			...KNOWN.map((model) => ({
 				...(byId.get(model.id) ?? model),
-				available: byId.has(model.id),
+				available: byId.has(model.id) && !SUSPENDED.has(model.id),
+				suspended: SUSPENDED.has(model.id),
 			})),
 			// A model the server offers that this build has never heard of.
 			...available
 				.filter(
 					(model) => !KNOWN.some((known) => known.id === model.id)
 				)
-				.map((model) => ({ ...model, available: true })),
+				.map((model) => ({
+					...model,
+					available: true,
+					suspended: false,
+				})),
 		];
 
 		const usable = choices.filter((model) => model.available);

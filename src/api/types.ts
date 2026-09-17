@@ -29,6 +29,22 @@ export interface ModelsResponse {
 	default_model_id: string | null;
 }
 
+/** A work on the shelves, as `GET /catalogue` lists it. */
+export interface Work {
+	work_id: string;
+	title: string;
+	creator: string;
+	originally_published: string | null;
+	documents: {
+		document_id: string;
+		label: string | null;
+		page_count: number;
+		/** `searchable` when there is a text layer; `scan` when there is not. */
+		text: 'searchable' | 'scan';
+		has_file: boolean;
+	}[];
+}
+
 export interface Conversation {
 	id: string;
 	user_id: string;

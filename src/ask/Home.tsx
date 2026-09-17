@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { libraryCount } from '../api/library';
 import { COPY } from '../copy';
 import { useConversation } from '../chat/context';
@@ -15,37 +15,18 @@ import { Wordmark } from '../ui/Wordmark';
  * paragraph. The composer is the only thing anyone came for.
  */
 
-/** How long a hand of questions stays before the next is dealt. */
-const TURN_MS = 8000;
-
-type Suggestion = (typeof COPY.suggestions)[number];
-
-interface Hand {
-	deck: Suggestion[];
-	at: number;
-}
-
-function shuffled(): Suggestion[] {
-	const deck = [...COPY.suggestions];
-	for (let i = deck.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		[deck[i], deck[j]] = [deck[j], deck[i]];
-	}
-	return deck;
-}
-
 /**
- * The pool is shuffled once and dealt in threes, so nothing comes round again
- * until the rest of the library has had its turn. When what is left will not
- * fill a hand the deck is cut afresh.
+ * Three of the twenty-five, drawn on arrival and then left alone. They turned
+ * over on a timer for a while, which moved text about beside the thing a
+ * reader was trying to type into. The library is varied by coming back.
  */
-function deal(previous?: Hand): Hand {
-	const size = COPY.howManySuggestions;
-	const at = previous ? previous.at + size : 0;
-	if (previous && at + size <= previous.deck.length) {
-		return { deck: previous.deck, at };
+function draw(): (typeof COPY.suggestions)[number][] {
+	const pool = [...COPY.suggestions];
+	const drawn = [];
+	while (drawn.length < COPY.howManySuggestions && pool.length > 0) {
+		drawn.push(...pool.splice(Math.floor(Math.random() * pool.length), 1));
 	}
-	return { deck: shuffled(), at: 0 };
+	return drawn;
 }
 
 export function Home({
@@ -55,28 +36,16 @@ export function Home({
 }) {
 	const { ask } = useConversation();
 	const reduced = useReducedMotion();
-	const [hand, setHand] = useState<Hand>(() => deal());
-	// A question being read is not a question to take away.
-	const [held, setHeld] = useState(false);
+	const [questions] = useState(draw);
 	const books = useAsync(() => libraryCount(), []);
 	// Coming back here is an arrival, and the wordmark writes itself again.
 	const [ready, setReady] = useState(reduced);
-
-	useEffect(() => {
-		if (reduced || held) return;
-		const turn = setInterval(() => setHand(deal), TURN_MS);
-		return () => clearInterval(turn);
-	}, [reduced, held]);
 
 	const fade = (order: number) => ({
 		className: ready ? 'animate-settle' : 'opacity-0',
 		style: ready ? { animationDelay: `${order * 130}ms` } : undefined,
 	});
 
-	const questions = hand.deck.slice(
-		hand.at,
-		hand.at + COPY.howManySuggestions
-	);
 	const library = books.value === null ? null : COPY.library(books.value);
 
 	return (
@@ -87,10 +56,11 @@ export function Home({
 				className="text-[clamp(2.4rem,6.5vw,3.3rem)] @max-compact:text-[2.4rem]"
 			/>
 
-			{/* Above the composer in the stack as well as on the page: the
-			    model menu hangs out of this line over whatever is below it. */}
+			{/* Lifted off the reading surface, because the model menu hangs out
+			    of this line over the composer under it — and no higher, so the
+			    rail still covers it. */}
 			<div
-				className={`relative z-20 mt-1.5 grid justify-items-center gap-0.5 ${fade(0).className}`}
+				className={`relative z-(--z-lifted) mt-1.5 grid justify-items-center gap-0.5 ${fade(0).className}`}
 				style={fade(0).style}
 			>
 				<RunningModel hero />
@@ -112,48 +82,30 @@ export function Home({
 			/>
 
 			<div
-				className={`mt-4 w-full max-w-[30rem] ${fade(2).className}`}
+				className={`mt-4 grid w-full max-w-[30rem] ${fade(2).className}`}
 				style={fade(2).style}
-				onMouseEnter={() => setHeld(true)}
-				onMouseLeave={() => setHeld(false)}
-				onFocusCapture={() => setHeld(true)}
-				onBlurCapture={() => setHeld(false)}
 			>
-				{/* Keyed on the hand, so a new three is dealt in rather than
-				    swapped under the reader's eye. */}
-				<div
-					key={`${hand.at}:${questions[0].question}`}
-					className="grid"
-				>
-					{questions.map((suggestion, order) => (
-						<button
-							key={suggestion.question}
-							type="button"
-							onClick={() => ask(suggestion.question)}
-							style={
-								reduced
-									? undefined
-									: { animationDelay: `${order * 90}ms` }
-							}
-							className={`group/ask hover:bg-bubble/45 grid grid-cols-[0.9rem_minmax(0,1fr)] items-start gap-x-2 rounded-[4px] px-1 py-1.5 text-left transition-colors duration-300 ease-paper ${
-								reduced ? '' : 'animate-settle'
-							}`}
-						>
-							<span
-								aria-hidden
-								className="bg-paper-deep group-hover/ask:bg-ink-faint mt-[0.6em] h-px w-2 justify-self-end transition-[width,background-color] duration-300 ease-paper group-hover/ask:w-3.5"
-							/>
-							<span className="grid gap-0.5">
-								<span className="font-read text-ui text-ink-soft group-hover/ask:text-ink font-light leading-snug transition-colors duration-300 ease-paper">
-									{suggestion.question}
-								</span>
-								<span className="font-app text-tiny text-ink-faint">
-									{suggestion.work}
-								</span>
+				{questions.map((suggestion) => (
+					<button
+						key={suggestion.question}
+						type="button"
+						onClick={() => ask(suggestion.question)}
+						className="group/ask hover:bg-bubble/45 grid grid-cols-[0.9rem_minmax(0,1fr)] items-start gap-x-2 rounded-[4px] px-1 py-1.5 text-left transition-colors duration-300 ease-paper"
+					>
+						<span
+							aria-hidden
+							className="bg-paper-deep group-hover/ask:bg-ink-faint mt-[0.6em] h-px w-2 justify-self-end transition-[width,background-color] duration-300 ease-paper group-hover/ask:w-3.5"
+						/>
+						<span className="grid gap-0.5">
+							<span className="font-read text-ui text-ink-soft group-hover/ask:text-ink font-light leading-snug transition-colors duration-300 ease-paper">
+								{suggestion.question}
 							</span>
-						</button>
-					))}
-				</div>
+							<span className="font-app text-tiny text-ink-faint">
+								{suggestion.work}
+							</span>
+						</span>
+					</button>
+				))}
 			</div>
 		</div>
 	);

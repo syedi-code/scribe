@@ -15,6 +15,7 @@ export const models: ModelState = {
 			provider: 'anthropic',
 			acceptsFiles: true,
 			available: true,
+			suspended: false,
 		},
 		{
 			id: 'gpt-5.5',
@@ -22,6 +23,7 @@ export const models: ModelState = {
 			provider: 'openai',
 			acceptsFiles: true,
 			available: false,
+			suspended: false,
 		},
 	],
 	selected: {
@@ -30,6 +32,7 @@ export const models: ModelState = {
 		provider: 'anthropic',
 		acceptsFiles: true,
 		available: true,
+		suspended: false,
 	},
 	select: () => {},
 	labelFor: () => 'Claude Haiku 4.5',
@@ -47,6 +50,7 @@ export const thread = (id: string, title: string | null): Conversation => ({
 
 export const chat = (over: Partial<ChatState> = {}): ChatState => ({
 	threads: [],
+	naming: [],
 	activeId: null,
 	messages: [],
 	status: 'ready',
