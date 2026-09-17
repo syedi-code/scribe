@@ -1,0 +1,183 @@
+import { describe, expect, it } from 'vitest';
+import {
+	alignCitations,
+	markersFor,
+	parseCitations,
+	segmentAnswer,
+} from './parse';
+import type { AnswerCitation } from '../api/types';
+
+/**
+ * The awkward cases. This regex has to agree with alexandria's forever: when
+ * the two drift, an answer renders with a citation the reader can see in the
+ * margin and cannot find in the prose.
+ */
+describe('parseCitations', () => {
+	it('reads the bracketed form', () => {
+		expect(
+			parseCitations('He says [P7 "the will to truth"] here.')
+		).toEqual([
+			{ handle: 'P7', quote: 'the will to truth', start: 8, end: 32 },
+		]);
+	});
+
+	it('reads the form smaller models write', () => {
+		const [citation] = parseCitations('“the will to truth” [P7] is it.');
+		expect(citation).toMatchObject({
+			handle: 'P7',
+			quote: 'the will to truth',
+		});
+	});
+
+	it('accepts curly quotes and a colon after the handle', () => {
+		const [citation] = parseCitations(
+			'[P12: “the spirit that would bear”]'
+		);
+		expect(citation).toMatchObject({
+			handle: 'P12',
+			quote: 'the spirit that would bear',
+		});
+	});
+
+	it('lets a bracketed quote contain a quotation', () => {
+		const [citation] = parseCitations(
+			'[P3 "what in us really wants "truth"?"]'
+		);
+		expect(citation.quote).toBe('what in us really wants "truth"?');
+	});
+
+	it('finds every citation in order, with its offsets', () => {
+		const text =
+			'One [P1 "first quote here"] two [P2 "second quote here"].';
+		const found = parseCitations(text);
+		expect(found.map((c) => c.handle)).toEqual(['P1', 'P2']);
+		expect(text.slice(found[1].start, found[1].end)).toBe(
+			'[P2 "second quote here"]'
+		);
+	});
+
+	it('finds nothing in prose that only looks like a citation', () => {
+		expect(parseCitations('See page [7] and "this quote" nearby')).toEqual(
+			[]
+		);
+	});
+});
+
+const citation = (
+	handle: string,
+	quote: string,
+	extra: Partial<AnswerCitation> = {}
+): AnswerCitation =>
+	({
+		handle,
+		quote,
+		ref: { document_id: 'd1', page_no: 21 },
+		status: 'verified',
+		...extra,
+	}) as AnswerCitation;
+
+describe('alignCitations', () => {
+	it('pairs a marker with the citation for the same quote', () => {
+		const markers = parseCitations('[P1 "alpha beta gamma delta"]');
+		const aligned = alignCitations(markers, [
+			citation('P2', 'something else entirely here'),
+			citation('P1', 'alpha beta gamma delta'),
+		]);
+		expect(aligned[0]?.handle).toBe('P1');
+	});
+
+	it('ignores curly-vs-straight quoting when pairing', () => {
+		const markers = parseCitations('[P1 "it isn’t there"]');
+		const aligned = alignCitations(markers, [
+			citation('P1', "it isn't there"),
+		]);
+		expect(aligned[0]).not.toBeNull();
+	});
+
+	it('leaves a marker unchecked rather than guessing', () => {
+		const markers = parseCitations('[P9 "a quote never checked here"]');
+		expect(alignCitations(markers, [])).toEqual([null]);
+	});
+
+	it('does not reuse one citation for two markers', () => {
+		const markers = parseCitations(
+			'[P1 "same words here"] [P1 "same words here"]'
+		);
+		const aligned = alignCitations(markers, [
+			citation('P1', 'same words here'),
+		]);
+		expect(aligned[0]).not.toBeNull();
+		expect(aligned[1]).toBeNull();
+	});
+});
+
+describe('markersFor', () => {
+	it('prefers the server’s offsets when every citation carries them', () => {
+		const text = 'Prose about [P1 "a quote"] and more.';
+		const markers = markersFor(text, [
+			citation('P1', 'a quote', { marker: { start: 12, end: 26 } }),
+		]);
+		expect(markers[0]).toMatchObject({ start: 12, end: 26 });
+	});
+
+	it('falls back to parsing when they are absent', () => {
+		const text = 'Prose about [P1 "a quote"] and more.';
+		expect(markersFor(text, [citation('P1', 'a quote')])[0].start).toBe(12);
+	});
+});
+
+describe('segmentAnswer', () => {
+	const segment = (text: string) => segmentAnswer(text, parseCitations(text));
+
+	it('splits paragraphs on blank lines only', () => {
+		const paragraphs = segment('First line.\nStill first.\n\nSecond.');
+		expect(paragraphs).toHaveLength(2);
+	});
+
+	it('marks the sentence a citation stands behind', () => {
+		const [paragraph] = segment(
+			'Nietzsche opens with it: [P7 "the will to truth"] That is my reading.'
+		);
+		expect(paragraph[0].cited).toBe(true);
+		expect(paragraph[1].cited).toBe(false);
+	});
+
+	it('starts a new sentence after a citation, not a new paragraph', () => {
+		const [paragraph, second] = segment(
+			'He says [P7 "a quote of some length"] That is my reading.'
+		);
+		expect(second).toBeUndefined();
+		expect(paragraph).toHaveLength(2);
+	});
+
+	it('still breaks the paragraph when a blank line follows a citation', () => {
+		const paragraphs = segment(
+			'He says [P7 "a quote of some length"]\n\nThat is my reading.'
+		);
+		expect(paragraphs).toHaveLength(2);
+	});
+
+	it('does not end a sentence at an abbreviated page number', () => {
+		const [paragraph] = segment('He writes on p. 9 that it is so.');
+		expect(paragraph).toHaveLength(1);
+	});
+
+	it('keeps emphasis and drops its markers', () => {
+		const [paragraph] = segment('It is *his* word, not mine.');
+		const nodes = paragraph[0].nodes;
+		expect(nodes.some((n) => n.kind === 'emphasis')).toBe(true);
+		expect(
+			nodes.map((n) => ('text' in n ? n.text : '')).join('')
+		).not.toContain('*');
+	});
+
+	it('renders the quote, never the marker', () => {
+		const [paragraph] = segment('So [P7 "the will to truth"] stands.');
+		const text = paragraph
+			.flatMap((sentence) => sentence.nodes)
+			.map((node) => ('text' in node ? node.text : node.quote))
+			.join('');
+		expect(text).not.toContain('P7');
+		expect(text).toContain('the will to truth');
+	});
+});
