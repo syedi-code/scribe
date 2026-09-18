@@ -14,3 +14,6 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# Licensed, not redistributable. CI fetches them from R2; see FONTS.md.
+public/fonts/
