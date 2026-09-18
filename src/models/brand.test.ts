@@ -9,14 +9,45 @@ describe("a model's maker, in its own colour", () => {
 			.map((piece) => [piece.text, piece.ink]);
 
 	it('finds the maker in each of the three names', () => {
+		expect(inked('Claude Haiku 4.5')).toEqual([
+			['Claude', 'text-anthropic'],
+		]);
+		expect(inked('GPT-5.6 Luna')).toEqual([['GPT-5', 'text-openai']]);
+		expect(inked('Gemini 3.8 Flash')).toEqual([
+			['Gemini 3', 'text-google'],
+		]);
+	});
+
+	// The major is the name of the generation and goes with the maker; the
+	// minor is a release and stays grey. A number belonging to the model
+	// rather than the maker stays grey whole: the 4.5 in `Claude Haiku 4.5`.
+	it('takes the major of the version, and nothing after the point', () => {
+		expect(inked('GPT-5.6 Luna')).toEqual([['GPT-5', 'text-openai']]);
+		expect(inked('Gemini 3.8 Flash')).toEqual([
+			['Gemini 3', 'text-google'],
+		]);
 		expect(inked('Claude Opus 5')).toEqual([['Claude', 'text-anthropic']]);
-		expect(inked('GPT-5.5')).toEqual([['GPT', 'text-openai']]);
-		expect(inked('Gemini 3.5 Flash')).toEqual([['Gemini', 'text-google']]);
+	});
+
+	it('leaves the point release grey, beside the inked major', () => {
+		const grey = brandedLabel('GPT-5.6 Luna')
+			.filter((piece) => piece.ink === '')
+			.map((piece) => piece.text)
+			.join('');
+		expect(grey).toBe('.6 Luna');
 	});
 
 	it('keeps the rest of the name, exactly', () => {
-		for (const label of ['Claude Opus 5', 'GPT-5.5', 'Gemini 3.5 Flash']) {
-			expect(brandedLabel(label).map((p) => p.text).join('')).toBe(label);
+		for (const label of [
+			'Claude Haiku 4.5',
+			'GPT-5.6 Luna',
+			'Gemini 3.8 Flash',
+		]) {
+			expect(
+				brandedLabel(label)
+					.map((p) => p.text)
+					.join('')
+			).toBe(label);
 		}
 	});
 
@@ -33,10 +64,11 @@ describe("a model's maker, in its own colour", () => {
 		expect(inkFor('gpt')).toBe(inkFor('gemini'));
 
 		const inks = new Set(
-			['Claude Opus 5', 'GPT-5.5', 'Gemini 3.5 Flash'].flatMap((label) =>
-				brandedLabel(label)
-					.filter((piece) => piece.ink !== '')
-					.map((piece) => piece.ink)
+			['Claude Haiku 4.5', 'GPT-5.6 Luna', 'Gemini 3.8 Flash'].flatMap(
+				(label) =>
+					brandedLabel(label)
+						.filter((piece) => piece.ink !== '')
+						.map((piece) => piece.ink)
 			)
 		);
 		expect(inks.size).toBe(3);
