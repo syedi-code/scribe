@@ -126,6 +126,14 @@
 	--color-highlight: #f9d0ae;
 
 	--font-read: 'GT Alpina', 'Iowan Old Style', Georgia, serif;
+
+	/* The weight the app is set in. Named because two places have to agree on
+	   it: the prose, and a work's title sitting inside the prose. They drifted —
+	   the body was Light and a title was pinned a step above it — and every book
+	   name in the app read as emphasised. 400 is the emphasis step here (a
+	   checked quotation is set in it); a title is not emphasis. */
+	--weight-text: 300;
+
 	--font-app: 'GT Alpina Condensed', 'GT Alpina', Georgia, serif;
 	/* Only ever inside an answer, and only for what the model set as code. */
 	--font-code: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas,
@@ -264,7 +272,7 @@
 		background: var(--color-paper);
 		color: var(--color-ink);
 		font-family: var(--font-read);
-		font-weight: 300;
+		font-weight: var(--weight-text);
 		font-size: var(--text-prose);
 		-webkit-font-smoothing: antialiased;
 		text-rendering: optimizeLegibility;
@@ -314,14 +322,19 @@
    browser-sheared Condensed Regular while the other four sites got the real
    drawn italic. Standard has a true italic at 300, 400 and 700.
 
-   The weight is pinned for the same reason. A run-in head is set at 500,
-   which has no italic, so a title inherited a synthesised medium that read
-   as bold and competed with the heading it sat in. A title is a slant, never
-   a weight, wherever it lands. */
+   The weight is pinned for the same reason, and pinned to the weight the
+   app is set in. A run-in head is 500, which has no italic, so an inherited
+   title printed as a synthesised medium that read as bold. Pinning it at 400
+   fixed that one place and introduced the same fault in every other: the
+   prose is Light, 400 is the step above it that a checked quotation is set
+   in, and so every book name in the app -- in the prose, in the margin, on
+   the shelves -- came out looking emphasised. A title is a slant, never a
+   weight, wherever it lands, so it is set in the weight of the words it sits
+   among. */
 @utility work-title {
 	font-family: var(--font-read);
 	font-style: italic;
-	font-weight: 400;
+	font-weight: var(--weight-text);
 }
 
 /* One class per ink, so a component names the slot and the stylesheet owns the

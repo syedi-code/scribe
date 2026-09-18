@@ -269,8 +269,16 @@ export function MarginNotes({
 			</div>
 
 			{/* One line per book, and the 8px between them is what each pip
-			    borrows above and below to reach a 44px target. */}
-			<div className="hidden @max-fold:grid @max-fold:gap-2">
+			    borrows above and below to reach a 44px target.
+
+			    The column is `minmax(0, 1fr)` and not `1fr`, because a grid track
+			    is min-content wide by default and a book with a long name is wider
+			    than a phone. The track grew to fit the name, the shelf grew with
+			    it, and the line ran off the right of the screen with the pips —
+			    the part that carries the verdict — somewhere past the edge. The
+			    `truncate` on the name inside could never fire, because nothing
+			    above it was ever narrower than the name. */}
+			<div className="hidden @max-fold:grid @max-fold:grid-cols-[minmax(0,1fr)] @max-fold:gap-2">
 				{groupByDocument(markers, citations, resolved, shown).map(
 					(group) => (
 						<Shelf

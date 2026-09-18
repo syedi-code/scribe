@@ -95,12 +95,18 @@ describe('a work set as a work', () => {
 	});
 
 	// A run-in head is 500, and a title inside one printed as a synthesised
-	// medium italic that read as bold.
-	it('is the same weight wherever it lands', () => {
-		const rule = THEME.slice(THEME.indexOf('@utility work-title'));
-		const body = rule.slice(0, rule.indexOf('}'));
+	// medium italic that read as bold. Pinning the weight fixed that; pinning
+	// it at 400 while the prose stayed Light made every title in the app read
+	// as emphasised instead, which is the same bug one step along. The two
+	// weights are one token so they cannot drift apart again.
+	it('is the weight the prose it sits in is set in', () => {
+		const declared = THEME.slice(THEME.indexOf('@utility work-title'));
+		const title = declared.slice(0, declared.indexOf('}'));
 
-		expect(body).toContain('font-weight: 400');
+		expect(title).toContain('font-weight: var(--weight-text)');
+		expect(rule('body')).toContain('font-weight: var(--weight-text)');
+		// And the token is a real weight, with a real italic cut behind it.
+		expect(THEME).toContain('--weight-text: 300;');
 	});
 
 	it('has a real italic file behind every weight a title is set in', () => {
