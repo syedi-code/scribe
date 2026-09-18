@@ -142,6 +142,13 @@ whatever works-shaped surface it needs, and ask alexandria to add it.
 
 ## Style
 
+**A root component composes and nothing else.** `App`, `Home` and `AppFrame` say
+what is on the screen and in what order; they hold no helpers, no effects and no
+markup beyond nesting. Opening the session is `ui/SessionGate`, the arrival
+sequence is `ask/settle.ts`, the questions are `ask/Suggestions`, the keyboard
+is `ui/useShortcuts`. State stays in a root only when two of its children both
+need it — `tab` and `railOpen` in `AppFrame`, and nothing else.
+
 **Comments are brief, and only where the code is not immediately readable.** A
 comment says why, or names a trap; it never narrates what the next line does. If
 a comment is needed to explain what code does, rename or restructure the code
