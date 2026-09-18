@@ -208,3 +208,49 @@ describe('an author ink', () => {
 	});
 });
 
+/**
+ * The highlight behind a matched passage. It was a slightly deeper cream and
+ * sat 1.18:1 off the paper, which is not a highlight so much as a rumour of
+ * one.
+ */
+describe('the highlight', () => {
+	const tokenOf = (name: string) =>
+		/#[0-9a-f]{6}/i.exec(THEME.slice(THEME.indexOf(`${name}:`)))![0];
+
+	const luminance = (hex: string) => {
+		const channel = (c: number) => {
+			const v = c / 255;
+			return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+		};
+		const [r, g, b] = [1, 3, 5].map((at) =>
+			channel(parseInt(hex.slice(at, at + 2), 16))
+		);
+		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	};
+	const contrast = (a: string, b: string) => {
+		const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+		return (light + 0.05) / (dark + 0.05);
+	};
+
+	it('keeps the passage on it readable', () => {
+		expect(
+			contrast(tokenOf('--color-highlight'), tokenOf('--color-ink'))
+		).toBeGreaterThan(7);
+	});
+
+	it('is visibly not the paper', () => {
+		expect(
+			contrast(tokenOf('--color-highlight'), tokenOf('--color-paper'))
+		).toBeGreaterThan(1.2);
+	});
+
+	// The verdict is drawn as a rule under the passage, on top of this.
+	it('leaves the verdict rule drawn on it legible', () => {
+		for (const verdict of ['--color-rubric', '--color-verdigris']) {
+			expect(
+				contrast(tokenOf('--color-highlight'), tokenOf(verdict))
+			).toBeGreaterThan(3);
+		}
+	});
+});
+

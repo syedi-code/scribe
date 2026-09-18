@@ -92,11 +92,14 @@
 	   how the evidence came back; colour on a *word* means whose name it is.
 	   Nothing else in the app may be coloured at all.
 
-	   Chosen against the prose rather than against the paper: L 0.34 in OKLCH,
-	   the same band the text sits in, so a name reads as ink from a different
-	   inkwell and not as a highlight. Every hue is at least 25 degrees clear of
-	   verdigris (178), rubric (30) and slate (298), and all six sit a whole
-	   lightness band below them, which is what keeps the two systems apart. */
+	   L 0.46 in OKLCH with hues 62, 104, 148, 213, 258 and 338 — each at least
+	   25 degrees clear of verdigris (178), rubric (30) and slate (298).
+
+	   They were a band darker, close enough to the prose that a reader could
+	   not see one at all. Raised to here they share a lightness band with the
+	   verdicts, so what keeps the two systems apart is the rule above and not
+	   the palette: a verdict lands on a mark, a name lands on a word, and
+	   nothing in this app is both. */
 	--author-c0: #814800; /* bronze */
 	--author-c1: #615a00; /* moss */
 	--author-c2: #1d6930; /* forest */
@@ -110,7 +113,12 @@
 	--color-google: #4a6fa5;
 
 	--color-edge: #cfc4ab;
-	--color-highlight: #e4ddc6;
+	/* What a matched passage is laid on. It was a slightly deeper cream and
+	   sat 1.18:1 off the paper, which is to say it was barely a highlight at
+	   all. Warm rather than yellow so it reads as a lamp on the page, pale
+	   enough to keep the prose at 11.4:1, and clear of the verdict rule drawn
+	   under it at 5.3:1. */
+	--color-highlight: #f9d0ae;
 
 	--font-read: 'GT Alpina', 'Iowan Old Style', Georgia, serif;
 	--font-app: 'GT Alpina Condensed', 'GT Alpina', Georgia, serif;
