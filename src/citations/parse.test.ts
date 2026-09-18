@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { nodesIn, printedIn, sentencesIn } from './walk';
 import {
 	alignCitations,
 	markersFor,
@@ -132,51 +133,48 @@ describe('segmentAnswer', () => {
 	const segment = (text: string) => segmentAnswer(text, parseCitations(text));
 
 	it('splits paragraphs on blank lines only', () => {
-		const paragraphs = segment('First line.\nStill first.\n\nSecond.');
-		expect(paragraphs).toHaveLength(2);
+		const blocks = segment('First line.\nStill first.\n\nSecond.');
+		expect(blocks).toHaveLength(2);
 	});
 
 	it('marks the sentence a citation stands behind', () => {
-		const [paragraph] = segment(
-			'Nietzsche opens with it: [P7 "the will to truth"] That is my reading.'
+		const sentences = sentencesIn(
+			segment(
+				'Nietzsche opens with it: [P7 "the will to truth"] That is my reading.'
+			)
 		);
-		expect(paragraph[0].cited).toBe(true);
-		expect(paragraph[1].cited).toBe(false);
+		expect(sentences[0].cited).toBe(true);
+		expect(sentences[1].cited).toBe(false);
 	});
 
 	it('starts a new sentence after a citation, not a new paragraph', () => {
-		const [paragraph, second] = segment(
+		const blocks = segment(
 			'He says [P7 "a quote of some length"] That is my reading.'
 		);
-		expect(second).toBeUndefined();
-		expect(paragraph).toHaveLength(2);
+		expect(blocks).toHaveLength(1);
+		expect(sentencesIn(blocks)).toHaveLength(2);
 	});
 
 	it('still breaks the paragraph when a blank line follows a citation', () => {
-		const paragraphs = segment(
+		const blocks = segment(
 			'He says [P7 "a quote of some length"]\n\nThat is my reading.'
 		);
-		expect(paragraphs).toHaveLength(2);
+		expect(blocks).toHaveLength(2);
 	});
 
 	it('does not end a sentence at an abbreviated page number', () => {
-		const [paragraph] = segment('He writes on p. 9 that it is so.');
-		expect(paragraph).toHaveLength(1);
+		const blocks = segment('He writes on p. 9 that it is so.');
+		expect(sentencesIn(blocks)).toHaveLength(1);
 	});
 
 	it('keeps emphasis and drops its markers', () => {
-		const [paragraph] = segment('It is *his* word, not mine.');
-		const nodes = paragraph[0].nodes;
-		expect(nodes.some((n) => n.kind === 'emphasis')).toBe(true);
-		expect(
-			nodes.map((n) => ('text' in n ? n.text : '')).join('')
-		).not.toContain('*');
+		const blocks = segment('It is *his* word, not mine.');
+		expect(nodesIn(blocks).some((n) => n.kind === 'emphasis')).toBe(true);
+		expect(printedIn(blocks)).not.toContain('*');
 	});
 
 	it('renders the quote, never the marker', () => {
-		const [paragraph] = segment('So [P7 "the will to truth"] stands.');
-		const text = paragraph
-			.flatMap((sentence) => sentence.nodes)
+		const text = nodesIn(segment('So [P7 "the will to truth"] stands.'))
 			.map((node) => ('text' in node ? node.text : node.quote))
 			.join('');
 		expect(text).not.toContain('P7');
@@ -190,8 +188,7 @@ describe('a citation that repeats what the prose just quoted', () => {
 	const text = `He writes: "However, the compulsion towards it, ${QUOTE}, even if as an unconscious imperative" [P1 "${QUOTE}"]. That is his claim.`;
 
 	const only = () => {
-		const [paragraph] = segmentAnswer(text, parseCitations(text));
-		const nodes = paragraph.flatMap((sentence) => sentence.nodes);
+		const nodes = nodesIn(segmentAnswer(text, parseCitations(text)));
 		const citation = nodes.find((node) => node.kind === 'citation');
 		if (citation?.kind !== 'citation') throw new Error('no citation');
 		return { nodes, citation };
@@ -224,8 +221,7 @@ describe('a citation that repeats what the prose just quoted', () => {
 	it('does not fold in a quotation that is a different passage', () => {
 		const other =
 			'He writes: "something else entirely here" [P1 "a quote of five words"].';
-		const [paragraph] = segmentAnswer(other, parseCitations(other));
-		const nodes = paragraph.flatMap((sentence) => sentence.nodes);
+		const nodes = nodesIn(segmentAnswer(other, parseCitations(other)));
 		const citation = nodes.find((node) => node.kind === 'citation');
 		expect(citation?.kind === 'citation' && citation.quote).toBe(
 			'a quote of five words'
@@ -258,10 +254,9 @@ describe('trimHalfWrittenCitation', () => {
 
 describe('the people an answer names', () => {
 	const inked = (text: string, surnames: string[]) =>
-		segmentAnswer(text, [], [], surnames)
-			.flat()
-			.flatMap((sentence) => sentence.nodes)
-			.filter((node) => node.kind === 'author');
+		nodesIn(segmentAnswer(text, [], [], surnames)).filter(
+			(node) => node.kind === 'author'
+		);
 
 	it('writes a cited surname in its own ink', () => {
 		const found = inked('Nietzsche treats truth as a faith.', [
@@ -298,14 +293,14 @@ describe('the people an answer names', () => {
 
 	// A surname inside a work's title belongs to the title.
 	it('leaves a surname inside a cited title to the title', () => {
-		const nodes = segmentAnswer(
-			'He read Nietzsche and Philosophy closely.',
-			[],
-			['Nietzsche and Philosophy'],
-			['Nietzsche']
-		)
-			.flat()
-			.flatMap((sentence) => sentence.nodes);
+		const nodes = nodesIn(
+			segmentAnswer(
+				'He read Nietzsche and Philosophy closely.',
+				[],
+				['Nietzsche and Philosophy'],
+				['Nietzsche']
+			)
+		);
 		expect(nodes.filter((node) => node.kind === 'author')).toHaveLength(0);
 		expect(nodes.filter((node) => node.kind === 'title')).toHaveLength(1);
 	});

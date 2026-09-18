@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { markersFor, segmentAnswer } from './parse';
+import { nodesIn } from './walk';
 import type { AnswerNode } from './parse';
 
 /**
@@ -9,9 +10,7 @@ import type { AnswerNode } from './parse';
  */
 describe('markdown the model wrote anyway', () => {
 	const nodesOf = (text: string, titles: string[] = []): AnswerNode[] =>
-		segmentAnswer(text, markersFor(text, undefined), titles)
-			.flat()
-			.flatMap((sentence) => sentence.nodes);
+		nodesIn(segmentAnswer(text, markersFor(text, undefined), titles));
 
 	const printed = (text: string, titles: string[] = []) =>
 		nodesOf(text, titles)
@@ -63,9 +62,7 @@ describe('markdown the model wrote anyway', () => {
  */
 describe('a title the model italicised itself', () => {
 	const nodesOf = (text: string, titles: string[] = []): AnswerNode[] =>
-		segmentAnswer(text, markersFor(text, undefined), titles)
-			.flat()
-			.flatMap((sentence) => sentence.nodes);
+		nodesIn(segmentAnswer(text, markersFor(text, undefined), titles));
 
 	it('becomes a real title when the answer cited that work', () => {
 		const nodes = nodesOf('He opens *Meditations on First Philosophy* so.', [

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { markersFor, segmentAnswer } from './parse';
+import { nodesIn } from './walk';
 
 /**
  * Both from conversation 4ba7cb2c on production, where the reader was shown
@@ -7,9 +8,7 @@ import { markersFor, segmentAnswer } from './parse';
  */
 describe('a citation that repeats a passage the prose already wrote', () => {
 	const proseOf = (text: string) =>
-		segmentAnswer(text, markersFor(text, undefined))
-			.flat()
-			.flatMap((sentence) => sentence.nodes);
+		nodesIn(segmentAnswer(text, markersFor(text, undefined)));
 
 	// The prose quoted a fragment and the citation quoted a longer passage, so
 	// neither held the other -- they only overlapped.

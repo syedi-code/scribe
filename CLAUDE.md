@@ -47,23 +47,50 @@ all come from `CITATION_STATUS` in `citations/status.ts`. A colour written
 inline in a component is a bug: the next status would be added in four places
 and shown in three.
 
-**The model writes Markdown whatever it is told.** Headings, bold, and bold
-wrapped around an italic. None of it is rendered, so any mark left in the text
-is shown to the reader as the character the model typed — production had ten
-literal `**` and a `##` in one answer. `emphasise()` finds bold first and
-emphasis inside it; `unheaded()` drops a heading's marks and keeps the break
-they implied, and treats a line that is nothing but one bold run as the heading
-it is. The instruction asking for none of it is in alexandria's
-`conversations/instructions.ts`; the client does not rely on it.
+**Markdown is rendered, not stripped.** Asking the model for plain prose was a
+fight we lost every turn — production carried ten literal `**` and a `##` in one
+answer — and stripping the marks left a wall, because an answer about five books
+genuinely is a list. `citations/blocks.ts` parses a small, deliberate subset:
+headings, lists, quotations, code, rules, prose. No dependency; the subset is
+small and the citation constraint below rules out a general renderer.
 
-**An italic the model wrote is a hint, not a claim.** It marks its own book
-titles with `*…*`, which looks exactly like `work-title` and asserts nothing. An
-emphasised run becomes a real title only when it names a work the answer cited —
-`setTitles` walks emphasis nodes for that, and a shortened title counts, since a
-model writes `Meditations` for a work it has already named in full. Anything
-else stays the emphasis it asked for. Before this, a title the model marked up
-was never recognised as a title at all: `emphasise` ran first and `setTitles`
-only walked plain text.
+**A block carries spans, never a copy of its text.** A citation is found by
+character offset, so a parser that handed back cleaned strings would put every
+offset in the answer out by the width of the marks it removed, and a quote would
+render in the wrong place or not at all. `localise()` moves the answer's
+citations onto a block by looking each old position up in a map of what was
+kept. A blockquote is several spans because its `>` sits on every line. Every
+citation keeps the index it has in the whole answer, so the stamp a reader
+clicks is the one the server checked whatever block it landed in.
+
+**Blocks are set the way a book sets them.** `section-head`, `run-in-head`,
+`extract`, `list-hang`, `code-block`, `page-break` in `styles/theme.css`. What a
+block may never borrow is a mark that means something else here: no coloured
+rule, no square, no stamp. A blockquote's rule is `--color-paper-deep`, because a
+coloured rule in this app is a verdict and an extract is not a verdict about
+anything. A section break is a centred ornament, not a line across the page, for
+the same reason. A list hangs its marker in the margin and numbers are
+tabular, so 9 and 10 agree on where the point is.
+
+**The model marks its own names, and the catalogue catches what it misses.**
+`<title>` and `<author>` in the answer, parsed by `citations/tags.ts`. This used
+to be forbidden here on the grounds that a model forgets and a forgotten tag
+shows the reader markup. Both halves are true and neither is fatal: it forgets
+sometimes, so `useLibraryNames` runs the whole catalogue behind it as a
+fallback, and markup only reaches the reader if we print it, so a stray or
+unclosed tag is swept. It buys the one thing no rule of ours could — the model
+knows Newton is a person and Sufism is not, and every heuristic for that is a
+list of words to be wrong about.
+
+The model's mark wins and is never reconsidered; the catalogue only ever runs on
+what is left as plain text, so nothing is marked twice. A mark inside a
+citation's quotation is stripped before the quote is used: a quote is matched
+against its page character for character, and a tag inside one turns a faithful
+citation into an unverified one.
+
+**An italic means a book, not a book we hold.** A work the answer merely names
+is set as a work. Tying the italic to a verified citation meant a title the
+model marked up was never recognised as one at all.
 
 **A citation that repeats the prose is folded into it.** Models write the
 passage out and _then_ cite a few words of it, which printed the same sentence
@@ -125,9 +152,16 @@ lowercased name with apostrophes normalised, because `Ibn 'Arabī` arrives three
 ways). Collisions are expected and harmless: the ink links mentions, it never
 claims to identify anyone.
 
-Only creators the server actually checked are inked, the same discipline the
-titles follow, and only whole words — `Kantian` stays prose. A surname inside a
-cited title belongs to the title.
+Only whole words are inked — `Kantian` stays prose — and a surname inside a
+work's title belongs to the title.
+
+**An ink is a plain rule, not a `@utility`.** The class is built at run time,
+`author-c${hash % 6}`, so Tailwind's scanner never sees the name and emitted no
+rule for it at all. The tokens were in the stylesheet and the spans carried the
+class, and every name rendered in plain ink from the day the feature shipped —
+which is what "the inking still isn't working" turned out to mean, twice.
+`styles/theme.test.ts` fails if one goes back to being a utility, and fails
+again if an ink is as dark as the prose it has to be told apart from.
 
 **What was checked is asked for, not read off the payload.** `citation.page` is
 one of the four fields alexandria does not send yet, so a pass that read it got
@@ -236,6 +270,19 @@ the click that follows usually has nothing to wait for — 245ms to 14ms, measur
 against a round trip. `forgetThread()` on every question asked, since that turn
 makes what was held wrong. The list is keyed on which conversation it is, so the
 switch reads as turning to one rather than a list rewritten in place.
+
+**A name is one line of words.** The title model is asked for six words and
+usually gives them; it has also returned a whole Markdown document — heading,
+italic aside, numbered list — which went into the row verbatim and into the
+reader's rail as one very long line. `asTitle()` in alexandria makes it one line
+on the way in, and `chat/title.ts` does it again on the way out, for the rows
+already written and for the next model that ignores the instruction in a way
+nobody has thought of.
+
+**An answer is signed by whoever wrote it.** `Turn` falls back to the model in
+the switcher only while a turn is actually streaming. Falling back to it on a
+saved turn re-signed every old answer in the conversation each time the reader
+changed models.
 
 **`naming…` is a claim about right now.** It is said only while `ChatProvider`
 is actually polling for a title. A conversation that is still untitled after
