@@ -1,3 +1,4 @@
+import { cleanTitle } from '../chat/title';
 import { COPY } from '../copy';
 import { useConversation } from '../chat/context';
 
@@ -94,18 +95,21 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 					onPointerEnter={() => warmThread(thread.id)}
 					onFocus={() => warmThread(thread.id)}
 					aria-current={thread.id === activeId}
+					title={cleanTitle(thread.title) ?? undefined}
 					className={`press font-app text-ui hover:text-ink hover:bg-bubble/45 -mx-1 block w-[calc(100%+0.5rem)] rounded-[4px] px-1 py-1 text-left leading-snug ${
-						thread.title
+						cleanTitle(thread.title)
 							? thread.id === activeId
 								? 'text-ink'
 								: 'text-ink-soft'
 							: 'text-ink-faint italic'
 					}`}
 				>
-					{thread.title ??
-						(naming.includes(thread.id)
-							? COPY.naming
-							: COPY.unnamed)}
+					<span className="line-clamp-2 block">
+						{cleanTitle(thread.title) ??
+							(naming.includes(thread.id)
+								? COPY.naming
+								: COPY.unnamed)}
+					</span>
 				</button>
 			))}
 		</nav>

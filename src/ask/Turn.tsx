@@ -8,6 +8,7 @@ import {
 } from '../citations/parse';
 import { surnamesOf } from '../citations/authors';
 import { useCitedWorks } from '../citations/useCitedWorks';
+import { useLibraryNames } from '../citations/useLibraryNames';
 import { useStaggeredResolve } from '../citations/useResolve';
 import { readMessage, type ScribeMessage } from '../chat/message';
 import { useModels } from '../models/context';
@@ -58,23 +59,32 @@ export function Turn({
 		[message, streaming]
 	);
 
-	// Only works the server actually checked, so nothing is set as a title or
-	// inked as a name that the answer did not cite.
-	const { titles, creators } = useCitedWorks(read?.citations);
+	// What this answer cited, and what the library holds. The model marks its
+	// own names as it writes; these are the fallback for the ones it misses,
+	// and the reason a work it merely mentions is still set as a work.
+	const cited = useCitedWorks(read?.citations);
+	const library = useLibraryNames();
 
-	const { markers, paragraphs, citations } = useMemo(() => {
+	const { markers, blocks, citations } = useMemo(() => {
 		const written = read?.answer ?? '';
 		// Nothing half-written is shown: a citation appears whole or not yet.
 		const answer = streaming ? trimHalfWrittenCitation(written) : written;
 		const markers = markersFor(answer, read?.citations);
-		const surnames = surnamesOf(creators);
+
+		// Longest first in both, so a full title beats the head of it.
+		const titles = [...new Set([...cited.titles, ...library.titles])].sort(
+			(a, b) => b.length - a.length
+		);
+		const surnames = [
+			...new Set([...surnamesOf(cited.creators), ...library.surnames]),
+		].sort((a, b) => b.length - a.length);
 
 		return {
 			markers,
-			paragraphs: segmentAnswer(answer, markers, titles, surnames),
+			blocks: segmentAnswer(answer, markers, titles, surnames),
 			citations: alignCitations(markers, read?.citations),
 		};
-	}, [read, streaming, titles, creators]);
+	}, [read, streaming, cited, library]);
 
 	const resolved = useStaggeredResolve(
 		markers.length,
@@ -83,7 +93,12 @@ export function Turn({
 	);
 
 	const answered = (read?.answer.length ?? 0) > 0;
-	const model = labelFor(read?.modelId) ?? selected?.label ?? null;
+	// An answer is signed by whoever wrote it. The model in the switcher is
+	// only the right answer for the turn being written right now: falling back
+	// to it on a saved turn re-signed every old answer in the conversation
+	// each time the reader changed models.
+	const model =
+		labelFor(read?.modelId) ?? (streaming ? selected?.label : null) ?? null;
 
 	return (
 		<>
@@ -105,7 +120,7 @@ export function Turn({
 				{answered && read && (
 					<>
 						<Answer
-							paragraphs={paragraphs}
+							blocks={blocks}
 							citations={citations}
 							resolved={resolved}
 							streaming={streaming}

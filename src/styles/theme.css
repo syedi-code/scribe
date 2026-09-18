@@ -97,12 +97,12 @@
 	   inkwell and not as a highlight. Every hue is at least 25 degrees clear of
 	   verdigris (178), rubric (30) and slate (298), and all six sit a whole
 	   lightness band below them, which is what keeps the two systems apart. */
-	--author-c0: #512f01; /* bronze */
-	--author-c1: #3e3900; /* moss */
-	--author-c2: #1f420c; /* forest */
-	--author-c3: #00404a; /* steel */
-	--author-c4: #003c5c; /* indigo */
-	--author-c5: #1d3666; /* iris */
+	--author-c0: #814800; /* bronze */
+	--author-c1: #615a00; /* moss */
+	--author-c2: #1d6930; /* forest */
+	--author-c3: #006372; /* steel */
+	--author-c4: #2c5797; /* indigo */
+	--author-c5: #7f3b6e; /* damson */
 
 	/* Provider marks, used only as a dot in the model switcher. */
 	--color-anthropic: #cc785c;
@@ -114,6 +114,9 @@
 
 	--font-read: 'GT Alpina', 'Iowan Old Style', Georgia, serif;
 	--font-app: 'GT Alpina Condensed', 'GT Alpina', Georgia, serif;
+	/* Only ever inside an answer, and only for what the model set as code. */
+	--font-code: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas,
+		monospace;
 
 	--text-prose: 17px;
 	--text-prose--line-height: 1.42;
@@ -307,22 +310,28 @@
 /* One class per ink, so a component names the slot and the stylesheet owns the
    value. Weight is deliberately not touched: a name sits mid-sentence and has
    to stay in the same cut as its neighbours. */
-@utility author-c0 {
+/* Plain rules, not `@utility`. The class is built at run time —
+   `author-c${hash % 6}` in `citations/authors.ts` — so Tailwind's scanner
+   never sees the name and emitted no rule for it at all. The tokens were in
+   the stylesheet and the spans carried the class, and a name has been
+   rendering in plain ink since the day the feature shipped. A utility that
+   nothing spells out in source has to be written out here. */
+.author-c0 {
 	color: var(--author-c0);
 }
-@utility author-c1 {
+.author-c1 {
 	color: var(--author-c1);
 }
-@utility author-c2 {
+.author-c2 {
 	color: var(--author-c2);
 }
-@utility author-c3 {
+.author-c3 {
 	color: var(--author-c3);
 }
-@utility author-c4 {
+.author-c4 {
 	color: var(--author-c4);
 }
-@utility author-c5 {
+.author-c5 {
 	color: var(--author-c5);
 }
 
@@ -376,6 +385,112 @@
 	color: inherit;
 	padding: 0.06em 0;
 	box-shadow: inset 0 -1.5px 0 var(--color-rubric);
+}
+
+/* -------------------------------------------------------------------------
+   How an answer is set.
+
+   The model writes Markdown and an answer about five books really is a list,
+   so the blocks are rendered rather than stripped. They are set the way a
+   printed page sets them, not the way a web page does: no rule is borrowed
+   from the citation system, nothing is boxed that a book would not box, and
+   every mark that is not a word sits in the margin rather than in the text.
+   ------------------------------------------------------------------------- */
+
+/* A section head: architecture, not voice. Quiet enough that the eye passes
+   over it on the way down and finds it again on the way back up. */
+@utility section-head {
+	font-family: var(--font-app);
+	font-size: var(--text-tiny);
+	font-weight: 400;
+	line-height: 1.2;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--color-ink-faint);
+	margin: 1.9em 0 0.75em;
+}
+
+/* A run-in head, which is what `**1. Al-Ghazali's ...**` actually is: the
+   first line of what follows, set a weight up, in the reading face. */
+@utility run-in-head {
+	font-family: var(--font-read);
+	font-weight: 500;
+	color: var(--color-ink);
+	margin: 1.5em 0 0.4em;
+}
+
+/* An extract. The rule is paper, never ink: a coloured rule in this app is a
+   verdict, and an extract is not a verdict about anything. */
+@utility extract {
+	margin: 1.15em 0 1.15em 0.1em;
+	padding-left: 1.05em;
+	border-left: 1px solid var(--color-paper-deep);
+	color: var(--color-ink-soft);
+}
+
+/* A list, hung. The marker sits out in the margin and the text keeps one
+   edge, which is the whole difference between a list in a book and a list in
+   a form. Numbers are right-aligned so 9 and 10 agree on where the point is. */
+@utility list-hang {
+	display: grid;
+	grid-template-columns: 1.6em 1fr;
+	gap: 0.15em 0.55em;
+	margin: 0.9em 0;
+	padding: 0;
+	list-style: none;
+}
+@utility list-mark {
+	font-family: var(--font-app);
+	color: var(--color-ink-faint);
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	user-select: none;
+}
+/* A nested item gives up its first column and is set in from the parent. */
+@utility list-deep {
+	grid-column: 2;
+	padding-left: 1.1em;
+}
+
+@utility code-inline {
+	font-family: var(--font-code);
+	font-size: 0.86em;
+	background: var(--color-paper-deep);
+	border-radius: 3px;
+	padding: 0.1em 0.34em;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+
+@utility code-block {
+	font-family: var(--font-code);
+	font-size: var(--text-small);
+	line-height: 1.55;
+	background: var(--color-paper-lift);
+	border: 1px solid var(--color-paper-deep);
+	border-radius: 10px;
+	padding: 0.8em 0.95em;
+	margin: 1.1em 0;
+	overflow-x: auto;
+	white-space: pre;
+	tab-size: 2;
+}
+
+/* A break between passages. A book marks one with a centred ornament, not a
+   line across the page -- a line across the page here would read as a rule
+   with a verdict missing. */
+@utility page-break {
+	display: block;
+	height: auto;
+	border: 0;
+	margin: 1.7em 0;
+	color: var(--color-ink-faint);
+	text-align: center;
+	&::before {
+		content: '\00B7\2003\00B7\2003\00B7';
+		letter-spacing: 0.1em;
+		font-size: var(--text-small);
+	}
 }
 
 /* The live apparatus line trails a sweeping rule while a step is running. */

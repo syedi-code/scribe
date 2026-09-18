@@ -1,4 +1,6 @@
 import { inkFor } from './authors';
+import { blocksOf, localise } from './blocks';
+import { untag, untagQuote } from './tags';
 import { sharedRun, wordsOf } from './overlap';
 import type { AnswerCitation } from '../api/types';
 
@@ -125,6 +127,7 @@ export type AnswerNode =
 	| { kind: 'title'; text: string }
 	| { kind: 'author'; text: string; ink: number }
 	| { kind: 'emphasis'; text: string; strong: boolean }
+	| { kind: 'code'; text: string }
 	| {
 			kind: 'citation';
 			index: number;
@@ -141,7 +144,26 @@ export interface Sentence {
 	cited: boolean;
 }
 
-export type Paragraph = Sentence[];
+/**
+ * A block of an answer, as the model wrote it.
+ *
+ * `blocksOf` decides which is which; this is what each becomes once its
+ * citations, titles and names are in place.
+ */
+export type Block =
+	| { kind: 'prose'; sentences: Sentence[] }
+	| { kind: 'heading'; level: 2 | 3; sentences: Sentence[] }
+	| { kind: 'quote'; sentences: Sentence[] }
+	| { kind: 'code'; lang: string; text: string }
+	| { kind: 'rule' }
+	| {
+			kind: 'list';
+			ordered: boolean;
+			items: { depth: 0 | 1; sentences: Sentence[] }[];
+	  };
+
+/** A citation, and which of the answer's citations it is. */
+export type NumberedMarker = CitationMarker & { index: number };
 
 /* -------------------------------------------------------------------------
    The model quotes twice.
@@ -210,6 +232,8 @@ const ABBREVIATION =
  */
 const BOLD = /\*\*([\s\S]+?)\*\*/g;
 const ITALIC = /(?<![\p{L}\p{N}])[*_]([^*_\n]+)[*_]/gu;
+/** Inline code, found first: an asterisk inside a span of code is code. */
+const TICKED = /`([^`\n]+)`/g;
 
 /**
  * The works being discussed, set as works.
@@ -321,6 +345,20 @@ function italicise(text: string, strong: boolean): AnswerNode[] {
 function emphasise(text: string): AnswerNode[] {
 	const nodes: AnswerNode[] = [];
 	let cursor = 0;
+	for (const match of text.matchAll(TICKED)) {
+		if (match.index > cursor) {
+			nodes.push(...bolden(text.slice(cursor, match.index)));
+		}
+		nodes.push({ kind: 'code', text: match[1] });
+		cursor = match.index + match[0].length;
+	}
+	if (cursor < text.length) nodes.push(...bolden(text.slice(cursor)));
+	return nodes;
+}
+
+function bolden(text: string): AnswerNode[] {
+	const nodes: AnswerNode[] = [];
+	let cursor = 0;
 	for (const match of text.matchAll(BOLD)) {
 		if (match.index > cursor) {
 			nodes.push(...italicise(text.slice(cursor, match.index), false));
@@ -332,44 +370,6 @@ function emphasise(text: string): AnswerNode[] {
 		nodes.push(...italicise(text.slice(cursor), false));
 	}
 	return nodes;
-}
-
-const HEADING = /^\s*#{1,6}\s+/;
-
-/** A line that is nothing but one bold run: a heading, written in bold. */
-const BOLD_LINE = /^\s*\*\*([\s\S]+?)\*\*\s*$/;
-
-/**
- * A block split where the model put a heading, with the marks dropped.
- *
- * An answer is plain prose -- a heading in one would be a decision rather
- * than a default -- but a model reaches for `## ` anyway on a question that
- * wants a list, and the marks were printed to the reader as text. The break
- * a heading implies is kept; the mark that asked for it is not.
- */
-function unheaded(block: string): string[] {
-	const out: string[] = [];
-	let run: string[] = [];
-	const flush = () => {
-		if (run.length > 0) out.push(run.join(' '));
-		run = [];
-	};
-
-	for (const line of block.split('\n')) {
-		const bold = BOLD_LINE.exec(line);
-		if (HEADING.test(line)) {
-			flush();
-			out.push(line.replace(HEADING, ''));
-		} else if (bold) {
-			flush();
-			out.push(bold[1]);
-		} else {
-			run.push(line.trim());
-		}
-	}
-	flush();
-
-	return out.map((text) => text.trim()).filter(Boolean);
 }
 
 /** Splits prose into sentences, keeping the whitespace that followed each one. */
@@ -388,24 +388,36 @@ function sentencePieces(text: string): string[] {
 	return pieces;
 }
 
+/** The inline passes, in the order each earns its claim over the last. */
+function inline(
+	piece: string,
+	titles: readonly string[],
+	surnames: readonly string[]
+): AnswerNode[] {
+	// What the model marked comes first and is never reconsidered; the
+	// catalogue only ever runs on what is left over as plain text.
+	const marked = untag(piece);
+	const emphasised = marked.flatMap((node): AnswerNode[] =>
+		node.kind === 'text' ? emphasise(node.text) : [node]
+	);
+	return setAuthors(setTitles(emphasised, titles), surnames);
+}
+
 /**
- * The answer as paragraphs of sentences, with each citation standing in place
- * of the marker that produced it.
+ * One block's sentences, with each citation standing in place of the marker
+ * that produced it.
  *
  * Sentences are the unit because `Only what's cited` works on them: a sentence
  * with no citation behind it is a sentence the answer is standing on by
  * itself, and the reader is entitled to see which those are.
  */
-export function segmentAnswer(
+function sentencesOf(
 	text: string,
-	markers: CitationMarker[],
-	/** Work titles the answer cited, set in italics where the prose names them. */
-	titles: readonly string[] = [],
-	/** Surnames of the creators it cited, written in their own ink. */
-	surnames: readonly string[] = []
-): Paragraph[] {
-	const paragraphs: Paragraph[] = [];
-	let sentences: Paragraph = [];
+	markers: readonly NumberedMarker[],
+	titles: readonly string[],
+	surnames: readonly string[]
+): Sentence[] {
+	const sentences: Sentence[] = [];
 	let nodes: AnswerNode[] = [];
 	let cited = false;
 
@@ -414,11 +426,6 @@ export function segmentAnswer(
 		sentences.push({ nodes, cited });
 		nodes = [];
 		cited = false;
-	};
-	const closeParagraph = () => {
-		closeSentence();
-		if (sentences.length > 0) paragraphs.push(sentences);
-		sentences = [];
 	};
 
 	/**
@@ -429,35 +436,20 @@ export function segmentAnswer(
 	const breaksAfterCitation = /^(\s+)(?=[“"'(\p{Lu}\p{N}])/u;
 
 	const addProse = (prose: string) => {
-		// A blank line is a paragraph break; a single newline is just a space.
-		const blocks = prose.split(/\n{2,}/);
-		blocks.forEach((block, index) => {
-			if (index > 0) closeParagraph();
-			unheaded(block).forEach((flat, n) => {
-				if (n > 0) closeParagraph();
-				const pieces = sentencePieces(flat);
-				pieces.forEach((piece, at) => {
-					nodes.push(
-						...setAuthors(
-							setTitles(emphasise(piece), titles),
-							surnames
-						)
-					);
-					// Every piece but the last ends a sentence; the last may
-					// be continued by a citation or the next chunk of prose.
-					if (at < pieces.length - 1) closeSentence();
-				});
-			});
+		// Inside a block a single newline is only the width of the column.
+		const flat = prose.replace(/\s*\n\s*/g, ' ');
+		sentencePieces(flat).forEach((piece, at, pieces) => {
+			nodes.push(...inline(piece, titles, surnames));
+			// Every piece but the last ends a sentence; the last may be
+			// continued by a citation or by the next chunk of prose.
+			if (at < pieces.length - 1) closeSentence();
 		});
 	};
 
 	/** Prose that follows a citation, which may be a new sentence. */
 	const addAfter = (prose: string) => {
-		// A blank line is a paragraph break and belongs to addProse; anything
-		// shorter is the space between two sentences.
 		const split =
 			nodes[nodes.length - 1]?.kind === 'citation' &&
-			!/^[^\S\n]*\n[^\S\n]*\n/.test(prose) &&
 			breaksAfterCitation.exec(prose);
 		if (!split) return addProse(prose);
 		nodes.push({ kind: 'text', text: split[1] });
@@ -466,24 +458,110 @@ export function segmentAnswer(
 	};
 
 	let cursor = 0;
-	markers.forEach((marker, index) => {
+	for (const marker of markers) {
 		const before = text.slice(cursor, marker.start);
-		const absorbed = absorbQuotation(before, marker.quote);
+		const quote = untagQuote(marker.quote);
+		const absorbed = absorbQuotation(before, quote);
 		addAfter(absorbed ? absorbed.prose : before);
 		nodes.push({
 			kind: 'citation',
-			index,
+			index: marker.index,
 			handle: marker.handle,
-			quote: absorbed ? absorbed.quote : marker.quote,
-			checked: absorbed ? absorbed.checked : [0, marker.quote.length],
+			quote: absorbed ? absorbed.quote : quote,
+			checked: absorbed ? absorbed.checked : [0, quote.length],
 		});
 		cited = true;
 		if (absorbed?.trailing) addAfter(absorbed.trailing);
 		cursor = marker.end;
-	});
+	}
 
 	addAfter(text.slice(cursor));
-	closeParagraph();
+	closeSentence();
 
-	return paragraphs;
+	return sentences;
+}
+
+/**
+ * An answer, as the blocks it was written in.
+ *
+ * The block layer comes first and the inline passes run inside each one, so a
+ * citation never has to survive being cut in half by a list marker. Every
+ * citation keeps the index it has in the answer, so the stamp a reader clicks
+ * is the citation the server checked, whatever block it ended up in.
+ */
+export function segmentAnswer(
+	text: string,
+	markers: CitationMarker[],
+	/** Work titles to set, whether this answer cited them or the library holds them. */
+	titles: readonly string[] = [],
+	/** Surnames to ink, from the same two places. */
+	surnames: readonly string[] = []
+): Block[] {
+	const numbered: NumberedMarker[] = markers.map((marker, index) => ({
+		...marker,
+		index,
+	}));
+	const raw = blocksOf(text);
+	const blocks: Block[] = [];
+
+	for (let at = 0; at < raw.length; at++) {
+		const block = raw[at];
+
+		if (block.kind === 'rule') {
+			blocks.push({ kind: 'rule' });
+			continue;
+		}
+
+		if (block.kind === 'code') {
+			blocks.push({
+				kind: 'code',
+				lang: block.lang,
+				text: localise(text, block.spans, []).text,
+			});
+			continue;
+		}
+
+		// Items that run together are one list, so the numbering is the
+		// list's rather than each line's.
+		if (block.kind === 'item') {
+			const { ordered } = block;
+			const items: { depth: 0 | 1; sentences: Sentence[] }[] = [];
+			let next = raw[at];
+			while (next?.kind === 'item' && next.ordered === ordered) {
+				const one = localise(text, next.spans, numbered);
+				items.push({
+					depth: next.depth,
+					sentences: sentencesOf(
+						one.text,
+						one.markers,
+						titles,
+						surnames
+					),
+				});
+				next = raw[++at];
+			}
+			at--;
+			if (items.some((item) => item.sentences.length > 0)) {
+				blocks.push({ kind: 'list', ordered, items });
+			}
+			continue;
+		}
+
+		const one = localise(text, block.spans, numbered);
+		const sentences = sentencesOf(
+			one.text,
+			one.markers,
+			titles,
+			surnames
+		);
+		if (sentences.length === 0) continue;
+
+		blocks.push(
+			block.kind === 'heading'
+				? { kind: 'heading', level: block.level, sentences }
+				: { kind: block.kind, sentences }
+		);
+	}
+
+	return blocks;
 }

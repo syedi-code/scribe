@@ -155,3 +155,56 @@ describe('the stacking order', () => {
 		for (const layer of used) expect(LAYERS).toContain(layer);
 	});
 });
+
+/**
+ * The class is built at run time from a hash, so Tailwind's scanner never
+ * sees the name. Declared as a utility, it emitted no rule at all: the token
+ * was in the stylesheet, the span carried the class, and every name rendered
+ * in plain ink.
+ */
+describe('an author ink', () => {
+	const SLOTS = [0, 1, 2, 3, 4, 5];
+
+	it('is a rule of its own, not a utility waiting to be scanned', () => {
+		for (const slot of SLOTS) {
+			expect(THEME, `author-c${slot} is not declared as a rule`).toContain(
+				`.author-c${slot} {`
+			);
+			expect(THEME).not.toContain(`@utility author-c${slot}`);
+		}
+	});
+
+	it('has a token behind every slot the hash can reach', () => {
+		for (const slot of SLOTS) {
+			expect(THEME).toContain(`--author-c${slot}:`);
+		}
+	});
+
+	// Against the prose, not against the paper: a name the reader cannot see
+	// is not a name they can follow.
+	it('sits clear of the ink the prose is set in', () => {
+		const lightness = (hex: string) => {
+			const lin = (c: number) => {
+				const v = c / 255;
+				return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+			};
+			const [r, g, b] = [1, 3, 5].map((at) =>
+				lin(parseInt(hex.slice(at, at + 2), 16))
+			);
+			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+		};
+		const inkOf = (name: string) =>
+			/#[0-9a-f]{6}/i.exec(
+				THEME.slice(THEME.indexOf(`${name}:`))
+			)?.[0] as string;
+
+		const prose = lightness(inkOf('--color-ink'));
+		for (const slot of SLOTS) {
+			expect(
+				lightness(inkOf(`--author-c${slot}`)),
+				`author-c${slot} is as dark as the prose`
+			).toBeGreaterThan(prose * 1.5);
+		}
+	});
+});
+

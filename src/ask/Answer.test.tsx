@@ -17,7 +17,7 @@ function renderAnswer(text: string, citations = [verified('P1', 'a quote')]) {
 	const markers = markersFor(text, citations);
 	return renderApp(
 		<Answer
-			paragraphs={segmentAnswer(text, markers)}
+			blocks={segmentAnswer(text, markers)}
 			citations={alignCitations(markers, citations)}
 			resolved={markers.length}
 			streaming={false}
