@@ -14,6 +14,7 @@ import type { DocumentDetail, PageText } from './types';
 
 const documents = new Map<string, Promise<DocumentDetail>>();
 const pages = new Map<string, Promise<PageText[]>>();
+const scans = new Map<string, Promise<string | null>>();
 
 export function loadDocument(id: string): Promise<DocumentDetail> {
 	let pending = documents.get(id);
@@ -49,6 +50,35 @@ export function loadPages(
 				throw error;
 			});
 		pages.set(key, pending);
+	}
+	return pending;
+}
+
+/**
+ * Where the scan itself can be read, signed for this reader.
+ *
+ * Null when the document has no file behind it, which is a fact about the
+ * document rather than a failure to fetch one. Signed once per document and
+ * kept, because the renderer asks for the file in pieces as pages are turned
+ * and every piece carries the same token.
+ */
+export function scanUrl(documentId: string): Promise<string | null> {
+	let pending = scans.get(documentId);
+	if (!pending) {
+		pending = loadDocument(documentId)
+			.then(async ({ file_key }) => {
+				if (!file_key) return null;
+				const { token } = await api.post<{ token: string }>(
+					'/files/sign',
+					{ path: file_key }
+				);
+				return `/api/files/${file_key}?token=${encodeURIComponent(token)}`;
+			})
+			.catch((error: unknown) => {
+				scans.delete(documentId);
+				throw error;
+			});
+		scans.set(documentId, pending);
 	}
 	return pending;
 }

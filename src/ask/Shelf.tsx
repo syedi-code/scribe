@@ -9,27 +9,41 @@ import type { CitationGroup, GroupedCitation } from '../citations/group';
 /**
  * One book, and every reference an answer made into it.
  *
- * Not a card: the book's name, and a pip per reference under it. The pip is
- * the stamp from the prose at reading size — filled when the words were on
- * the page, open when they were not, dotted when the page had no text to check
- * against — so a row of them reads at a glance and still survives printing.
+ * Not a card and not a block: one line. The book's name, and its pips ranged
+ * right on the same line — an entry in a ledger, which is what this is. Two
+ * lines per book was a phone screen of apparatus under every answer about four
+ * books; one line is 44px, a little over half of what two were, and reads down
+ * the left edge as a list of what the answer stood on.
+ *
+ * The pip is the stamp from the prose at reading size — filled when the words
+ * were on the page, open when they were not, dotted when the page had no text
+ * to check against — so a row of them reads at a glance and still survives
+ * printing.
  *
  * Past five a row of pips stops being countable at a glance, so each verdict
  * becomes one pip and a number. Kept per verdict rather than one total: seven
  * found and one not is the fact the reader needs, and a single count would
  * hide the one that failed.
  *
- * A pip is 44px tall to take a finger and only as wide as its rhythm needs;
- * 44 both ways put more space between the marks than the marks themselves.
+ * A pip is drawn 36px tall and reaches the full 44 with the gap above and
+ * below it, so the line is a ledger entry to the eye and a target to a finger.
+ * The name is set at the size the margin sets its notes at, because this *is*
+ * the margin note, folded.
  */
 
 const SINGLY = 5;
 
 const pip = (stamp: string) =>
-	`block size-4 border-2 transition-[background-color,border-color] duration-300 ease-paper ${stamp}`;
+	`block size-3.5 border-2 transition-[background-color,border-color] duration-300 ease-paper ${stamp}`;
 
+/**
+ * The cell the eye sees, and the target the finger gets. The pseudo-element
+ * takes the row's gap on both sides, which is the only space there is to take:
+ * 36 drawn plus 4 above and 4 below is the 44 a tap wants, and two rows' targets
+ * meet without ever overlapping.
+ */
 const cell = (lit: boolean) =>
-	`hover:bg-bubble -my-2 flex h-11 items-center justify-center rounded-md transition-colors disabled:cursor-default ${
+	`hover:bg-bubble relative flex h-9 w-7 shrink-0 items-center justify-center rounded transition-colors after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] disabled:cursor-default ${
 		lit ? 'bg-bubble' : ''
 	}`;
 
@@ -61,7 +75,7 @@ function Pip({
 			onBlur={() => onLight(null)}
 			aria-label={label}
 			title={label}
-			className={`${cell(lit)} w-7`}
+			className={cell(lit)}
 		>
 			<span aria-hidden className={pip(stamp)} />
 		</button>
@@ -93,7 +107,7 @@ function Tally({
 			onBlur={() => onLight(null)}
 			aria-label={label}
 			title={label}
-			className={`${cell(entries.some((entry) => entry.index === lit))} gap-1.5 px-1.5`}
+			className={`${cell(entries.some((entry) => entry.index === lit))} w-auto gap-1 px-1.5`}
 		>
 			<span aria-hidden className={pip(stamp)} />
 			<span
@@ -134,25 +148,27 @@ export function Shelf({
 		group.named !== null && verdictKey(group.named) === 'unknown_handle';
 
 	return (
-		<div>
-			<p className="text-ask m-0 leading-snug">
+		<div className="flex items-center gap-2">
+			{/* The name gives way before the pips do: a truncated title is
+			    still a title, and a missing verdict is a missing fact. */}
+			<p className="font-app text-small m-0 min-w-0 flex-1 truncate">
 				{title ? (
 					<span className="work-title text-ink">{title}</span>
 				) : (
-					<span className="font-app text-small text-ink-faint">
+					<span className="text-ink-faint">
 						{never
 							? COPY.verdict.unknown_handle
 							: COPY.verdict.pending}
 					</span>
 				)}
 				{creator && (
-					<span className="font-app text-small text-ink-soft">
+					<span className="text-ink-soft">
 						{' · '}
 						<AuthorName creator={creator} />
 					</span>
 				)}
 			</p>
-			<div className="-ml-1.5 flex flex-wrap items-center">
+			<div className="-mr-1 flex shrink-0 items-center">
 				{group.entries.length > SINGLY
 					? byMark(group.entries).map((entries) => (
 							<Tally
