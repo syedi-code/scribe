@@ -242,11 +242,21 @@ is actually polling for a title. A conversation that is still untitled after
 that is `untitled` — promising a name that is not coming is how `naming…` came
 to sit in the rail for ever.
 
-**Two models are held back.** `SUSPENDED` in `models/ModelProvider.tsx`, shown
-struck through and _temporarily disabled_ rather than hidden, which is a
-different claim from _no key set_. `Add a book` is held back the same way: the
-tab is struck through and disabled, and `add/AddPanel.tsx` waits for an
-ingestion to exist behind it.
+**One model is held back.** `COMING_SOON` in `models/ModelProvider.tsx`, shown
+struck through and _coming soon_ rather than hidden, which is a different claim
+from _no key set_ and a different one again from _temporarily disabled_: Gemini
+3.8 Flash has never run here. `Add a book` is held back the same way: the tab is
+struck through and disabled, and `add/AddPanel.tsx` waits for an ingestion to
+exist behind it.
+
+**The default model is slow on purpose.** GPT-5.6 Luna costs a fifth of Haiku's
+input and a quarter of its output and scores higher, and pays for it in time:
+minutes can pass before its first token, and every step of the agent loop pays
+that again. So `ask/Waiting.tsx` is not decoration. Past eight seconds it shows
+a running clock, because at two minutes an animation alone is indistinguishable
+from a hung page, and `ask/useElapsed.ts` reads that clock off a timestamp
+rather than counting its own ticks — a phone that locked and came back would
+otherwise show how long its timers ran, not how long the reader waited.
 
 **Do not copy components out of stylus.** The duplication between the two
 frontends is deliberate: sharing UI would anchor scribe to Vue and to stylus's
