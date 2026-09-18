@@ -27,16 +27,31 @@ export interface BrandedPiece {
 }
 
 /**
- * A model's label split into the maker's name and the rest. The name is not
- * a surname and cannot be found by the rule that finds one: `Claude Opus 5`
+ * A model's label split into the maker's name and the rest.
+ *
+ * The maker takes its generation with it, but only the whole number of it:
+ * `GPT-5` is inked and `.6` is left grey. The major is the name of the
+ * generation and belongs to the maker; the minor is a release and belongs to
+ * the release. A number that belongs to something else stays grey entirely —
+ * in `Claude Haiku 4.5` the 4.5 is Haiku's.
+ *
+ * The name cannot be found by the rule that finds a surname: `Claude Opus 5`
  * and `Gemini 3.5 Flash` would give up `5` and `Flash`.
  */
 export function brandedLabel(label: string): BrandedPiece[] {
 	const names = Object.keys(BRANDS).sort((a, b) => b.length - a.length);
-	const pattern = new RegExp(`(${names.join('|')})`, 'g');
+	const pattern = new RegExp(`(${names.join('|')})([- ][0-9]+)?`, 'g');
 
-	return label
-		.split(pattern)
-		.filter((piece) => piece !== '')
-		.map((piece) => ({ text: piece, ink: BRANDS[piece] ?? '' }));
+	const pieces: BrandedPiece[] = [];
+	let at = 0;
+
+	for (const match of label.matchAll(pattern)) {
+		if (match.index > at)
+			pieces.push({ text: label.slice(at, match.index), ink: '' });
+		pieces.push({ text: match[0], ink: BRANDS[match[1]] });
+		at = match.index + match[0].length;
+	}
+	if (at < label.length) pieces.push({ text: label.slice(at), ink: '' });
+
+	return pieces;
 }
