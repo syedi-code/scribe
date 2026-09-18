@@ -174,9 +174,40 @@ describe('an author ink', () => {
 		}
 	});
 
+	const contrastOf = (a: string, b: string) => {
+		const ink = (name: string) =>
+			/#[0-9a-f]{6}/i.exec(THEME.slice(THEME.indexOf(`${name}:`)))![0];
+		const luminance = (hex: string) => {
+			const channel = (c: number) => {
+				const v = c / 255;
+				return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+			};
+			const [r, g, bl] = [1, 3, 5].map((at) =>
+				channel(parseInt(hex.slice(at, at + 2), 16))
+			);
+			return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+		};
+		const [light, dark] = [luminance(ink(a)), luminance(ink(b))].sort(
+			(x, y) => y - x
+		);
+		return (light + 0.05) / (dark + 0.05);
+	};
+
 	it('has a token behind every slot the hash can reach', () => {
 		for (const slot of SLOTS) {
 			expect(THEME).toContain(`--author-c${slot}:`);
+		}
+	});
+
+	// Every ink has to carry its own colour on cream at prose size. Gold and
+	// olive went muddy there and turquoise could not saturate at all, so the
+	// floor is held here rather than in anyone's judgement.
+	it('is readable on the paper it is printed on', () => {
+		for (const slot of SLOTS) {
+			expect(
+				contrastOf(`--author-c${slot}`, '--color-paper'),
+				`author-c${slot} is too faint on the paper`
+			).toBeGreaterThan(4.5);
 		}
 	});
 
