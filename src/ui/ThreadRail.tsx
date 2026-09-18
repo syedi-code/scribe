@@ -39,8 +39,15 @@ function Plus() {
 }
 
 export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
-	const { threads, naming, activeId, openThread, newQuestion, busy } =
-		useConversation();
+	const {
+		threads,
+		naming,
+		activeId,
+		openThread,
+		warmThread,
+		newQuestion,
+		busy,
+	} = useConversation();
 
 	return (
 		<nav
@@ -82,6 +89,10 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 						openThread(thread.id);
 						onNavigate?.();
 					}}
+					// Fetched as the pointer arrives, so the click that
+					// follows has nothing left to wait for.
+					onPointerEnter={() => warmThread(thread.id)}
+					onFocus={() => warmThread(thread.id)}
 					aria-current={thread.id === activeId}
 					className={`font-app text-ui hover:text-ink block w-full py-1 text-left leading-snug transition-colors ${
 						thread.title

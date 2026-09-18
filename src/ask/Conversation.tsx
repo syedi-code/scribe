@@ -9,6 +9,11 @@ import type { ScribeMessage } from '../chat/message';
  * The conversation is a list of turns, and a turn is one question with whatever
  * came back for it. It behaves like a chat, because that is what every reader
  * already knows how to use; what is unconventional is the margin beside it.
+ *
+ * Keyed on which conversation it is, so moving between two of them reads as
+ * turning to one rather than as a list being rewritten in place. It cost
+ * nothing to add and it is most of why switching feels immediate: the other
+ * half is `chat/threads.ts`, which usually has the conversation already.
  */
 
 const questionOf = (message: ScribeMessage) =>
@@ -27,7 +32,7 @@ interface Exchange {
 }
 
 export function Conversation() {
-	const { messages, busy, error, retry } = useConversation();
+	const { messages, busy, error, retry, activeId } = useConversation();
 	const scroll = useRef<HTMLDivElement>(null);
 
 	const exchanges = useMemo(() => {
@@ -53,7 +58,10 @@ export function Conversation() {
 			ref={scroll}
 			className="overflow-y-auto px-5 pt-6 pb-1 @max-compact:px-3.5 @max-compact:pt-4"
 		>
-			<div className="max-w-spread mx-auto grid w-full grid-cols-[minmax(0,var(--container-thread))_var(--container-margin)] gap-9 @max-fold:max-w-thread @max-fold:grid-cols-1">
+			<div
+				key={activeId ?? 'new'}
+				className="animate-rise max-w-spread mx-auto grid w-full grid-cols-[minmax(0,var(--container-thread))_var(--container-margin)] gap-9 @max-fold:max-w-thread @max-fold:grid-cols-1"
+			>
 				{exchanges.map((exchange, index) => {
 					const last = index === exchanges.length - 1;
 					return (

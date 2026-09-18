@@ -12,6 +12,7 @@ import { api, describeApiError } from '../api/client';
 import { useModels } from '../models/context';
 import { closePage } from '../state/reader';
 import { ChatContext, type ChatState } from './context';
+import { forgetThread, loadThread, readThread, warmThread } from './threads';
 import type { Conversation } from '../api/types';
 import type { ScribeMessage } from './message';
 
@@ -22,6 +23,10 @@ import type { ScribeMessage } from './message';
  * because a question asked from the home screen has to create a conversation
  * before it can be sent, and because the server names a conversation a beat
  * after its first question lands.
+ *
+ * What has been read once is kept by `threads.ts`, and the rail warms a
+ * conversation as the pointer reaches it, so switching is usually a render
+ * rather than a round trip.
  */
 
 /** How long to keep asking the server what it called this conversation. */
@@ -126,6 +131,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 					setThreads((current) => [conversation, ...current]);
 					void pollTitle(id);
 				}
+				// This turn makes whatever was held for the conversation wrong.
+				forgetThread(id);
 				await sendMessage({ text });
 			};
 			// A conversation that could not be created is a question that never
@@ -141,23 +148,29 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 		(id: string) => {
 			target.current.id = id;
 			setActiveId(id);
-			setMessages([]);
 			// Last conversation's failure is not this one's, and neither is
 			// the page left open over it.
 			clearError();
 			setFailure(null);
 			closePage();
-			api.get<{ conversation: Conversation; messages: ScribeMessage[] }>(
-				`/conversations/${id}`
-			)
-				.then((body) => {
+
+			const name = (opened: { conversation: Conversation }) =>
+				setThreads((current) =>
+					current.map((thread) =>
+						thread.id === id ? opened.conversation : thread
+					)
+				);
+
+			// Already read: the switch is a render, and nothing blanks.
+			const inHand = readThread(id);
+			setMessages(inHand?.messages ?? []);
+			if (inHand) return name(inHand);
+
+			void loadThread(id)
+				.then((opened) => {
 					if (target.current.id !== id) return;
-					setMessages(body.messages);
-					setThreads((current) =>
-						current.map((thread) =>
-							thread.id === id ? body.conversation : thread
-						)
-					);
+					setMessages(opened.messages);
+					name(opened);
 				})
 				.catch(() => undefined);
 		},
@@ -186,6 +199,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			busy: status === 'submitted' || status === 'streaming',
 			ask,
 			openThread,
+			warmThread,
 			newQuestion,
 			stop,
 			retry: () => void regenerate(),

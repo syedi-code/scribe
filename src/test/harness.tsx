@@ -60,6 +60,7 @@ export const chat = (over: Partial<ChatState> = {}): ChatState => ({
 	busy: false,
 	ask: () => {},
 	openThread: () => {},
+	warmThread: () => {},
 	newQuestion: () => {},
 	stop: () => {},
 	retry: () => {},
