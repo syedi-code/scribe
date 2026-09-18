@@ -92,6 +92,7 @@ describe('a work set as a work', () => {
 
 		expect(body).toContain('font-family: var(--font-read)');
 		expect(body).toContain('font-style: italic');
+		expect(body).toContain('font-synthesis: none');
 	});
 
 	// A run-in head is 500, and a title inside one printed as a synthesised
@@ -107,6 +108,41 @@ describe('a work set as a work', () => {
 		expect(rule('body')).toContain('font-weight: var(--weight-text)');
 		// And the token is a real weight, with a real italic cut behind it.
 		expect(THEME).toContain('--weight-text: 300;');
+	});
+
+	/**
+	 * A roman is discovered in the markup; an italic only once the stylesheet
+	 * has been parsed. On a phone that gap is long enough to paint, and what
+	 * painted was the prose in GT Alpina Light with every book name beside it
+	 * still in the fallback — Iowan Old Style on iOS, a far darker face. A
+	 * title two shades heavier than the sentence it sits in does not read as
+	 * an italic; it reads as bold, which is how it was reported, twice.
+	 *
+	 * The two italics that are on screen before a reader does anything are a
+	 * title and the wordmark. Regular Italic is deliberately not here: it is
+	 * only reached by an italic inside a 500 run-in head, and a third 135kB
+	 * face fetched up front costs the phone more than it saves it.
+	 */
+	it('preloads the italics that are on screen at first paint', () => {
+		const html = readFileSync('index.html', 'utf8');
+		const fileFor = (weight: string) => {
+			const face = THEME.split('@font-face').find(
+				(one) =>
+					one.includes(`font-weight: ${weight}`) &&
+					one.includes('font-style: italic')
+			);
+			return /url\('([^']+)'\)/.exec(face ?? '')?.[1];
+		};
+
+		// The title's cut, and the wordmark's.
+		for (const weight of ['300', '700']) {
+			const url = fileFor(weight);
+			expect(url, `no italic declared at ${weight}`).toBeTruthy();
+			expect(
+				html.includes(url!),
+				`the ${weight} italic is declared but never preloaded`
+			).toBe(true);
+		}
 	});
 
 	it('has a real italic file behind every weight a title is set in', () => {
