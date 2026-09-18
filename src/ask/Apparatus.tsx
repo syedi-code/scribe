@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { COPY } from '../copy';
 import type { WorkStep } from '../chat/message';
+import { Waiting } from './Waiting';
 
 /**
  * What the model did, as against what it said.
@@ -58,14 +59,7 @@ export function Apparatus({
 }) {
 	const [opened, setOpened] = useState(false);
 	if (work.length === 0) {
-		return live ? (
-			<p
-				aria-live="polite"
-				className="font-app text-small text-ink-soft doing mb-3"
-			>
-				{COPY.thinking}
-			</p>
-		) : null;
+		return live ? <Waiting /> : null;
 	}
 
 	// While the model is working the steps are the whole story, so they stay

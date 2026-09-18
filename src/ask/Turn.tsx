@@ -15,6 +15,7 @@ import { Answer } from './Answer';
 import { AnswerFooter } from './AnswerFooter';
 import { Apparatus } from './Apparatus';
 import { MarginNotes } from './MarginNotes';
+import { Waiting } from './Waiting';
 
 /**
  * One exchange: the question, what the model did, what it answered, and the
@@ -99,11 +100,7 @@ export function Turn({
 					/>
 				)}
 
-				{!read && streaming && (
-					<p className="font-app text-small text-ink-soft doing mb-3">
-						{COPY.thinking}
-					</p>
-				)}
+				{!read && streaming && <Waiting />}
 
 				{answered && read && (
 					<>

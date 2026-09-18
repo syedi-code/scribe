@@ -77,7 +77,7 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 							>
 								<span className="flex min-w-0 items-baseline gap-2">
 									<span
-										className={`truncate ${model.suspended ? 'line-through' : ''} ${
+										className={`truncate ${model.comingSoon ? 'line-through' : ''} ${
 											model.available ? '' : 'opacity-60'
 										}`}
 									>
@@ -85,8 +85,8 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 									</span>
 								</span>
 								<span className="text-tiny text-ink-faint shrink-0 whitespace-nowrap">
-									{model.suspended
-										? COPY.suspended
+									{model.comingSoon
+										? COPY.comingSoon
 										: !model.available
 											? COPY.noKey
 											: inUse

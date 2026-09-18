@@ -97,27 +97,27 @@ describe('the model switcher', () => {
 		choices: [
 			...models.choices,
 			{
-				id: 'claude-opus-5',
-				label: 'Claude Opus 5',
-				provider: 'anthropic' as const,
+				id: 'gemini-3.8-flash',
+				label: 'Gemini 3.8 Flash',
+				provider: 'google' as const,
 				acceptsFiles: true,
 				available: false,
-				suspended: true,
+				comingSoon: true,
 			},
 		],
 	};
 
 	// A model held back is a decision, and reads as one: `no key set` would
 	// have said the deployment was misconfigured.
-	it('says a held-back model is disabled, not keyless', () => {
+	it('says a held-back model is coming, not keyless', () => {
 		stubFetch();
 		renderApp(<AppFrame />, { state: withThreads(), roster });
 		fireEvent.click(screen.getByRole('button', { name: /Claude Haiku/ }));
 
-		const opus = screen.getByRole('menuitem', { name: /Claude Opus 5/ });
-		expect(opus.textContent).toContain('temporarily disabled');
-		expect(opus.textContent).not.toContain('no key set');
-		expect(opus.hasAttribute('disabled')).toBe(true);
+		const held = screen.getByRole('menuitem', { name: /Gemini 3.8 Flash/ });
+		expect(held.textContent).toContain('coming soon');
+		expect(held.textContent).not.toContain('no key set');
+		expect(held.hasAttribute('disabled')).toBe(true);
 	});
 });
 

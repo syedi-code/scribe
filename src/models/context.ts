@@ -5,7 +5,7 @@ export interface ModelChoice extends Model {
 	/** Whether this model can be chosen: a key on the worker, and not held back. */
 	available: boolean;
 	/** Held back deliberately, which is a different thing from having no key. */
-	suspended: boolean;
+	comingSoon: boolean;
 }
 
 export interface ModelState {

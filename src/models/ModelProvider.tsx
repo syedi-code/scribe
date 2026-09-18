@@ -20,13 +20,23 @@ import type { Model, ModelsResponse } from '../api/types';
  * quietly dropped: a reader can see what Scribe could run, and that the reason
  * it is not running is a decision rather than a missing key.
  */
-const SUSPENDED = new Set(['claude-sonnet-5', 'claude-opus-5']);
+const COMING_SOON = new Set(['gemini-3.8-flash']);
 
-/** Cheapest model first while the interface is being built. One line to change. */
-export const PREFERRED_MODEL_ID = 'claude-haiku-4-5-20251001';
+/**
+ * Luna first: a fifth of Haiku's input price and a quarter of its output, and
+ * it scores higher. What it spends instead is time — minutes can pass before
+ * its first word. One line to change.
+ */
+export const PREFERRED_MODEL_ID = 'gpt-5.6-luna';
 
 /** Models Scribe knows of, so one without a key can be named rather than omitted. */
 const KNOWN: Model[] = [
+	{
+		id: 'gpt-5.6-luna',
+		label: 'GPT-5.6 Luna',
+		provider: 'openai',
+		acceptsFiles: true,
+	},
 	{
 		id: 'claude-haiku-4-5-20251001',
 		label: 'Claude Haiku 4.5',
@@ -34,26 +44,8 @@ const KNOWN: Model[] = [
 		acceptsFiles: true,
 	},
 	{
-		id: 'claude-sonnet-5',
-		label: 'Claude Sonnet 5',
-		provider: 'anthropic',
-		acceptsFiles: true,
-	},
-	{
-		id: 'claude-opus-5',
-		label: 'Claude Opus 5',
-		provider: 'anthropic',
-		acceptsFiles: true,
-	},
-	{
-		id: 'gpt-5.5',
-		label: 'GPT-5.5',
-		provider: 'openai',
-		acceptsFiles: true,
-	},
-	{
-		id: 'gemini-3.5-flash',
-		label: 'Gemini 3.5 Flash',
+		id: 'gemini-3.8-flash',
+		label: 'Gemini 3.8 Flash',
 		provider: 'google',
 		acceptsFiles: true,
 	},
@@ -69,8 +61,8 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 		const choices: ModelChoice[] = [
 			...KNOWN.map((model) => ({
 				...(byId.get(model.id) ?? model),
-				available: byId.has(model.id) && !SUSPENDED.has(model.id),
-				suspended: SUSPENDED.has(model.id),
+				available: byId.has(model.id) && !COMING_SOON.has(model.id),
+				comingSoon: COMING_SOON.has(model.id),
 			})),
 			// A model the server offers that this build has never heard of.
 			...available
@@ -80,7 +72,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 				.map((model) => ({
 					...model,
 					available: true,
-					suspended: false,
+					comingSoon: false,
 				})),
 		];
 

@@ -26,7 +26,8 @@ export const COPY = {
 	unnamed: 'untitled',
 	modelsEmpty: 'no models available',
 	noKey: 'no key set',
-	suspended: 'temporarily disabled',
+	/** Held back because it is not ready here yet, not because it broke. */
+	comingSoon: 'coming soon',
 	inUse: 'in use',
 	modelNote:
 		'Whichever providers have a key on the worker. Earlier answers keep the model that wrote them.',
@@ -179,6 +180,9 @@ export const COPY = {
 	   on screen once they have happened. What the model said to itself between
 	   them is not shown at all. */
 	thinking: 'looking for something to read',
+	/** How long it has been looking. Shown only once the wait is long. */
+	waiting: (seconds: number) =>
+		`${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
 	work: {
 		searched: 'searched',
 		read: 'read',
