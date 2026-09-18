@@ -52,6 +52,13 @@ describe('the names a model marked', () => {
  * only true if we print it.
  */
 describe('a mark the model got wrong', () => {
+	// Production, 2026-09-18: the reader was shown `Plato>’s`.
+	it('takes a bare > as the close it was meant to be', () => {
+		expect(printedOf('There <author>Plato>’s intoxication')).toBe(
+			'There Plato’s intoxication'
+		);
+	});
+
 	it('shows the words, never the brackets, when it forgets to close one', () => {
 		expect(printedOf('He reads <author>Voltaire closely.')).toBe(
 			'He reads Voltaire closely.'

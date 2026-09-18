@@ -6,6 +6,7 @@ import {
 	useState,
 } from 'react';
 import { COPY } from '../copy';
+import { usePagesShown, type ShownPage } from '../chat/shown';
 import { groupByDocument } from '../citations/group';
 import { describePage, locatePage } from '../citations/page';
 import { presentationOf } from '../citations/status';
@@ -40,11 +41,13 @@ interface NoteProps {
 	index: number;
 	marker: CitationMarker;
 	citation: AnswerCitation | null;
+	/** The book as the model was shown it, known before the verdict is. */
+	shown: ShownPage | null;
 	lit: boolean;
 	onLight: (index: number | null) => void;
 }
 
-function Note({ index, marker, citation, lit, onLight }: NoteProps) {
+function Note({ index, marker, citation, shown, lit, onLight }: NoteProps) {
 	const { page } = useCitedPage(citation);
 	const { verdict, rule, ink } = presentationOf(citation);
 	const element = useRef<HTMLButtonElement>(null);
@@ -92,13 +95,20 @@ function Note({ index, marker, citation, lit, onLight }: NoteProps) {
 						{locatePage(page)}
 					</span>
 				</>
-			) : (
+			) : shown ? (
+				<>
+					<span className="work-title text-ink block">
+						{shown.work_title}
+					</span>
+					<span className="block">
+						<AuthorName creator={shown.creator} />
+					</span>
+				</>
+			) : citation?.ref ? (
 				<span className="text-ink block">
-					{citation?.ref
-						? `document ${citation.ref.document_id.slice(0, 8)} — PDF p. ${citation.ref.page_no}`
-						: COPY.verdict.unknown_handle}
+					{`document ${citation.ref.document_id.slice(0, 8)} — PDF p. ${citation.ref.page_no}`}
 				</span>
-			)}
+			) : null}
 			<span className={`mt-0.5 block ${ink}`}>
 				{citation ? verdict : COPY.verdict.pending}
 			</span>
@@ -193,6 +203,7 @@ export function MarginNotes({
 	anchors: Map<number, HTMLElement>;
 }) {
 	const [margin, setMargin] = useState<HTMLDivElement | null>(null);
+	const shown = usePagesShown();
 
 	/** Stack the notes beside their quotes, when the column is a column. */
 	const place = useCallback(() => {
@@ -250,21 +261,24 @@ export function MarginNotes({
 						index={index}
 						marker={marker}
 						citation={index < resolved ? citations[index] : null}
+						shown={shown.get(marker.handle) ?? null}
 						lit={lit === index}
 						onLight={onLight}
 					/>
 				))}
 			</div>
 
-			<div className="hidden @max-fold:grid @max-fold:gap-2.5">
-				{groupByDocument(markers, citations, resolved).map((group) => (
-					<Shelf
-						key={group.key}
-						group={group}
-						lit={lit}
-						onLight={onLight}
-					/>
-				))}
+			<div className="hidden @max-fold:grid @max-fold:gap-3">
+				{groupByDocument(markers, citations, resolved, shown).map(
+					(group) => (
+						<Shelf
+							key={group.key}
+							group={group}
+							lit={lit}
+							onLight={onLight}
+						/>
+					)
+				)}
 			</div>
 		</div>
 	);

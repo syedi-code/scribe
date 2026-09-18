@@ -93,6 +93,15 @@ describe('a work set as a work', () => {
 		expect(body).toContain('font-style: italic');
 	});
 
+	// A run-in head is 500, and a title inside one printed as a synthesised
+	// medium italic that read as bold.
+	it('is the same weight wherever it lands', () => {
+		const rule = THEME.slice(THEME.indexOf('@utility work-title'));
+		const body = rule.slice(0, rule.indexOf('}'));
+
+		expect(body).toContain('font-weight: 400');
+	});
+
 	it('has a real italic file behind every weight a title is set in', () => {
 		for (const weight of [300, 400, 700]) {
 			const faces = THEME.split('@font-face');

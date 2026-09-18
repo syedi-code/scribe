@@ -2,7 +2,13 @@ import { COPY } from '../copy';
 import type { Tab } from './tabs';
 
 /**
- * Where in the app you are, and — narrow — the way to the rail.
+ * Where in the app you are.
+ *
+ * `Sessions` is a tab only when narrow: a list of conversations on a phone is
+ * a destination, not an overlay, and a drawer over a screen one column wide
+ * was a second layer with nothing beside it. Wide, the list is the rail and
+ * the tab is not offered — so if the window widens while it is showing, the
+ * page under it is Ask, and Ask is what reads as current.
  *
  * `Add a book` is struck through and disabled rather than removed: it is
  * coming back, and a reader who remembers it should see that it is held rather
@@ -11,57 +17,43 @@ import type { Tab } from './tabs';
 export function TabBar({
 	tab,
 	onTab,
-	onRail,
 	railable,
-	railOpen,
 }: {
 	tab: Tab;
 	onTab: (tab: Tab) => void;
-	onRail: () => void;
 	railable: boolean;
-	railOpen: boolean;
 }) {
+	// Wide, a reader on Sessions is looking at Ask: the tab is not there.
 	const tabClass = (which: Tab) =>
 		`font-read text-ui leading-tight whitespace-nowrap transition-colors ${
-			tab === which ? 'text-ink' : 'text-ink-faint hover:text-ink'
+			which === 'ask' && tab === 'sessions'
+				? 'text-ink @max-compact:text-ink-faint @max-compact:hover:text-ink'
+				: tab === which
+					? 'text-ink'
+					: 'text-ink-faint hover:text-ink'
 		}`;
 
+	const named = (which: Tab, label: string, className = '') => (
+		<button
+			type="button"
+			role="tab"
+			aria-selected={tab === which}
+			onClick={() => onTab(which)}
+			className={`${tabClass(which)} ${className}`}
+		>
+			{label}
+		</button>
+	);
+
 	return (
-		<div className="flex items-center gap-4 @max-compact:gap-3">
-			{railable && (
-				<button
-					type="button"
-					onClick={onRail}
-					aria-expanded={railOpen}
-					data-rail-toggle
-					// The same face and size as the tabs beside it: in the
-					// condensed face it neither matched them nor sat on their
-					// line.
-					className={`${tabClass('ask')} hidden @max-compact:block ${
-						railOpen ? 'text-ink' : 'text-ink-faint hover:text-ink'
-					}`}
-				>
-					{COPY.sessions}
-				</button>
-			)}
-			<button
-				type="button"
-				role="tab"
-				aria-selected={tab === 'ask'}
-				onClick={() => onTab('ask')}
-				className={tabClass('ask')}
-			>
-				{COPY.tabs.ask}
-			</button>
-			<button
-				type="button"
-				role="tab"
-				aria-selected={tab === 'books'}
-				onClick={() => onTab('books')}
-				className={tabClass('books')}
-			>
-				{COPY.tabs.books}
-			</button>
+		<div
+			role="tablist"
+			className="pointer-events-auto flex items-center gap-4 @max-compact:gap-3"
+		>
+			{railable &&
+				named('sessions', COPY.sessions, 'hidden @max-compact:block')}
+			{named('ask', COPY.tabs.ask)}
+			{named('books', COPY.tabs.books)}
 			<button
 				type="button"
 				role="tab"

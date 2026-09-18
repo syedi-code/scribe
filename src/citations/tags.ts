@@ -15,7 +15,11 @@ import type { AnswerNode } from './parse';
  * about.
  */
 
-const TAGGED = /<(title|author)>([\s\S]*?)<\/\1>/g;
+/**
+ * Closed properly, or closed with a bare `>`: production has
+ * `<author>Plato>’s`, and the reader was shown `Plato>’s`.
+ */
+const TAGGED = /<(title|author)>([^<>]*?)(?:<\/\1>|>)/g;
 
 /**
  * A tag opened and not closed, or closed and never opened. Mid-stream the

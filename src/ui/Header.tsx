@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { COPY } from '../copy';
 import { useConversation } from '../chat/context';
 import { RunningModel } from '../models/RunningModel';
 import { TabBar } from './TabBar';
+import { Travel } from './Travel';
 import { Wordmark } from './Wordmark';
 import type { Tab } from './tabs';
 
@@ -21,19 +22,18 @@ import type { Tab } from './tabs';
  * has finished, or it would cut the model menu off where it hangs out of the
  * header — so it is on while the mark is away, and while it is on its way
  * back, and off once it has arrived.
+ *
+ * Leaving the home screen, the big mark does not vanish and reappear here: it
+ * travels into the corner over the same 300ms (`Travel`).
  */
 export function Header({
 	tab,
 	onTab,
-	onRail,
 	railable,
-	railOpen,
 }: {
 	tab: Tab;
 	onTab: (tab: Tab) => void;
-	onRail: () => void;
 	railable: boolean;
-	railOpen: boolean;
 }) {
 	const { atHome, newQuestion } = useConversation();
 	const bare = atHome && tab === 'ask';
@@ -47,10 +47,29 @@ export function Header({
 		setArrived(false);
 	}
 	const folding = bare || !arrived;
+	const row = useRef<HTMLElement>(null);
+	const mark = useRef<HTMLButtonElement>(null);
+	const conceal = useCallback((hidden: boolean) => {
+		mark.current?.classList.toggle('invisible', hidden);
+	}, []);
+
+	// How tall the row is with the mark folded away, for the rail to rise by:
+	// on the home screen the rail takes the empty corner (`ui/Rail`).
+	useLayoutEffect(() => {
+		const header = row.current;
+		if (!bare || !header?.parentElement) return;
+		header.parentElement.style.setProperty(
+			'--header-rest',
+			`${header.offsetHeight}px`
+		);
+	}, [bare]);
 
 	return (
 		<header
-			className={`relative z-(--z-header) flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
+			ref={row}
+			// Transparent to the pointer where it holds nothing, because on
+			// the home screen the rail has risen under its empty corner.
+			className={`pointer-events-none relative z-(--z-header) flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:px-3.5 @max-compact:py-2.5 ${
 				bare ? 'border-transparent' : 'border-paper-deep'
 			}`}
 		>
@@ -59,8 +78,13 @@ export function Header({
 				onTransitionEnd={() => {
 					if (!bare) setArrived(true);
 				}}
+				// Opening, the fade waits half the journey, so the model line
+				// comes up under a mark that has all but landed rather than
+				// through one still crossing it.
 				className={`grid transition-[grid-template-rows,opacity] duration-300 ease-paper ${
-					bare ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr]'
+					bare
+						? 'grid-rows-[0fr] opacity-0'
+						: 'pointer-events-auto grid-rows-[1fr] [transition-delay:0ms,150ms]'
 				}`}
 			>
 				<div className={folding ? 'overflow-hidden' : ''}>
@@ -71,6 +95,7 @@ export function Header({
 								onTab('ask');
 								newQuestion();
 							}}
+							ref={mark}
 							title={COPY.home}
 							aria-label={COPY.home}
 							className="justify-self-start"
@@ -82,13 +107,9 @@ export function Header({
 				</div>
 			</div>
 
-			<TabBar
-				tab={tab}
-				onTab={onTab}
-				onRail={onRail}
-				railable={railable}
-				railOpen={railOpen}
-			/>
+			{!bare && <Travel mark={mark} header={row} conceal={conceal} />}
+
+			<TabBar tab={tab} onTab={onTab} railable={railable} />
 		</header>
 	);
 }

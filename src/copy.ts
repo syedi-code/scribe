@@ -225,6 +225,9 @@ export const COPY = {
 	},
 	stampLabel: (verdict: string, page: string) => `${verdict} — ${page}`,
 	checkingLabel: (page: string) => `checking this quote against ${page}`,
+	/** One verdict's worth of references into a book, once there are too many to show singly. */
+	tallyLabel: (count: number, verdict: string) =>
+		`${count} ${plural(count, 'quote', 'quotes')}: ${verdict}`,
 
 	/* ---- under an answer ---- */
 	checking: (count: number) =>

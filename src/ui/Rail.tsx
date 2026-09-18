@@ -1,68 +1,40 @@
-import { useCallback, useRef } from 'react';
-import { useDismiss } from '../lib/useDismiss';
 import { ThreadRail } from './ThreadRail';
 
 /**
- * Earlier questions, beside the reading surface when there is room for them
- * and over it when there is not.
+ * Earlier questions: beside the reading surface when there is room for them,
+ * and a page of their own when there is not.
  *
- * Narrow, the rail is an overlay, and an overlay says so: the page behind it
- * dims and a tap anywhere on it puts the rail away — including on the button
- * that opened it, which would otherwise reopen it on the same tap.
+ * Narrow, this was a drawer that slid in over the page. A list of
+ * conversations is a destination rather than an overlay, so under the compact
+ * breakpoint it is the `Sessions` tab and takes the whole page — the same
+ * argument that made the citation drawer full-width there. One tree: the
+ * container query decides, and nothing here asks how wide the screen is.
  *
- * Going to a conversation is not the same as putting the rail away, and the
- * two are separate props for it: wide, the rail never closes, so a thread
- * opened from the Books tab loaded into a panel nobody was looking at.
+ * Going to a conversation is a move to `Ask`, wherever it was started from.
+ *
+ * Wide, on the home screen, the rail rises into the header's corner, which
+ * is otherwise empty until the wordmark comes to it; when a conversation
+ * starts it steps down out of the way as the mark arrives, on the same 300ms
+ * the header takes to open.
  */
 export function Rail({
-	open,
-	onClose,
+	showing,
+	risen,
 	onNavigate,
 }: {
-	open: boolean;
-	onClose: () => void;
+	/** Whether the Sessions tab is the one showing, which only matters narrow. */
+	showing: boolean;
+	/** On the home screen, wide: up into the header's empty corner. */
+	risen: boolean;
 	onNavigate: () => void;
 }) {
-	const rail = useRef<HTMLDivElement>(null);
-
-	const dismiss = useCallback(
-		(event: Event) => {
-			const target = event.target as Element | null;
-			// The tap that closes must not be the tap that reopens; Escape has
-			// no element to make an exception for.
-			if (target?.closest?.('[data-rail-toggle]')) return;
-			onClose();
-		},
-		[onClose]
-	);
-	useDismiss(rail, open, dismiss);
-
 	return (
-		<>
-			{/* Kept mounted so both of these can be transitioned rather than
-			    switched. `pointer-events-none` is what stops the faded scrim
-			    from swallowing taps meant for the page under it. */}
-			<div
-				aria-hidden
-				onClick={onClose}
-				className={`bg-ink/15 absolute inset-0 z-(--z-rail) hidden transition-opacity duration-300 ease-paper @max-compact:block ${
-					open ? 'opacity-100' : 'pointer-events-none opacity-0'
-				}`}
-			/>
-			{/* `visibility` rather than `display` when it is away: it takes the
-			    rail out of the tab order like `hidden` did, and unlike
-			    `hidden` it can be transitioned, so the slide out is allowed to
-			    finish before the rail stops being there. */}
-			<div
-				ref={rail}
-				className={`min-h-0 @max-compact:bg-paper @max-compact:absolute @max-compact:inset-y-0 @max-compact:left-0 @max-compact:z-(--z-rail) @max-compact:w-rail @max-compact:shadow-[8px_0_24px_-20px_rgba(36,31,26,0.9)] @max-compact:rail-slide ${
-					open
-						? ''
-						: '@max-compact:invisible @max-compact:-translate-x-full'
-				}`}
-			>
-				<ThreadRail onNavigate={onNavigate} />
-			</div>
-		</>
+		<div
+			className={`min-h-0 transition-[margin-top] duration-300 ease-paper @max-compact:mt-0 ${
+				risen ? '-mt-(--header-rest)' : ''
+			} ${showing ? '' : '@max-compact:hidden'}`}
+		>
+			<ThreadRail onNavigate={onNavigate} />
+		</div>
 	);
 }

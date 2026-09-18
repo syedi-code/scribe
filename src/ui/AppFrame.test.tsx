@@ -13,7 +13,7 @@ import { AppFrame } from './AppFrame';
 
 /**
  * The shell, and the things reported broken on a phone: the rail would not go
- * away, the switcher opened behind the page, the phone-frame toggle was still
+ * away (it is a tab now), the switcher opened behind the page, the phone-frame toggle was still
  * shipping, the rail was called Questions, and the drawer behind a citation
  * came up over the header with the app carried off the side of the screen.
  */
@@ -36,7 +36,7 @@ describe('the header', () => {
 	it('calls earlier conversations Sessions', () => {
 		stubFetch();
 		renderApp(<AppFrame />, { state: withThreads() });
-		expect(screen.getByRole('button', { name: 'Sessions' })).toBeTruthy();
+		expect(screen.getByRole('tab', { name: 'Sessions' })).toBeTruthy();
 	});
 
 	it('takes the reader home when the wordmark is clicked', () => {
@@ -132,7 +132,7 @@ describe('the rail, naming', () => {
 				atHome: false,
 			}),
 		});
-		fireEvent.click(screen.getByRole('button', { name: 'Sessions' }));
+		fireEvent.click(screen.getByRole('tab', { name: 'Sessions' }));
 
 		expect(screen.getByText('naming…')).toBeTruthy();
 		// The one nobody is naming any more says what it is, and stops
@@ -303,40 +303,63 @@ describe('the drawer behind a citation', () => {
 	});
 });
 
-describe('the rail, narrow', () => {
-	it('opens from the header and closes again when clicked away', () => {
+/**
+ * Narrow, Sessions was a drawer over the page. It is a tab now, level with Ask
+ * and Books, and takes the whole page. The container query decides which of
+ * the two is on screen; these check that the tree asks it to.
+ */
+describe('sessions, narrow', () => {
+	it('is a tab, offered only where there is no rail beside the page', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: withThreads() });
+		const tab = screen.getByRole('tab', { name: 'Sessions' });
+		expect(tab.className).toContain('hidden');
+		expect(tab.className).toContain('@max-compact:block');
+	});
+
+	it('takes the page from Ask rather than lying over it', () => {
 		stubFetch();
 		const { container } = renderApp(<AppFrame />, {
 			state: withThreads(),
 		});
-		const toggle = screen.getByRole('button', { name: 'Sessions' });
+		const rail = screen.getByRole('navigation').parentElement!;
+		const panel = container.querySelector('main > div.contents')!;
+		expect(rail.className).toContain('@max-compact:hidden');
+		expect(panel.className).not.toContain('@max-compact:hidden');
 
-		fireEvent.click(toggle);
-		expect(screen.getByRole('navigation')).toBeTruthy();
-		expect(toggle.getAttribute('aria-expanded')).toBe('true');
-
-		fireEvent.pointerDown(container.querySelector('main')!);
-		expect(toggle.getAttribute('aria-expanded')).toBe('false');
+		fireEvent.click(screen.getByRole('tab', { name: 'Sessions' }));
+		expect(rail.className).not.toContain('@max-compact:hidden');
+		expect(panel.className).toContain('@max-compact:hidden');
+		expect(
+			screen
+				.getByRole('tab', { name: 'Sessions' })
+				.getAttribute('aria-selected')
+		).toBe('true');
 	});
 
-	it('closes on Escape', () => {
+	it('goes to Ask when a conversation is chosen from it', () => {
 		stubFetch();
-		renderApp(<AppFrame />, { state: withThreads() });
-		const toggle = screen.getByRole('button', { name: 'Sessions' });
-		fireEvent.click(toggle);
-		fireEvent.keyDown(document, { key: 'Escape' });
-		expect(toggle.getAttribute('aria-expanded')).toBe('false');
+		const openThread = vi.fn();
+		renderApp(<AppFrame />, { state: withThreads({ openThread }) });
+		fireEvent.click(screen.getByRole('tab', { name: 'Sessions' }));
+		fireEvent.click(
+			screen.getByRole('button', { name: 'The will to truth as faith' })
+		);
+		expect(openThread).toHaveBeenCalledWith('c1');
+		expect(
+			screen
+				.getByRole('tab', { name: 'Ask' })
+				.getAttribute('aria-selected')
+		).toBe('true');
 	});
 
-	it('is not reopened by the very tap that closed it', () => {
+	// Wide there is no Sessions tab to be on: the rail is beside Ask, so Ask
+	// is what reads as current.
+	it('leaves Ask reading as current when the window is wide', () => {
 		stubFetch();
 		renderApp(<AppFrame />, { state: withThreads() });
-		const toggle = screen.getByRole('button', { name: 'Sessions' });
-		fireEvent.click(toggle);
-		expect(toggle.getAttribute('aria-expanded')).toBe('true');
-		fireEvent.pointerDown(toggle);
-		expect(toggle.getAttribute('aria-expanded')).toBe('true');
-		fireEvent.click(toggle);
-		expect(toggle.getAttribute('aria-expanded')).toBe('false');
+		fireEvent.click(screen.getByRole('tab', { name: 'Sessions' }));
+		const ask = screen.getByRole('tab', { name: 'Ask' });
+		expect(ask.className).toContain('text-ink @max-compact:text-ink-faint');
 	});
 });

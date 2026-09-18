@@ -12,22 +12,16 @@ import type { Tab } from './tabs';
  * rather than the viewport's. There is no `isMobile` anywhere in the tree, and
  * no second layout component for small screens.
  *
- * Which tab is showing and whether the rail is open are the only two things
- * held here, because they are the only two the header and the workspace both
- * need. Everything else belongs to whichever of them does it.
+ * Which tab is showing is the only thing held here, because it is the only
+ * thing the header and the workspace both need. Everything else belongs to
+ * whichever of them does it.
  */
 export function AppFrame() {
 	const { threads } = useConversation();
 	const [tab, setTab] = useState<Tab>('ask');
-	const [railOpen, setRailOpen] = useState(false);
-	const closeRail = useCallback(() => setRailOpen(false), []);
 	// Opening a conversation is a move to the reading surface, wherever it was
-	// started from — wide, the rail stays put and nothing else would take you
-	// off the shelves.
-	const readConversation = useCallback(() => {
-		setTab('ask');
-		setRailOpen(false);
-	}, []);
+	// started from — the shelves, or the list of sessions itself.
+	const readConversation = useCallback(() => setTab('ask'), []);
 
 	useShortcuts(setTab);
 
@@ -39,17 +33,9 @@ export function AppFrame() {
 			// focusing the parked drawer scrolled the app sideways under it.
 			className="bg-paper relative grid h-full grid-rows-[auto_minmax(0,1fr)] overflow-clip @container"
 		>
-			<Header
-				tab={tab}
-				onTab={setTab}
-				onRail={() => setRailOpen((was) => !was)}
-				railable={threads.length > 0}
-				railOpen={railOpen}
-			/>
+			<Header tab={tab} onTab={setTab} railable={threads.length > 0} />
 			<Workspace
 				tab={tab}
-				railOpen={railOpen}
-				onCloseRail={closeRail}
 				onNavigate={readConversation}
 				railable={threads.length > 0}
 			/>

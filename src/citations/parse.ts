@@ -1,7 +1,7 @@
 import { inkFor } from './authors';
 import { blocksOf, localise } from './blocks';
-import { untag, untagQuote } from './tags';
-import { sharedRun, wordsOf } from './overlap';
+import { stripTags, untag, untagQuote } from './tags';
+import { repeats, wordsOf } from './overlap';
 import type { AnswerCitation } from '../api/types';
 
 /**
@@ -170,50 +170,75 @@ export type NumberedMarker = CitationMarker & { index: number };
 
    The instructions ask for the quotation inside the citation — `[P7 "…"]` —
    and models write the passage out in their own prose first anyway, then cite
-   a few words of it. Rendering both prints the same sentence twice running,
-   which is how a perfectly good answer reads as gibberish.
+   it. Rendering both prints the same words twice running, which is how a
+   perfectly good answer reads as gibberish.
 
-   So a citation that only repeats the quotation the prose has just closed is
-   folded back into it: the reader sees the passage once, with the words the
-   server actually checked set one weight heavier inside it. Nothing is
-   dropped except the duplicate, and the stamp still reports only what was
-   checked.
+   So a citation that repeats a quotation the prose has already written is
+   moved onto it: the stamp goes where the quoted words are, the words the
+   server actually checked are set one weight heavier inside them, and the
+   copy after is dropped. Nothing is dropped except the duplicate, and the
+   stamp still reports only what was checked.
+
+   Production writes this every way it can. The quotation is not always the
+   one nearest the citation — *“at war with itself,” and calls it “a mighty
+   conflict” [P9 "Spirit is at war with itself"]* — a clause of any length can
+   sit between them, and the citations are sometimes all piled up after the
+   sentence, where only the first had any prose in front of it. A pile shares
+   the prose before it, and each citation in it finds its own quotation there.
    ------------------------------------------------------------------------- */
 
-/**
- * A quotation the prose has just closed before a citation, and the clause that
- * may trail it — *the "reciprocal kinship between knowledge and language" that
- * characterized Classical thought [P28 "…"]*. Requiring the quotation to sit
- * flush against the citation missed that, and printed the passage twice.
- */
-const QUOTED_TAIL = /["“]([^"”]{12,})["”]([^"”]{0,80}?)[\s,;:.]*$/;
+const PROSE_QUOTATION = /["“]([^"”\n]+)["”]/g;
 
-interface Absorbed {
-	/** The prose to keep, with the duplicated quotation removed. */
-	prose: string;
+/** Where a citation is drawn, when it has been moved onto the prose's quotation. */
+interface Anchor {
+	start: number;
+	end: number;
+	/** The quotation as the prose wrote it. */
 	quote: string;
 	checked: [number, number];
-	/** The clause that sat between the quotation and the citation, if any. */
-	trailing: string;
 }
 
+/** Nothing but space and punctuation between two citations: one pile. */
+const PILED = /^[\s,;:.]*$/;
 
-/** Whether `prose` has just written out the passage this citation repeats. */
-function absorbQuotation(prose: string, quote: string): Absorbed | null {
-	const tail = QUOTED_TAIL.exec(prose);
-	if (!tail) return null;
-	const written = tail[1];
+function anchorsFor(
+	text: string,
+	markers: readonly NumberedMarker[]
+): (Anchor | null)[] {
+	const claimed: [number, number][] = [];
+	const inMarker = (at: number) =>
+		markers.some((marker) => at >= marker.start && at < marker.end);
+	const taken = (at: number) =>
+		claimed.some(([start, end]) => at >= start && at < end);
 
-	// The citation must be the same passage, not merely a neighbouring one.
-	const shared = sharedRun(wordsOf(written), wordsOf(quote));
-	if (!shared) return null;
+	let from = 0;
+	return markers.map((marker, at) => {
+		const previous = markers[at - 1];
+		if (previous && !PILED.test(text.slice(previous.end, marker.start))) {
+			from = previous.end;
+		}
+		const quote = wordsOf(untagQuote(marker.quote));
+		const written = [
+			...text.slice(0, marker.start).matchAll(PROSE_QUOTATION),
+		].filter(
+			(match) =>
+				match.index >= from &&
+				!inMarker(match.index) &&
+				!taken(match.index)
+		);
 
-	return {
-		prose: prose.slice(0, tail.index),
-		quote: written,
-		checked: shared,
-		trailing: tail[2] ?? '',
-	};
+		// Nearest first: a quotation further back is only the one being
+		// repeated when the nearer ones are not.
+		for (const match of written.reverse()) {
+			const inner = stripTags(match[1]);
+			const shared = repeats(wordsOf(inner), quote);
+			if (!shared) continue;
+			const end = match.index + match[0].length;
+			claimed.push([match.index, end]);
+			return { start: match.index, end, quote: inner, checked: shared };
+		}
+		return null;
+	});
 }
 
 /** Where a sentence ends: terminal punctuation, then space, then a new start. */
@@ -457,25 +482,48 @@ function sentencesOf(
 		addProse(prose.slice(split[1].length));
 	};
 
+	// Each citation is drawn at its anchor when it has one, and its own
+	// marker is then only the duplicate, dropped with the space before it.
+	const anchors = anchorsFor(text, markers);
+	const events = markers
+		.flatMap((marker, at) => {
+			const anchor = anchors[at];
+			const quote = untagQuote(marker.quote);
+			const node: AnswerNode = {
+				kind: 'citation',
+				index: marker.index,
+				handle: marker.handle,
+				quote: anchor ? anchor.quote : quote,
+				checked: anchor ? anchor.checked : [0, quote.length],
+			};
+			const drawn = anchor ?? marker;
+			return [
+				{ start: drawn.start, end: drawn.end, node },
+				...(anchor
+					? [{ start: marker.start, end: marker.end, node: null }]
+					: []),
+			];
+		})
+		.sort((a, b) => a.start - b.start);
+
+	// Prose is held until a citation interrupts it, so the text either side
+	// of a dropped duplicate is still read as one run of sentences.
+	let pending = '';
 	let cursor = 0;
-	for (const marker of markers) {
-		const before = text.slice(cursor, marker.start);
-		const quote = untagQuote(marker.quote);
-		const absorbed = absorbQuotation(before, quote);
-		addAfter(absorbed ? absorbed.prose : before);
-		nodes.push({
-			kind: 'citation',
-			index: marker.index,
-			handle: marker.handle,
-			quote: absorbed ? absorbed.quote : quote,
-			checked: absorbed ? absorbed.checked : [0, quote.length],
-		});
+	for (const event of events) {
+		pending += text.slice(cursor, event.start);
+		cursor = event.end;
+		if (!event.node) {
+			pending = pending.trimEnd();
+			continue;
+		}
+		addAfter(pending);
+		pending = '';
+		nodes.push(event.node);
 		cited = true;
-		if (absorbed?.trailing) addAfter(absorbed.trailing);
-		cursor = marker.end;
 	}
 
-	addAfter(text.slice(cursor));
+	addAfter(pending + text.slice(cursor));
 	closeSentence();
 
 	return sentences;
