@@ -29,6 +29,23 @@ jobs:
 
             # A failing test stops the deploy, whatever the merge said.
             - run: npm test
+
+            # GT Alpina is licensed to serve, not to redistribute, so it is not
+            # in the repository (FONTS.md). It lives in R2 and is copied into
+            # public/ here, before vite copies public/ into dist/. A missing face
+            # fails the deploy: production silently set in Georgia is worse than
+            # production not updated.
+            - name: Fetch licensed fonts
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  mkdir -p public/fonts
+                  for face in $(grep -oE 'GT-Alpina-[A-Za-z-]+[.]woff2' src/styles/theme.css | sort -u); do
+                    npx wrangler r2 object get "antisocial-media-files/scribe-fonts/$face" --remote --file "public/fonts/$face"
+                  done
+                  ls -la public/fonts
+
             - run: npm run build
 
             - name: Deploy

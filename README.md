@@ -52,7 +52,7 @@ it is apparatus — one condensed line, live while the model works, collapsed on
 the answer starts, expandable by anyone who wants to audit the search.
 
 The full reasoning, and the prototype these decisions were made in, are in
-`open_src/plans/` — `scribe-ui.md`, `scribe-citations-api.md`, and
+`docs/` — `scribe-ui.md`, `scribe-citations-api.md`, and
 `prototype/index.html`.
 
 ## Stack
@@ -108,7 +108,7 @@ Endpoints used: `GET /models`, `GET|POST /conversations`,
 
 ## What this is waiting on
 
-`plans/scribe-citations-api.md` asks alexandria for four additive fields on a
+`docs/scribe-citations-api.md` asks alexandria for four additive fields on a
 citation: `page` (which book it is), `context` (the page's own words around the
 match), `matched_prefix` (where a partial match stopped) and `marker` (where the
 citation sits in the answer). Every one of them has a fallback here, so the

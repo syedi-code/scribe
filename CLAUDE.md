@@ -2,8 +2,8 @@
 
 **scribe-lm**, the reading half: a chat that answers from the PDFs in Works, and
 shows whether every quote in the answer is on the page it named. The decisions
-behind it are in `open_src/plans/scribe-ui.md`, with the design prototype at
-`open_src/plans/prototype/index.html`.
+behind it are in `docs/scribe-ui.md`, with the design prototype at
+`docs/prototype/index.html`.
 
 ## Stack
 
@@ -436,7 +436,7 @@ is wrong.
 **alexandria's API is additive-only.** Fields are never removed or retyped, so
 code written against it now will keep working. In return, do not ask for a
 breaking change casually. The four fields this app is waiting on, and its
-fallback for each, are in `plans/scribe-citations-api.md` and the README.
+fallback for each, are in `docs/scribe-citations-api.md` and the README.
 
 **The catalogue speaks `Work`, not `Book`.** A Book is a Work whose kind is
 `book`. `/books` is a compatibility facade for stylus; scribe should prefer

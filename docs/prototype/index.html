@@ -1,0 +1,2919 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>scribe-lm</title>
+		<!--
+			Design prototype. Everything here is scripted: no model, no library, no
+			network. The shapes it renders are alexandria's real ones — see
+			plans/scribe-ui.md for the decisions and plans/scribe-citations-api.md
+			for the fields this asks the backend to add.
+
+			Layout responds to #app's own width through container queries, so the
+			phone frame (the ▯ button) exercises the real mobile layout.
+		-->
+		<style>
+			/* ---------- GT Alpina ---------- */
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Thin.woff2')
+					format('woff2');
+				font-weight: 100;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Thin-Italic.woff2')
+					format('woff2');
+				font-weight: 100;
+				font-style: italic;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Light.woff2')
+					format('woff2');
+				font-weight: 300;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Light-Italic.woff2')
+					format('woff2');
+				font-weight: 300;
+				font-style: italic;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Regular.woff2')
+					format('woff2');
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Regular-Italic.woff2')
+					format('woff2');
+				font-weight: 400;
+				font-style: italic;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Medium.woff2')
+					format('woff2');
+				font-weight: 500;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Bold.woff2')
+					format('woff2');
+				font-weight: 700;
+				font-style: normal;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina';
+				src: url('../../public/fonts/GT-Alpina-Standard-Bold-Italic.woff2')
+					format('woff2');
+				font-weight: 700;
+				font-style: italic;
+				font-display: swap;
+			}
+			@font-face {
+				font-family: 'GT Alpina Condensed';
+				src: url('../../public/fonts/GT-Alpina-Condensed-Regular.woff2')
+					format('woff2');
+				font-weight: 400;
+				font-style: normal;
+				font-display: swap;
+			}
+
+			/* ---------- tokens ----------
+			   Sizes are set against what the reference apps use: ChatGPT 16/24,
+			   Gemini 17/24 (measured). A serif needs the larger of the two to
+			   carry the same x-height, so prose is 17px, and every line-height
+			   here is tighter than a document would take. */
+			:root {
+				--paper: #f4efe3;
+				--paper-deep: #e8e0cd;
+				--paper-lift: #fbf8f1;
+				--bubble: #eae2d1;
+				--ink: #241f1a;
+				--ink-soft: #6e6358;
+				--ink-faint: #a0968a;
+				--verdigris: #2f5d53;
+				--rubric: #9b2c21;
+				--slate: #7c7789;
+
+				--read: 'GT Alpina', 'Iowan Old Style', Georgia, serif;
+				--app: 'GT Alpina Condensed', 'GT Alpina', Georgia, serif;
+
+				--prose: 17px;
+				--ui: 14px;
+				--small: 13px;
+
+				--rail: 200px;
+				--thread-w: 38rem;
+				--margin-w: 15rem;
+				--gap: 2.25rem;
+
+				--ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+			}
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+			}
+
+			html,
+			body {
+				height: 100%;
+			}
+
+			body {
+				margin: 0;
+				overflow: hidden;
+				background: var(--paper);
+				color: var(--ink);
+				font-family: var(--read);
+				font-weight: 300;
+				font-size: var(--prose);
+				-webkit-font-smoothing: antialiased;
+				text-rendering: optimizeLegibility;
+			}
+
+			button {
+				font: inherit;
+				color: inherit;
+				background: none;
+				border: 0;
+				padding: 0;
+				cursor: pointer;
+			}
+
+			:focus-visible {
+				outline: 1.5px solid var(--verdigris);
+				outline-offset: 3px;
+			}
+
+			/* ---------- the phone frame ---------- */
+			body.mobile {
+				background: #e3dbc9;
+				display: grid;
+				place-items: center;
+				padding: 18px;
+			}
+			body.mobile #app {
+				width: 390px;
+				height: min(844px, 100%);
+				border: 1px solid #d3c9b3;
+				border-radius: 26px;
+				overflow: hidden;
+				box-shadow: 0 40px 70px -50px rgba(36, 31, 26, 0.8);
+			}
+
+			#app {
+				position: relative;
+				height: 100%;
+				background: var(--paper);
+				display: grid;
+				grid-template-rows: auto minmax(0, 1fr);
+				container-type: inline-size;
+			}
+
+			/* ---------- header ---------- */
+			header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1rem;
+				padding: 0.8rem 1.2rem;
+				border-bottom: 1px solid transparent;
+				transition: border-color 0.4s var(--ease);
+			}
+			body.talking header {
+				border-bottom-color: var(--paper-deep);
+			}
+
+			.mark {
+				font-weight: 400;
+				letter-spacing: -0.012em;
+				margin: 0;
+				white-space: nowrap;
+				line-height: 1;
+			}
+			.mark em {
+				font-style: italic;
+				font-weight: 700;
+			}
+
+			#brand {
+				display: grid;
+				gap: 0.2rem;
+				opacity: 0;
+				transform: translateY(-3px);
+				pointer-events: none;
+				transition:
+					opacity 0.45s var(--ease),
+					transform 0.45s var(--ease);
+			}
+			body.talking #brand {
+				opacity: 1;
+				transform: none;
+				pointer-events: auto;
+			}
+			#brand .mark {
+				font-size: 17px;
+			}
+
+			.running {
+				font-family: var(--app);
+				font-size: var(--small);
+				line-height: 1.2;
+				color: var(--ink-soft);
+				white-space: nowrap;
+			}
+
+			.bar {
+				display: flex;
+				align-items: center;
+				gap: 1.05rem;
+			}
+			.tab {
+				font-family: var(--read);
+				font-weight: 400;
+				font-size: var(--ui);
+				line-height: 1.2;
+				color: var(--ink-faint);
+				transition: color 0.2s;
+			}
+			.tab[aria-selected='true'],
+			.tab:hover {
+				color: var(--ink);
+			}
+			.tab-meta {
+				font-family: var(--app);
+				padding-left: 1.05rem;
+				border-left: 1px solid var(--paper-deep);
+			}
+			#device {
+				display: flex;
+				color: var(--ink-faint);
+				transition: color 0.2s;
+			}
+			#device:hover,
+			body.mobile #device {
+				color: var(--ink);
+			}
+
+			/* ---------- shell ---------- */
+			main {
+				min-height: 0;
+				display: grid;
+				grid-template-columns: 1fr;
+			}
+			body.has-threads main {
+				grid-template-columns: var(--rail) minmax(0, 1fr);
+			}
+
+			#rail {
+				display: none;
+				border-right: 1px solid var(--paper-deep);
+				padding: 1rem 0.95rem;
+				overflow-y: auto;
+			}
+			body.has-threads #rail {
+				display: block;
+			}
+			.thread,
+			#newq {
+				display: block;
+				width: 100%;
+				text-align: left;
+				font-family: var(--app);
+				font-size: var(--ui);
+				line-height: 1.3;
+				padding: 0.32rem 0;
+				color: var(--ink-soft);
+				transition: color 0.2s;
+			}
+			#newq {
+				color: var(--ink);
+				margin-bottom: 0.45rem;
+			}
+			.thread:hover,
+			#newq:hover {
+				color: var(--ink);
+			}
+			.thread.on {
+				color: var(--ink);
+			}
+			.thread.naming {
+				font-style: italic;
+				color: var(--ink-faint);
+			}
+
+			.panel {
+				display: none;
+				min-height: 0;
+			}
+			.panel.on {
+				display: grid;
+				grid-template-rows: minmax(0, 1fr) auto;
+			}
+
+			/* ---------- home ---------- */
+			#home {
+				grid-row: 1 / -1;
+				display: grid;
+				align-content: center;
+				justify-items: center;
+				padding: 1.2rem 1.2rem 7vh;
+				min-height: 0;
+			}
+			body.talking #home {
+				display: none;
+			}
+			#heroMark {
+				position: relative;
+				font-size: clamp(2.4rem, 6.5vw, 3.3rem);
+			}
+			#heroRunning {
+				margin-top: 0.85rem;
+				font-size: clamp(1.05rem, 2.4vw, 1.4rem);
+			}
+			.fade {
+				opacity: 0;
+				transform: translateY(4px);
+			}
+			.fade.in {
+				opacity: 1;
+				transform: none;
+				transition:
+					opacity 0.5s var(--ease),
+					transform 0.5s var(--ease);
+			}
+			#homeSlot,
+			.suggests {
+				width: 100%;
+				max-width: 33rem;
+			}
+			#homeSlot {
+				margin-top: 1.4rem;
+			}
+			.suggests {
+				margin-top: 0.7rem;
+				display: grid;
+			}
+			.suggest {
+				text-align: left;
+				font-family: var(--read);
+				font-weight: 300;
+				font-size: var(--ui);
+				line-height: 1.4;
+				color: var(--ink-faint);
+				padding: 0.4rem 0.1rem;
+				transition:
+					color 0.2s,
+					padding-left 0.3s var(--ease);
+			}
+			.suggest:hover {
+				color: var(--ink);
+				padding-left: 0.4rem;
+			}
+
+			/* the wordmark types in place: every glyph is laid out from the
+			   start and only its opacity changes, so nothing reflows */
+			.ch {
+				opacity: 0;
+				transition: opacity 0.24s linear;
+			}
+			.ch.on {
+				opacity: 1;
+			}
+			.caret {
+				position: absolute;
+				top: 0.16em;
+				left: 0;
+				width: 0.05em;
+				height: 0.74em;
+				background: var(--ink);
+				animation: blink 1.05s steps(1) infinite;
+				transition:
+					left 0.06s linear,
+					opacity 0.4s;
+			}
+			.caret.done {
+				animation: none;
+				opacity: 0;
+			}
+			@keyframes blink {
+				50% {
+					opacity: 0;
+				}
+			}
+
+			/* ---------- the conversation ---------- */
+			#scroll {
+				overflow-y: auto;
+				padding: 1.4rem 1.2rem 0.4rem;
+			}
+			body:not(.talking) #scroll {
+				display: none;
+			}
+			.spread {
+				display: grid;
+				grid-template-columns: minmax(0, var(--thread-w)) var(--margin-w);
+				gap: var(--gap);
+				width: 100%;
+				max-width: calc(var(--thread-w) + var(--margin-w) + var(--gap));
+				margin: 0 auto;
+			}
+
+			.turn {
+				position: relative;
+				margin-bottom: 1.9rem;
+			}
+
+			.question {
+				width: fit-content;
+				max-width: 82%;
+				margin: 0 0 1.3rem auto;
+				background: var(--bubble);
+				border-radius: 15px 15px 5px 15px;
+				padding: 0.5rem 0.8rem;
+				font-size: 16px;
+				line-height: 1.4;
+				font-weight: 400;
+			}
+
+			/* apparatus: what the model did */
+			.work {
+				font-family: var(--app);
+				font-size: var(--small);
+				line-height: 1.35;
+				color: var(--ink-soft);
+				margin-bottom: 0.85rem;
+			}
+			.work-live > div {
+				padding: 0.07rem 0;
+				opacity: 0;
+				animation: riseIn 0.35s var(--ease) forwards;
+			}
+			@keyframes riseIn {
+				from {
+					opacity: 0;
+					transform: translateY(4px);
+				}
+				to {
+					opacity: 1;
+					transform: none;
+				}
+			}
+			.work-live .doing::after {
+				content: '';
+				display: inline-block;
+				width: 2em;
+				height: 1px;
+				background: var(--ink-soft);
+				margin-left: 0.5em;
+				vertical-align: 0.28em;
+				transform-origin: left;
+				animation: sweep 1.1s var(--ease) infinite;
+			}
+			@keyframes sweep {
+				0%,
+				100% {
+					transform: scaleX(0.1);
+					opacity: 0.4;
+				}
+				50% {
+					transform: scaleX(1);
+					opacity: 1;
+				}
+			}
+			.work-sum {
+				display: inline-flex;
+				gap: 0.4rem;
+				align-items: baseline;
+				font-family: var(--app);
+				font-size: var(--small);
+				color: var(--ink-faint);
+			}
+			.work-sum:hover {
+				color: var(--ink);
+			}
+			.work-sum .chev {
+				font-size: 0.75em;
+				transition: transform 0.25s var(--ease);
+			}
+			.work[data-open='true'] .work-sum .chev {
+				transform: rotate(180deg);
+			}
+			.work-detail {
+				display: none;
+				border-left: 1px solid var(--paper-deep);
+				padding: 0.35rem 0 0.1rem 0.7rem;
+				margin-top: 0.4rem;
+			}
+			.work[data-open='true'] .work-detail {
+				display: block;
+			}
+
+			.answer {
+				font-size: var(--prose);
+				line-height: 1.42;
+			}
+			.answer p {
+				margin: 0 0 0.8rem;
+			}
+			.sentence {
+				transition: opacity 0.35s var(--ease);
+			}
+			body.only-cited .sentence:not(.has-cite) {
+				opacity: 0.16;
+			}
+			.w {
+				opacity: 0;
+				transition: opacity 0.28s linear;
+			}
+			.w.on {
+				opacity: 1;
+			}
+
+			/* The cited words carry a little more weight than the prose around
+			   them — that is the whole marking. The stamp after them says how the
+			   check came back: filled for found, a ring for not found, a ghost
+			   outline for a page with no text to check against. Shape as well as
+			   colour, so it survives being printed or colour-blind. */
+			.cite {
+				cursor: pointer;
+				font-weight: 400;
+				-webkit-box-decoration-break: clone;
+				box-decoration-break: clone;
+				border-radius: 3px;
+				transition: background-color 0.2s;
+			}
+			.cite .qm {
+				color: var(--ink-faint);
+				font-weight: 300;
+			}
+			.cite:hover,
+			.cite.lit {
+				background-color: var(--bubble);
+			}
+			.stamp {
+				display: inline-block;
+				width: 0.66em;
+				height: 0.66em;
+				margin-left: 0.34em;
+				margin-right: 0.26em;
+				border-radius: 0;
+				vertical-align: -0.02em;
+				border: 2px solid transparent;
+				transition:
+					background-color 0.35s var(--ease),
+					border-color 0.35s var(--ease),
+					transform 0.35s var(--ease);
+			}
+			.stamp[data-status='pending'] {
+				border-color: var(--ink-faint);
+				animation: pulse 1.3s var(--ease) infinite;
+			}
+			@keyframes pulse {
+				50% {
+					opacity: 0.3;
+				}
+			}
+			.stamp[data-status='verified'] {
+				background: var(--verdigris);
+				border-color: var(--verdigris);
+			}
+			.stamp[data-status='unverified'] {
+				border-color: var(--rubric);
+			}
+			.stamp[data-status='unverifiable'] {
+				border-color: var(--slate);
+				border-style: dotted;
+			}
+			.cite:hover .stamp,
+			.cite.lit .stamp {
+				transform: scale(1.18);
+			}
+
+			.foot {
+				margin-top: 0.95rem;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.85rem;
+				align-items: baseline;
+				font-family: var(--app);
+				font-size: var(--small);
+				line-height: 1.3;
+				color: var(--ink-faint);
+			}
+			.dim {
+				font-family: var(--app);
+				color: var(--ink-faint);
+				border-bottom: 1px solid var(--paper-deep);
+			}
+			.dim:hover,
+			.dim[aria-pressed='true'] {
+				color: var(--ink);
+				border-bottom-color: var(--ink);
+			}
+
+			/* ---------- the margin ---------- */
+			.margin {
+				position: relative;
+			}
+			.ties {
+				position: absolute;
+				inset: 0;
+				overflow: visible;
+				pointer-events: none;
+			}
+			.ties path {
+				fill: none;
+				stroke: var(--ink-faint);
+				stroke-width: 1;
+				stroke-dasharray: var(--len);
+				stroke-dashoffset: var(--len);
+			}
+			.ties path.draw {
+				animation: drawTie 0.32s var(--ease) forwards;
+			}
+			@keyframes drawTie {
+				to {
+					stroke-dashoffset: 0;
+				}
+			}
+
+			.note {
+				position: absolute;
+				left: 0;
+				width: 100%;
+				font-family: var(--app);
+				font-size: var(--small);
+				line-height: 1.35;
+				color: var(--ink-soft);
+				padding-left: 0.7rem;
+				border-left: 1.5px solid var(--paper-deep);
+				cursor: pointer;
+				transition:
+					top 0.4s var(--ease),
+					opacity 0.35s var(--ease),
+					transform 0.35s var(--ease),
+					border-color 0.3s,
+					color 0.25s;
+			}
+			.note.appearing {
+				opacity: 0;
+				transform: translateX(5px);
+			}
+			.note[data-status='verified'] {
+				border-left-color: var(--verdigris);
+			}
+			.note[data-status='unverified'] {
+				border-left-color: var(--rubric);
+			}
+			.note[data-status='unverifiable'] {
+				border-left-color: var(--slate);
+			}
+			.note:hover,
+			.note.lit {
+				color: var(--ink);
+			}
+			.note .ref {
+				display: block;
+				color: var(--ink);
+			}
+			.note .verdict {
+				display: block;
+				margin-top: 0.2rem;
+			}
+			.note[data-status='verified'] .verdict {
+				color: var(--verdigris);
+			}
+			.note[data-status='unverified'] .verdict {
+				color: var(--rubric);
+			}
+			.note[data-status='unverifiable'] .verdict {
+				color: var(--slate);
+			}
+			.note .handle {
+				float: right;
+				color: var(--ink-faint);
+			}
+
+			/* ---------- composer ---------- */
+			#dock {
+				padding: 0.55rem 1.2rem 0.85rem;
+			}
+			body:not(.talking) #dock {
+				display: none;
+			}
+			#dock .holder,
+			.crumb {
+				width: 100%;
+				max-width: calc(var(--thread-w) + var(--margin-w) + var(--gap));
+				margin: 0 auto;
+			}
+			/* the composer holds the reading column, not the margin beside it */
+			#dock #composer,
+			.crumb {
+				max-width: var(--thread-w);
+			}
+			#composer {
+				display: flex;
+				align-items: flex-end;
+				gap: 0.5rem;
+				background: var(--paper-lift);
+				border: 1px solid var(--paper-deep);
+				border-radius: 16px;
+				padding: 0.5rem 0.6rem 0.5rem 0.9rem;
+				transition:
+					border-color 0.25s,
+					box-shadow 0.25s;
+			}
+			#composer:focus-within {
+				border-color: #cfc4ab;
+				box-shadow: 0 6px 20px -16px rgba(36, 31, 26, 0.8);
+			}
+			#ask-input {
+				flex: 1;
+				font-family: var(--read);
+				font-weight: 300;
+				font-size: 16px;
+				line-height: 1.45;
+				color: var(--ink);
+				background: none;
+				border: 0;
+				padding: 0.28rem 0;
+				max-height: 8rem;
+				resize: none;
+			}
+			#ask-input:focus {
+				outline: none;
+			}
+			#ask-input::placeholder {
+				color: var(--ink-faint);
+			}
+			#send {
+				font-family: var(--app);
+				font-size: var(--small);
+				line-height: 1;
+				color: var(--ink-soft);
+				padding: 0.42rem 0.6rem;
+				border-radius: 999px;
+				transition:
+					color 0.2s,
+					background 0.2s;
+			}
+			#send:hover:not([disabled]) {
+				color: var(--ink);
+				background: var(--paper-deep);
+			}
+			#send[disabled] {
+				opacity: 0.35;
+				cursor: default;
+			}
+			.crumb {
+				margin-top: 0.4rem;
+				font-family: var(--app);
+				font-size: 12px;
+				line-height: 1.3;
+				color: var(--ink-faint);
+			}
+
+			/* ---------- page view ---------- */
+			#pageview {
+				position: absolute;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				width: min(33rem, 100%);
+				background: var(--paper-lift);
+				border-left: 1px solid var(--paper-deep);
+				z-index: 30;
+				transform: translateX(101%);
+				transition: transform 0.38s var(--ease);
+				display: flex;
+				flex-direction: column;
+			}
+			#pageview.on {
+				transform: none;
+			}
+			.pv-head {
+				padding: 1rem 1.3rem 0.8rem;
+				border-bottom: 1px solid var(--paper-deep);
+				display: flex;
+				justify-content: space-between;
+				align-items: flex-start;
+				gap: 1rem;
+			}
+			.pv-head h3 {
+				margin: 0;
+				font-weight: 400;
+				font-size: 17px;
+				line-height: 1.25;
+				font-style: italic;
+			}
+			.pv-head .sub {
+				font-family: var(--app);
+				font-size: var(--small);
+				line-height: 1.3;
+				color: var(--ink-soft);
+				margin-top: 0.2rem;
+			}
+			.pv-body {
+				padding: 1rem 1.3rem 1.5rem;
+				overflow-y: auto;
+				font-size: 16px;
+				line-height: 1.48;
+			}
+			.pv-body p {
+				margin: 0;
+			}
+			.pv-body .lead {
+				font-family: var(--app);
+				font-size: var(--small);
+				line-height: 1.4;
+				color: var(--ink-soft);
+				margin-bottom: 0.85rem;
+				padding-bottom: 0.7rem;
+				border-bottom: 1px solid var(--paper-deep);
+			}
+			mark {
+				background: #e4ddc6;
+				color: inherit;
+				padding: 0.06em 0;
+				box-shadow: inset 0 -1.5px 0 var(--verdigris);
+			}
+			mark.partial {
+				box-shadow: inset 0 -1.5px 0 var(--rubric);
+			}
+			.cut {
+				color: var(--rubric);
+				font-family: var(--app);
+				font-size: var(--small);
+				white-space: nowrap;
+			}
+			.pv-foot {
+				margin-top: auto;
+				padding: 0.75rem 1.3rem 0.95rem;
+				border-top: 1px solid var(--paper-deep);
+				display: flex;
+				gap: 1.1rem;
+				font-family: var(--app);
+				font-size: var(--small);
+				color: var(--ink-soft);
+			}
+			.pv-act,
+			.close {
+				font-family: var(--app);
+				font-size: var(--small);
+				color: var(--ink-soft);
+			}
+			.pv-act {
+				border-bottom: 1px solid var(--paper-deep);
+			}
+			.pv-act:hover,
+			.close:hover {
+				color: var(--ink);
+			}
+
+			/* ---------- model switcher ---------- */
+			.switcher {
+				position: relative;
+				display: inline-block;
+			}
+			.model-btn {
+				font-family: var(--app);
+				font-size: inherit;
+				line-height: 1.2;
+				color: var(--ink);
+				border-bottom: 1px solid transparent;
+			}
+			.model-btn:hover {
+				border-bottom-color: var(--paper-deep);
+			}
+			.model-btn .chev {
+				font-size: 0.8em;
+				margin-left: 0.25em;
+				display: inline-block;
+				transition: transform 0.25s var(--ease);
+			}
+			.switcher.open .chev {
+				transform: rotate(180deg);
+			}
+			.menu {
+				position: absolute;
+				left: 0;
+				top: 1.5rem;
+				width: 250px;
+				background: var(--paper-lift);
+				border: 1px solid var(--paper-deep);
+				border-radius: 12px;
+				padding: 0.3rem 0;
+				z-index: 25;
+				opacity: 0;
+				transform: translateY(-4px);
+				pointer-events: none;
+				transition:
+					opacity 0.18s var(--ease),
+					transform 0.18s var(--ease);
+				box-shadow: 0 16px 34px -28px rgba(36, 31, 26, 0.9);
+			}
+			.switcher.open .menu {
+				opacity: 1;
+				transform: none;
+				pointer-events: auto;
+			}
+			.menu button {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 0.6rem;
+				width: 100%;
+				padding: 0.33rem 0.7rem;
+				text-align: left;
+				font-family: var(--app);
+				font-size: var(--ui);
+				line-height: 1.3;
+			}
+			.menu button:hover:not([disabled]) {
+				background: var(--paper-deep);
+			}
+			.menu button[disabled] {
+				color: var(--ink-faint);
+				cursor: default;
+			}
+			.menu .why {
+				font-size: 12px;
+				color: var(--ink-faint);
+			}
+			.menu-note {
+				font-family: var(--app);
+				font-size: 12px;
+				line-height: 1.35;
+				color: var(--ink-faint);
+				padding: 0.4rem 0.7rem 0.2rem;
+				border-top: 1px solid var(--paper-deep);
+				margin-top: 0.28rem;
+			}
+
+			/* ---------- build notes ----------
+			   Prototype scaffolding, not part of the app: the brief an
+			   implementer reads before writing any of it. */
+			#build {
+				grid-template-rows: minmax(0, 1fr);
+			}
+			.doc {
+				width: 100%;
+				max-width: 44rem;
+				margin: 0 auto;
+				padding: 2rem 1.2rem 4rem;
+				overflow-y: auto;
+				font-size: 15.5px;
+				line-height: 1.5;
+			}
+			.doc > header {
+				display: block;
+				border: 0;
+				padding: 0 0 1.2rem;
+				margin-bottom: 1.6rem;
+				border-bottom: 1px solid var(--paper-deep);
+			}
+			.doc h2 {
+				font-size: 26px;
+				font-weight: 400;
+				line-height: 1.15;
+				margin: 0 0 0.5rem;
+			}
+			.doc h3 {
+				font-size: 19px;
+				font-weight: 500;
+				line-height: 1.25;
+				margin: 2.1rem 0 0.6rem;
+				padding-top: 1.1rem;
+				border-top: 1px solid var(--paper-deep);
+			}
+			.doc h4 {
+				font-family: var(--app);
+				font-size: 15px;
+				font-weight: 400;
+				line-height: 1.3;
+				color: var(--ink-soft);
+				margin: 1.2rem 0 0.35rem;
+			}
+			.doc p {
+				margin: 0 0 0.7rem;
+			}
+			.doc ul,
+			.doc ol {
+				margin: 0 0 0.75rem;
+				padding-left: 1.15rem;
+			}
+			.doc li {
+				margin-bottom: 0.3rem;
+			}
+			.doc li::marker {
+				color: var(--ink-faint);
+			}
+			.doc b {
+				font-weight: 500;
+			}
+			.doc .lede {
+				font-size: 17px;
+				line-height: 1.45;
+				color: var(--ink-soft);
+			}
+			.doc code {
+				font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+				font-size: 0.82em;
+				background: var(--bubble);
+				padding: 0.08em 0.3em;
+				border-radius: 3px;
+			}
+			.doc pre {
+				font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+				font-size: 12px;
+				line-height: 1.5;
+				background: var(--paper-lift);
+				border: 1px solid var(--paper-deep);
+				border-radius: 8px;
+				padding: 0.85rem 1rem;
+				overflow-x: auto;
+				margin: 0 0 0.9rem;
+			}
+			.doc pre code {
+				background: none;
+				padding: 0;
+				font-size: inherit;
+			}
+			.doc table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 0 0 0.9rem;
+				font-size: 14px;
+			}
+			.doc th,
+			.doc td {
+				text-align: left;
+				vertical-align: top;
+				padding: 0.4rem 0.7rem 0.4rem 0;
+				border-bottom: 1px solid var(--paper-deep);
+			}
+			.doc th {
+				font-family: var(--app);
+				font-weight: 400;
+				color: var(--ink-soft);
+			}
+			.story {
+				border-left: 1.5px solid var(--paper-deep);
+				padding: 0.1rem 0 0.1rem 0.85rem;
+				margin: 0 0 1rem;
+			}
+			.story b {
+				display: block;
+				font-weight: 500;
+			}
+			.story .ac {
+				font-family: var(--app);
+				font-size: 13.5px;
+				line-height: 1.4;
+				color: var(--ink-soft);
+				margin-top: 0.25rem;
+			}
+			.doc .rule {
+				color: var(--rubric);
+			}
+
+			/* ---------- add a book ---------- */
+			#add {
+				grid-template-rows: minmax(0, 1fr);
+			}
+			#add .inner {
+				width: 100%;
+				max-width: calc(var(--thread-w) + var(--margin-w) + var(--gap));
+				margin: 0 auto;
+				padding: 1.8rem 1.2rem;
+				overflow-y: auto;
+			}
+			#drop {
+				border: 1px solid var(--paper-deep);
+				border-radius: 16px;
+				background: var(--paper-lift);
+				padding: 2.4rem 1.4rem;
+				text-align: center;
+				transition:
+					border-color 0.25s,
+					transform 0.3s var(--ease);
+			}
+			#drop.over {
+				border-color: var(--verdigris);
+				transform: scale(1.01);
+			}
+			#drop p {
+				margin: 0;
+				font-size: 20px;
+				line-height: 1.3;
+				font-style: italic;
+				font-weight: 300;
+			}
+			#drop .or {
+				font-family: var(--app);
+				font-size: var(--ui);
+				color: var(--ink-soft);
+				margin-top: 0.55rem;
+			}
+			#drop .or button {
+				font-family: var(--app);
+				border-bottom: 1px solid var(--ink-faint);
+			}
+			.pipeline {
+				margin: 1.5rem 0 0;
+				padding: 0;
+				list-style: none;
+				counter-reset: step;
+				font-family: var(--app);
+				font-size: var(--ui);
+				line-height: 1.4;
+				color: var(--ink-soft);
+			}
+			.pipeline li {
+				counter-increment: step;
+				display: grid;
+				grid-template-columns: 1.3rem 1fr;
+				gap: 0.5rem;
+				padding: 0.48rem 0;
+				border-top: 1px solid var(--paper-deep);
+			}
+			.pipeline li::before {
+				content: counter(step);
+				color: var(--ink-faint);
+			}
+			.pipeline b {
+				font-weight: 400;
+				color: var(--ink);
+			}
+			#queued {
+				margin-top: 1.1rem;
+				font-family: var(--app);
+				font-size: var(--ui);
+				color: var(--ink-soft);
+			}
+			#queued div {
+				padding: 0.4rem 0;
+				border-top: 1px solid var(--paper-deep);
+				display: flex;
+				justify-content: space-between;
+				gap: 1rem;
+				animation: riseIn 0.35s var(--ease) both;
+			}
+
+			/* ---------- narrow: the margin folds into the column ---------- */
+			@container (max-width: 1040px) {
+				.spread {
+					grid-template-columns: minmax(0, 1fr);
+					max-width: var(--thread-w);
+				}
+				.turn {
+					margin-bottom: 0.5rem;
+				}
+				.margin {
+					position: static;
+					display: grid;
+					gap: 0.65rem;
+					margin: 0 0 1.9rem;
+					padding-top: 0.75rem;
+					border-top: 1px solid var(--paper-deep);
+				}
+				.margin:empty {
+					display: none;
+				}
+				.note {
+					position: static !important;
+					opacity: 1 !important;
+					transform: none !important;
+				}
+				.ties {
+					display: none;
+				}
+				#dock .holder,
+				.crumb,
+				#add .inner {
+					max-width: var(--thread-w);
+				}
+			}
+
+			@container (max-width: 560px) {
+				body.has-threads main {
+					grid-template-columns: 1fr;
+				}
+				#rail {
+					display: none !important;
+				}
+				header {
+					padding: 0.65rem 0.85rem;
+				}
+				.bar {
+					gap: 0.85rem;
+				}
+				#scroll {
+					padding: 1rem 0.85rem 0.3rem;
+				}
+				#dock {
+					padding: 0.45rem 0.85rem 0.7rem;
+				}
+				#home {
+					padding-bottom: 14vh;
+				}
+				#heroMark {
+					font-size: 2.4rem;
+				}
+				#heroRunning {
+					font-size: 1.05rem;
+				}
+				.question {
+					max-width: 88%;
+				}
+				.crumb {
+					display: none;
+				}
+				#pageview {
+					width: 100%;
+					border-left: 0;
+				}
+				#add .inner {
+					padding: 1.2rem 0.85rem;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				*,
+				*::before,
+				*::after {
+					animation-duration: 0.01ms !important;
+					animation-iteration-count: 1 !important;
+					transition-duration: 0.01ms !important;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<header>
+				<div id="brand">
+					<h1 class="mark">scribe<em>-lm</em></h1>
+					<div class="running">
+						running <span class="switcher" data-switcher></span>
+					</div>
+				</div>
+				<div class="bar">
+					<button
+						class="tab"
+						role="tab"
+						aria-selected="true"
+						data-panel="ask"
+					>
+						Ask
+					</button>
+					<button
+						class="tab"
+						role="tab"
+						aria-selected="false"
+						data-panel="add"
+					>
+						Add a book
+					</button>
+					<button
+						class="tab tab-meta"
+						role="tab"
+						aria-selected="false"
+						data-panel="build"
+					>
+						Build notes
+					</button>
+					<button id="device" title="Preview at phone width" aria-label="Preview at phone width"><svg width="11" height="16" viewBox="0 0 11 16" fill="none" aria-hidden="true"><rect x="0.6" y="0.6" width="9.8" height="14.8" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="13" x2="7" y2="13" stroke="currentColor" stroke-width="1.2"/></svg></button>
+				</div>
+			</header>
+
+			<main>
+				<aside id="rail">
+					<button id="newq">New question</button>
+					<div id="threads"></div>
+				</aside>
+
+				<section class="panel on" id="ask">
+					<div id="home">
+						<h1 class="mark" id="heroMark"></h1>
+						<div class="running fade" id="heroRunning">
+							running <span class="switcher" data-switcher></span>
+						</div>
+						<div id="homeSlot" class="fade"></div>
+						<div class="suggests fade">
+							<button class="suggest" data-q="0">
+								Does Nietzsche think the will to truth is itself a kind
+								of faith?
+							</button>
+							<button class="suggest" data-q="1">
+								Is Kierkegaard's knight of faith making a claim anyone
+								else could check?
+							</button>
+						</div>
+					</div>
+
+					<div id="scroll"><div class="spread" id="spread"></div></div>
+
+					<div id="dock">
+						<div class="holder" id="dockSlot"></div>
+						<div class="crumb">
+							Scripted prototype — no model, no library. <b>/</b> to
+							write, <b>c</b> to dim everything uncited.
+						</div>
+					</div>
+				</section>
+
+				<section class="panel" id="add">
+					<div class="inner">
+						<div id="drop">
+							<p>Drop a PDF here</p>
+							<div class="or">
+								or <button id="pick">choose a file</button>
+							</div>
+						</div>
+						<ol class="pipeline">
+							<li>
+								<span
+									><b>The file lands in Works</b> as a Document — one
+									edition, with its own pagination.</span
+								>
+							</li>
+							<li>
+								<span
+									><b>Its text layer is extracted</b> into pages, a
+									few thousand rows a night.</span
+								>
+							</li>
+							<li>
+								<span
+									><b>The pages are indexed</b>, and from then on
+									Scribe can find them, read them, and be held to
+									them.</span
+								>
+							</li>
+						</ol>
+						<div id="queued"></div>
+					</div>
+				</section>
+				<section class="panel" id="build">
+					<div class="doc">
+						<header>
+							<h2>Build notes</h2>
+							<p class="lede">
+								Everything this prototype does, and how to build it for
+								real. Written to be read cold: if you have never seen
+								this project, start at the top and you will have enough.
+							</p>
+						</header>
+
+						<p>
+							<b>What this is.</b> A design prototype of
+							<b>scribe-lm</b>, the frontend of Scribe. It is scripted:
+							no model, no network, no library behind it. It is the
+							reference for look, motion and behaviour — not for code. Do
+							not port its DOM or its JavaScript. Read it, then build the
+							app properly.
+						</p>
+						<p>
+							This tab is scaffolding and does not ship. The two tabs
+							beside it, <b>Ask</b> and <b>Add a book</b>, are the app.
+						</p>
+
+						<h3>1. The product, cold</h3>
+						<p>
+							Scribe answers questions about philosophy from a library of
+							scanned PDFs, and every claim it makes about a text links to
+							the page it came from. Its backend is <b>alexandria</b> —
+							Hono on Cloudflare Workers, one D1, one R2, everything under
+							<code>/api/</code>. scribe-lm holds no data of its own; it
+							reads that API like any other client.
+						</p>
+						<p>
+							The thing that makes it worth building: after the model
+							answers, the server looks for every quote on the page the
+							model named, and reports whether it was actually there. Most
+							of this interface exists to show that result honestly.
+						</p>
+
+						<h4>Vocabulary you need</h4>
+						<table>
+							<tr>
+								<th>Work</th>
+								<td>
+									A book, lecture, article or film. What a citation is
+									ultimately about.
+								</td>
+							</tr>
+							<tr>
+								<th>Document</th>
+								<td>
+									One concrete file of a Work — a particular PDF,
+									edition or translation. Pagination belongs to the
+									Document, not the Work: page 47 means nothing until
+									you know which edition.
+								</td>
+							</tr>
+							<tr>
+								<th>Page</th>
+								<td>
+									One page of one Document, as extracted text.
+									Numbered by position in the PDF; the number printed
+									on the paper is derived from the page offset, so
+									both are shown:
+									<code>p. 9 (PDF p. 21)</code>.
+								</td>
+							</tr>
+							<tr>
+								<th>Page handle</th>
+								<td>
+									The short name — <code>P1</code>, <code>P7</code> —
+									a Page is given the first time a tool shows it to
+									the model in this conversation. A model can only
+									cite a handle it was shown, so it cannot cite a page
+									it never read.
+								</td>
+							</tr>
+							<tr>
+								<th>Citation</th>
+								<td>
+									A pointer from a claim to a Page, carrying the
+									verbatim words the claim relies on and whether those
+									words were found there.
+								</td>
+							</tr>
+						</table>
+
+						<h3>2. Stack</h3>
+						<ul>
+							<li>
+								<b>React + TypeScript + Vite.</b> The repo is already
+								scaffolded as a Cloudflare Pages app with one Pages
+								Function proxying <code>/api/*</code> to the worker.
+								Same-origin by construction — never add CORS handling,
+								never add a second API client.
+							</li>
+							<li>
+								<b>Tailwind 4</b>, CSS-first. Every token in this
+								prototype becomes a <code>@theme</code> variable. No
+								arbitrary hex values in components, ever.
+							</li>
+							<li>
+								<b>Vercel AI SDK v7</b>, <code>useChat</code> with
+								<code>DefaultChatTransport</code>. The chat endpoint
+								streams an AI SDK UI message stream, so the hook reads
+								it directly.
+							</li>
+							<li>
+								<b>No component library, no state library.</b> The app
+								is a chat and a drawer. <code>useChat</code> plus two
+								small contexts covers it.
+							</li>
+						</ul>
+
+						<h3>3. Endpoints</h3>
+						<table>
+							<tr>
+								<th>GET</th>
+								<td>
+									<code>/api/models</code> — the models whose provider
+									key is set on the worker, and the default.
+								</td>
+							</tr>
+							<tr>
+								<th>GET</th>
+								<td>
+									<code>/api/conversations</code> — the callers own
+									conversations, newest first.
+								</td>
+							</tr>
+							<tr>
+								<th>POST</th>
+								<td>
+									<code>/api/conversations</code> —
+									<code>{ title?, model_id? }</code>.
+								</td>
+							</tr>
+							<tr>
+								<th>GET</th>
+								<td>
+									<code>/api/conversations/:id</code> —
+									<code>{ conversation, messages }</code>, messages
+									being AI SDK UI messages.
+								</td>
+							</tr>
+							<tr>
+								<th>POST</th>
+								<td>
+									<code>/api/conversations/:id/chat</code> — send only
+									the new message; history is loaded server-side.
+								</td>
+							</tr>
+							<tr>
+								<th>GET</th>
+								<td>
+									<code>/api/documents/:id</code> and
+									<code>/api/documents/:id/pages</code> — what a
+									citation points at.
+								</td>
+							</tr>
+						</table>
+
+						<h3>4. Feature inventory</h3>
+						<p>
+							Everything in this prototype, in the order you meet it. Each
+							has a matching user story in section 11.
+						</p>
+						<ol>
+							<li>
+								<b>Launch.</b> The wordmark types itself in place at the
+								centre of an empty screen; the model line, composer and
+								suggestions fade up beneath it.
+							</li>
+							<li>
+								<b>Home.</b> One centred column: wordmark,
+								<code>running &lt;model&gt;</code>, composer, two
+								starting questions. No sidebar, no header chrome beyond
+								the tabs.
+							</li>
+							<li>
+								<b>Model switcher.</b> Lives in the line under the
+								wordmark, and in the header once a conversation starts.
+								Lists only models with a key set; the rest appear
+								disabled and labelled <i>no key set</i>.
+							</li>
+							<li>
+								<b>Composer.</b> One instance, which moves from the
+								centre of the home screen to the bottom dock when the
+								conversation starts. Auto-growing textarea, Enter sends,
+								Shift+Enter newlines.
+							</li>
+							<li>
+								<b>Question.</b> Right-aligned bubble, one corner
+								squared off toward the writer.
+							</li>
+							<li>
+								<b>Apparatus.</b> While the model searches, a live line
+								names what it is doing by name — <i>searching pages,
+								will to truth</i>. When the answer begins it collapses
+								into one summary line that expands on click.
+							</li>
+							<li>
+								<b>Answer.</b> Full width, no bubble, revealed a word at
+								a time.
+							</li>
+							<li>
+								<b>Citations.</b> The quoted words are set one weight
+								heavier, quote marks dropped to faint grey, followed by
+								a status stamp.
+							</li>
+							<li>
+								<b>Stamps.</b> Filled square: found on the page. Open
+								square: not found, or matched then diverged. Dotted open
+								square: the page has no text layer, so nothing could be
+								checked. Pending: an outline, pulsing.
+							</li>
+							<li>
+								<b>Margin notes.</b> On a wide screen each citation has
+								a note in the margin, level with the sentence it
+								supports, naming work, creator, printed page, PDF page
+								and verdict. Hovering either end lights both and draws a
+								hairline between them.
+							</li>
+							<li>
+								<b>Page view.</b> Clicking a citation opens a drawer
+								with the page in its own words and the quote in place.
+								For a partial match it shows where the match stopped.
+								For a page with no text it says so rather than
+								pretending.
+							</li>
+							<li>
+								<b>Only what is cited.</b> Fades every sentence no
+								citation supports.
+							</li>
+							<li>
+								<b>Thread rail.</b> Appears only once a conversation
+								exists. Titles arrive a beat late, because the server
+								names a conversation after its first question.
+							</li>
+							<li>
+								<b>Add a book.</b> Drop zone plus the three steps a file
+								goes through before it is citable.
+							</li>
+							<li>
+								<b>Keyboard.</b> <code>/</code> focuses the composer,
+								<code>c</code> toggles the dim, <code>Esc</code> closes
+								the drawer and any menu.
+							</li>
+						</ol>
+
+						<h3>5. Component structure</h3>
+						<pre><code>&lt;App&gt;
+  ModelProvider            roster + selection, from GET /models
+  &lt;AppFrame&gt;               header, rail, panel grid; owns tab state
+    &lt;Brand /&gt;              wordmark + RunningModel   (header only)
+    &lt;TabBar /&gt;
+    &lt;ThreadRail /&gt;         hidden until a conversation exists
+    &lt;AskPanel&gt;
+      &lt;Home /&gt;             Wordmark + RunningModel + Suggestions
+      &lt;Conversation&gt;       maps messages -&gt; Turn
+        &lt;Turn&gt;
+          &lt;QuestionBubble /&gt;
+          &lt;Apparatus /&gt;    live steps, then summary
+          &lt;Answer /&gt;       Sentence[] -&gt; Citation -&gt; Stamp
+          &lt;AnswerFooter /&gt; tally + Only what is cited
+          &lt;MarginNotes /&gt;  Note[] + TieLine
+      &lt;Composer /&gt;         ONE instance, portalled home | dock
+    &lt;AddPanel /&gt;
+    &lt;PageView /&gt;           drawer, one at a time
+&lt;/App&gt;</code></pre>
+						<h4>Who owns what</h4>
+						<ul>
+							<li>
+								<b>ModelProvider</b> owns the roster and the selection.
+								<code>RunningModel</code> is one component rendered in
+								two places; do not write a second switcher for the
+								header.
+							</li>
+							<li>
+								<b>Conversation</b> owns nothing but the message list
+								from <code>useChat</code>. A Turn derives everything it
+								renders from one assistant message plus the user message
+								before it.
+							</li>
+							<li>
+								<b>Composer</b> is a single instance whose position is a
+								prop, not a copy. Two textareas means two drafts, and
+								the draft is lost the first time someone sends.
+							</li>
+							<li>
+								<b>PageView</b> is a route-level singleton opened by id,
+								never rendered per citation.
+							</li>
+						</ul>
+
+						<h3>6. Reading a message</h3>
+						<p>
+							An assistant message holds the text of <i>every</i> step,
+							not only the last, and models narrate between tool calls —
+							<i>let me read the fuller context</i> — however firmly the
+							instructions ask them not to. Rendering every text part in
+							sequence shows the reader the model thinking out loud and
+							calls it the answer.
+						</p>
+						<p class="rule">
+							<b>The answer is the text after the final
+							<code>step-start</code>. Everything before it is
+							apparatus.</b>
+						</p>
+						<pre><code>const steps  = splitOn(message.parts, 'step-start');
+const answer = steps.at(-1).filter(isText);
+const work   = steps.slice(0, -1);      // narration + tool calls</code></pre>
+						<p>
+							The stream ends with a <code>data-citations</code> part:
+							every citation in the answer, its page, and whether the
+							quote was found there. Until it arrives, every citation in
+							the message renders <b>pending</b>. It is never faked, never
+							optimistic, and never inferred on the client.
+						</p>
+
+						<h3>7. The citation pipeline</h3>
+						<ol>
+							<li>
+								Every page a tool shows the model is labelled with a
+								handle, <code>[P7]</code>.
+							</li>
+							<li>
+								The model cites as
+								<code>[P7 "verbatim words"]</code>, or as
+								<code>"verbatim words" [P7]</code>, which is what
+								smaller models tend to write.
+							</li>
+							<li>
+								After the answer, the server normalises each quote —
+								case, diacritics, ligatures, punctuation, line-break
+								hyphens — and looks for it on that page, or across the
+								break onto the next.
+							</li>
+							<li>
+								The result, <code>verified</code>,
+								<code>unverified</code> or <code>unverifiable</code>, is
+								streamed to the reader and saved with the message.
+							</li>
+						</ol>
+						<h4>What each status means to a reader</h4>
+						<table>
+							<tr>
+								<th>verified</th>
+								<td>
+									The words are on the page.
+									<b>It does not mean they support the claim.</b> Say
+									<i>found on the page</i>, never a bare
+									<i>verified</i>, and never a tick.
+								</td>
+							</tr>
+							<tr>
+								<th>not_found</th>
+								<td>Not on that page in any reading of it.</td>
+							</tr>
+							<tr>
+								<th>partial_match</th>
+								<td>
+									The quote begins on the page and then diverges:
+									either the scan is damaged mid-quote, or the model
+									misquoted. Show where it stopped; do not assign
+									blame.
+								</td>
+							</tr>
+							<tr>
+								<th>quote_too_short</th>
+								<td>
+									Under five words, which matches too much text by
+									accident to count as evidence.
+								</td>
+							</tr>
+							<tr>
+								<th>unverifiable</th>
+								<td>
+									The page has no text layer. Nothing could be
+									checked, which is not the same as failing a check.
+								</td>
+							</tr>
+						</table>
+						<h4>Mapping a citation to its words</h4>
+						<p>
+							Today the client has to find each citation in the answer
+							text by re-implementing the server regex, and the two have
+							to agree forever, including on curly quotes and quotes
+							containing quotes. <b>Do not scatter that regex.</b> One
+							module, one exported function, one test file of the awkward
+							cases. The proper fix is for the server to send marker
+							offsets, and that ask is written up in
+							<code>plans/scribe-citations-api.md</code> along with three
+							others. Read it before building this part.
+						</p>
+
+						<h3>8. DRY, and the traps</h3>
+						<ul>
+							<li>
+								<b>One status map.</b> Colour, stamp shape, verdict
+								wording and tooltip all come from a single
+								<code>CITATION_STATUS</code> record keyed by status and
+								reason. A colour written inline in a component is a bug:
+								the next status will be added in four places and shown
+								in three.
+							</li>
+							<li>
+								<b>One page formatter.</b>
+								<code>describePage()</code> exists on the server and
+								produces
+								<code>Work — Creator — p. 9 (PDF p. 21)</code>. Mirror
+								it once on the client and call it everywhere: margin
+								note, page view, tooltip, empty state.
+							</li>
+							<li>
+								<b>One copy file.</b> Every user-facing string —
+								verdicts, empty states, failures — in one module. The
+								honesty of this interface lives in its wording, and
+								wording scattered across components drifts.
+							</li>
+							<li>
+								<b>Tokens, not values.</b> Three status inks and nothing
+								else coloured. If a component needs a new colour, the
+								design is wrong, not the palette.
+							</li>
+							<li>
+								<b>No mobile fork.</b> One component tree, container
+								queries. Never <code>isMobile</code> inside a component,
+								and never a second layout component for small screens.
+							</li>
+							<li>
+								<b>Status never rests on colour alone.</b> Shape and
+								words carry it too. Enforce that in the stamp component,
+								not by convention.
+							</li>
+							<li>
+								<b>The API is additive-only.</b> Two frontends, one
+								publisher. Code written against the payload as it stands
+								keeps working; a breaking change is a planned two-repo
+								event, not a commit.
+							</li>
+						</ul>
+
+						<h3>9. Animation</h3>
+						<table>
+							<tr>
+								<th>What</th>
+								<th>Spec</th>
+							</tr>
+							<tr>
+								<td>Wordmark typing</td>
+								<td>
+									86ms per glyph, 190ms over the hyphen. Every glyph
+									is laid out before the animation starts and only its
+									opacity changes, 240ms linear; the caret is
+									absolutely positioned and walks to the trailing edge
+									of each character. Inserting characters one at a
+									time jitters the whole line — do not.
+								</td>
+							</tr>
+							<tr>
+								<td>Home fade-up</td>
+								<td>
+									Model line, composer, suggestions: 500ms
+									<code>cubic-bezier(.22,.61,.36,1)</code>, staggered
+									130ms, 4px rise.
+								</td>
+							</tr>
+							<tr>
+								<td>Answer reveal</td>
+								<td>
+									Word at a time, 32ms apart, each fading 280ms
+									linear. A citation waits 200ms before the next word,
+									because the eye needs to land on it.
+								</td>
+							</tr>
+							<tr>
+								<td>Verification</td>
+								<td>
+									Stamps resolve in document order, ~290ms apart, each
+									with a 3px nudge on its margin note. It should read
+									as a pass down the page, not a flicker.
+								</td>
+							</tr>
+							<tr>
+								<td>Tie line</td>
+								<td>
+									320ms stroke-dashoffset draw. It starts at the
+									columns edge level with the quote, never at the
+									quotes own right edge — a citation ending mid-line
+									would otherwise drag the curve back across the
+									prose.
+								</td>
+							</tr>
+							<tr>
+								<td>Page view</td>
+								<td>380ms slide, same easing. One drawer at a time.</td>
+							</tr>
+							<tr>
+								<td>Reduced motion</td>
+								<td>
+									Skip the typing, print the answer whole, resolve
+									every stamp at once, keep the drawer instant. Honour
+									it with a real branch in the code, not only a CSS
+									override — a 40-second word-by-word reveal is still
+									a 40-second wait.
+								</td>
+							</tr>
+						</table>
+
+						<h3>10. Responsive and accessible</h3>
+						<ul>
+							<li>
+								<b>Container queries on the app shell</b>, not viewport
+								media queries. At <b>1040px</b> the margin column folds
+								into footnotes under the answer. At <b>560px</b> the
+								rail goes, the header compresses, and the page view
+								takes the full width.
+							</li>
+							<li>
+								Every interactive element reachable by keyboard with a
+								visible focus ring. Citations are focusable and open
+								their page on Enter.
+							</li>
+							<li>
+								Stamps carry an accessible label with the verdict and
+								the page, since the square itself says nothing to a
+								screen reader.
+							</li>
+							<li>
+								The drawer traps focus and returns it to the citation
+								that opened it.
+							</li>
+							<li>
+								<code>--ink-faint</code> is for decoration and
+								placeholders only. Never set a verdict or a control in
+								it.
+							</li>
+						</ul>
+
+						<h3>11. User stories</h3>
+						<p>
+							Acceptance criteria, not aspirations. The build is done when
+							every one of these is true.
+						</p>
+
+						<h4>Asking</h4>
+						<div class="story">
+							<b>US-1 — I land on the app and know what it is.</b>
+							<div class="ac">
+								The wordmark types itself in place, the composer is
+								focused and ready, and the model in use is named without
+								my having to open anything.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-2 — I ask a question and see it accepted.</b>
+							<div class="ac">
+								My question appears as a bubble immediately; the
+								composer clears and disables; the home screen gives way
+								to the conversation with the composer docked at the
+								bottom. My draft is never lost in that transition.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-3 — I can tell the difference between working and
+							hung.</b>
+							<div class="ac">
+								While the model searches, a line names each step as it
+								happens, by name and by book. If nothing has happened
+								for a while I can still see what the last step was.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-4 — I read the answer, not the narration.</b>
+							<div class="ac">
+								Only the text after the final step boundary is set as
+								the answer. Narration and tool calls collapse into one
+								apparatus line that expands on click.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-5 — I change models and know what it applies to.</b>
+							<div class="ac">
+								The switcher lists only models with a key set and labels
+								the others. A change applies to the next answer; earlier
+								answers keep, and display, the model that wrote them.
+							</div>
+						</div>
+
+						<h4>Evidence</h4>
+						<div class="story">
+							<b>US-6 — I can see which words are the evidence.</b>
+							<div class="ac">
+								Quoted words are visibly heavier than the prose around
+								them, with the quote marks receding. I can tell at a
+								glance which part of a sentence the source supplied.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-7 — I can see whether a quote held up, without
+							clicking.</b>
+							<div class="ac">
+								Each citation carries a stamp whose shape and colour
+								both encode the status, and a margin note that says it
+								in words. Nothing about the status is carried by colour
+								alone.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-8 — I watch the checking happen.</b>
+							<div class="ac">
+								Citations render pending while the answer streams, and
+								resolve in order once
+								<code>data-citations</code> arrives. At no point does an
+								unchecked citation look like a checked one.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-9 — I can go to the page and judge for myself.</b>
+							<div class="ac">
+								Clicking a citation or its note opens the page with the
+								quote in place, in the pages own words. A partial match
+								shows where it stopped matching. A page with no text
+								layer says so plainly instead of showing an empty
+								drawer.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-10 — I can see what the answer is <i>not</i> standing
+							on.</b>
+							<div class="ac">
+								One control fades every sentence no citation supports.
+								It is available on every answer and holds its state
+								across answers in the session.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-11 — I can trace a citation to its note and back.</b>
+							<div class="ac">
+								Hovering or focusing either end lights both and draws
+								the hairline between them. The hairline never crosses
+								the text of the answer.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-12 — I am never told a quote is right when only its
+							presence was checked.</b>
+							<div class="ac">
+								No tick, no bare <i>verified</i>, no green reassurance.
+								The wording everywhere is <i>found on the page</i>.
+							</div>
+						</div>
+
+						<h4>Conversations, and the rest</h4>
+						<div class="story">
+							<b>US-13 — My questions are kept and named.</b>
+							<div class="ac">
+								A conversation appears in the rail as soon as it exists,
+								titled once the server has named it, without the layout
+								jumping when the title lands.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-14 — I can start a new question without losing the
+							last.</b>
+							<div class="ac">
+								New question returns to the home screen; the previous
+								conversation remains in the rail and reopens with its
+								citations and their statuses intact.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-15 — I can use this on a phone.</b>
+							<div class="ac">
+								At narrow widths the margin becomes footnotes under the
+								answer, the rail becomes reachable rather than gone for
+								good, the page view is full width, and no horizontal
+								scroll appears at any width.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-16 — I can drive it from the keyboard.</b>
+							<div class="ac">
+								<code>/</code> focuses the composer, <code>c</code>
+								toggles the dim, <code>Esc</code> closes the drawer and
+								menus, Tab reaches every control with a visible ring.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-17 — When it breaks, I am told what broke.</b>
+							<div class="ac">
+								Provider failures are named in the readers terms — out
+								of credit, rate limited, provider down — not as a stack
+								trace and not as a generic apology. A failed answer
+								leaves the question in place and the composer usable.
+							</div>
+						</div>
+						<div class="story">
+							<b>US-18 — I can add a book.</b>
+							<div class="ac">
+								A dropped PDF is accepted and shown in a queue, and the
+								interface says what will happen to it before it is
+								citable. Until ingestion exists behind it, the interface
+								says that too, rather than implying success.
+							</div>
+						</div>
+
+						<h3>12. Do not build</h3>
+						<ul>
+							<li>
+								<b>Client-side verification.</b> The check belongs on
+								the server, after the answer. Never re-check, never
+								retry a failed citation, never soften one.
+							</li>
+							<li>
+								<b>Optimistic citations.</b> Nothing renders as checked
+								before <code>data-citations</code> arrives.
+							</li>
+							<li>
+								<b>A tick, a cross, or a confidence score.</b> None of
+								the three is what was measured.
+							</li>
+							<li>
+								<b>Markdown headings inside answers.</b> The model is
+								instructed to write plain prose. Support paragraphs,
+								emphasis and citations; nothing else.
+							</li>
+							<li>
+								<b>Avatars, three-dot typing indicators, per-message
+								action bars.</b> The apparatus line already says what is
+								happening, by name.
+							</li>
+							<li>
+								<b>Components copied out of stylus</b>, the other
+								frontend. The duplication between the two is
+								deliberate: sharing UI would anchor this app to Vue and
+								to stylus layout assumptions. Share technical code,
+								never business logic.
+							</li>
+							<li>
+								<b>Any database in this repo.</b> alexandria owns every
+								row.
+							</li>
+						</ul>
+					</div>
+				</section>
+			</main>
+
+			<div id="composer">
+				<textarea
+					id="ask-input"
+					rows="1"
+					placeholder="Ask about the library"
+				></textarea>
+				<button id="send" disabled>Ask</button>
+			</div>
+
+			<aside id="pageview" aria-hidden="true">
+				<div class="pv-head">
+					<div>
+						<h3 id="pvTitle"></h3>
+						<div class="sub" id="pvSub"></div>
+					</div>
+					<button class="close" id="pvClose">Close</button>
+				</div>
+				<div class="pv-body" id="pvBody"></div>
+				<div class="pv-foot" id="pvFoot"></div>
+			</aside>
+		</div>
+
+		<script>
+			const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+			const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+			const $ = (sel, root = document) => root.querySelector(sel);
+			const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+			/* ============================================================
+			   Scripted data. Shapes follow alexandria: a citation carries a
+			   handle, the model's quote, a PageRef and a verification result.
+			   `page` and `context` are the fields
+			   plans/scribe-citations-api.md asks the backend to send.
+			   ============================================================ */
+
+			const MODELS = [
+				{
+					id: 'claude-haiku-4-5-20251001',
+					label: 'Claude Haiku 4.5',
+					on: true,
+				},
+				{ id: 'claude-sonnet-5', label: 'Claude Sonnet 5', on: true },
+				{ id: 'claude-opus-5', label: 'Claude Opus 5', on: true },
+				{ id: 'gpt-5.5', label: 'GPT-5.5', on: false },
+				{ id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', on: false },
+			];
+			let model = MODELS[0];
+
+			const VERDICT = {
+				verified: 'found on the page',
+				not_found: 'not on this page',
+				partial_match: 'matches, then diverges',
+				quote_too_short: 'too short to check',
+				no_such_page: 'no such page',
+				unknown_handle: 'a page it was never shown',
+				no_text_layer: 'no text on this page to check against',
+			};
+
+			const CITES = {
+				c1: {
+					handle: 'P7',
+					quote: 'the will to truth, which will still tempt us to many a venture',
+					page: {
+						work_title: 'Beyond Good and Evil',
+						creator: 'Friedrich Nietzsche',
+						printed_page: '9',
+						page_no: 21,
+						viewable: true,
+					},
+					status: 'verified',
+					context: {
+						before: 'The will to truth which will still tempt us to many a venture, that famous truthfulness of which all philosophers so far have spoken with respect — what questions has this will to truth not laid before us! What strange, wicked, questionable questions! Is it any wonder that we should finally become suspicious, lose patience, and turn away impatiently? that we should finally learn from this Sphinx to ask questions, too? ',
+						text: 'Who is it really that puts questions to us here? What in us really wants "truth"?',
+						after: ' Indeed we came to a long halt at the question about the cause of this will — until we finally came to a complete stop before a still more basic question. We asked about the value of this will.',
+					},
+				},
+				c2: {
+					handle: 'P7',
+					quote: 'We asked about the value of this will. Suppose we want truth: why not rather untruth? and uncertainty? even ignorance?',
+					page: {
+						work_title: 'Beyond Good and Evil',
+						creator: 'Friedrich Nietzsche',
+						printed_page: '9',
+						page_no: 21,
+						viewable: true,
+					},
+					status: 'unverified',
+					reason: 'partial_match',
+					matched_prefix: 'We asked about the value of this will.',
+					context: {
+						before: 'until we finally came to a complete stop before a still more basic question. ',
+						text: 'We asked about the value of this will. Suppose we want truth: why not rather untruth?',
+						after: ' And uncertainty? even ignorance? The problem of the value of truth came before us — or was it we who came before the problem?',
+					},
+				},
+				c3: {
+					handle: 'P12',
+					quote: 'the spirit that would bear much and heavy things',
+					page: {
+						work_title: 'Thus Spoke Zarathustra',
+						creator: 'Friedrich Nietzsche',
+						printed_page: '25',
+						page_no: 41,
+						viewable: true,
+					},
+					status: 'unverifiable',
+					reason: 'no_text_layer',
+					context: null,
+				},
+				c4: {
+					handle: 'P3',
+					quote: 'the knight of faith is obliged to rely upon himself alone',
+					page: {
+						work_title: 'Fear and Trembling',
+						creator: 'Søren Kierkegaard',
+						printed_page: '80',
+						page_no: 92,
+						viewable: true,
+					},
+					status: 'verified',
+					context: {
+						before: 'The tragic hero renounces himself in order to express the universal; the knight of faith renounces the universal in order to become the individual. Everything depends upon that. ',
+						text: 'The knight of faith is obliged to rely upon himself alone, he feels the pain of not being able to make himself intelligible to others,',
+						after: ' but he feels no vain desire to guide others. The pain is his assurance that he is in the right way.',
+					},
+				},
+				c5: {
+					handle: 'P5',
+					quote: 'faith begins precisely where thought leaves off',
+					page: {
+						work_title: 'Fear and Trembling',
+						creator: 'Søren Kierkegaard',
+						printed_page: '64',
+						page_no: 76,
+						viewable: true,
+					},
+					status: 'unverified',
+					reason: 'not_found',
+					context: null,
+				},
+			};
+
+			const ANSWERS = [
+				{
+					q: 'Does Nietzsche think the will to truth is itself a kind of faith?',
+					title: 'The will to truth as faith',
+					steps: [
+						'searching pages — "will to truth"',
+						'6 pages across 2 works',
+						'reading Beyond Good and Evil, PDF pp. 19–23',
+						'searching pages — "value of truth"',
+						'reading Thus Spoke Zarathustra, PDF pp. 39–43',
+					],
+					summary: 'searched twice, read 9 pages in 2 works',
+					paras: [
+						[
+							{
+								s: 'Nietzsche does not treat the will to truth as an appetite for facts. He opens Beyond Good and Evil by making it the thing under suspicion rather than the thing doing the suspecting:',
+								cite: 'c1',
+							},
+							{
+								s: 'The move he makes next is the one that matters: rather than asking whether truth can be had, he asks what wanting it is worth,',
+								cite: 'c2',
+							},
+						],
+						[
+							{
+								s: 'Calling that a faith is a fair gloss, but it is a gloss. He does not use the word for it in this passage; what he says is that the value of truth is an unexamined premise, held in advance of any argument for it.',
+							},
+							{
+								s: 'The nearest he comes to the vocabulary of faith here is in the register of burden and obedience,',
+								cite: 'c3',
+							},
+							{
+								s: 'That is my reading of the connection, not his statement of it.',
+							},
+						],
+					],
+					cites: ['c1', 'c2', 'c3'],
+				},
+				{
+					q: "Is Kierkegaard's knight of faith making a claim anyone else could check?",
+					title: 'Whether faith can be checked',
+					steps: [
+						'searching pages — "knight of faith"',
+						'4 pages in 1 work',
+						'reading Fear and Trembling, PDF pp. 90–94',
+					],
+					summary: 'searched once, read 5 pages in 1 work',
+					paras: [
+						[
+							{
+								s: 'No, and Kierkegaard makes the unavailability of the check the defining feature rather than an embarrassment.',
+								cite: 'c4',
+							},
+							{
+								s: 'The knight has nothing to appeal to that would make his position assessable from outside it, because the universal — the shared moral language in which anyone could be answered — is exactly what he has stepped out of.',
+							},
+						],
+						[
+							{
+								s: 'He puts this in terms of where thinking stops,',
+								cite: 'c5',
+							},
+							{
+								s: 'Read strictly, that leaves the knight of faith indistinguishable from someone simply mistaken, which is a cost Kierkegaard accepts rather than answers.',
+							},
+						],
+					],
+					cites: ['c4', 'c5'],
+				},
+			];
+
+			/* ============================================================
+			   The wordmark, typed in place
+			   ============================================================ */
+
+			const heroMark = $('#heroMark');
+
+			function layOutMark() {
+				const chars = [];
+				const put = (parent, text) => {
+					for (const ch of text) {
+						const s = document.createElement('span');
+						s.className = 'ch';
+						s.textContent = ch;
+						parent.append(s);
+						chars.push(s);
+					}
+				};
+				put(heroMark, 'scribe');
+				const em = document.createElement('em');
+				heroMark.append(em);
+				put(em, '-lm');
+				const caret = document.createElement('span');
+				caret.className = 'caret';
+				heroMark.append(caret);
+				return { chars, caret };
+			}
+
+			async function launch() {
+				const { chars, caret } = layOutMark();
+				const done = () =>
+					$$('.fade').forEach((f, i) =>
+						setTimeout(() => f.classList.add('in'), i * 130)
+					);
+
+				if (reduced || location.hash.includes('skip-launch')) {
+					chars.forEach((c) => c.classList.add('on'));
+					caret.classList.add('done');
+					$$('.fade').forEach((f) => f.classList.add('in'));
+					return;
+				}
+
+				await wait(260);
+				// Nothing reflows: every glyph is already in place and only fades
+				// up. The caret is absolute, and walks to the edge of each one, so
+				// it reads as typing without the line ever moving.
+				for (const ch of chars) {
+					ch.classList.add('on');
+					caret.style.left = ch.offsetLeft + ch.offsetWidth + 'px';
+					await wait(ch.textContent === '-' ? 190 : 86);
+				}
+				await wait(430);
+				caret.classList.add('done');
+				done();
+			}
+
+			/* ============================================================
+			   Chrome: tabs, phone frame, model switcher
+			   ============================================================ */
+
+			$$('.tab').forEach((tab) =>
+				tab.addEventListener('click', () => {
+					$$('.tab').forEach((t) =>
+						t.setAttribute('aria-selected', String(t === tab))
+					);
+					$$('.panel').forEach((p) =>
+						p.classList.toggle('on', p.id === tab.dataset.panel)
+					);
+				})
+			);
+
+			$('#device').addEventListener('click', () => {
+				document.body.classList.toggle('mobile');
+				setTimeout(relayout, 60);
+			});
+
+			function renderSwitchers() {
+				$$('[data-switcher]').forEach((host) => {
+					host.innerHTML = `<button class="model-btn">${model.label}<span class="chev">▾</span></button><div class="menu" role="menu"></div>`;
+					const menu = $('.menu', host);
+					for (const m of MODELS) {
+						const b = document.createElement('button');
+						b.role = 'menuitem';
+						b.disabled = !m.on;
+						b.innerHTML = `<span>${m.label}</span><span class="why">${
+							!m.on ? 'no key set' : m.id === model.id ? 'in use' : ''
+						}</span>`;
+						if (m.on)
+							b.addEventListener('click', (e) => {
+								e.stopPropagation();
+								model = m;
+								renderSwitchers();
+							});
+						menu.append(b);
+					}
+					const note = document.createElement('div');
+					note.className = 'menu-note';
+					note.textContent =
+						'Whichever providers have a key on the worker. Earlier answers keep the model that wrote them.';
+					menu.append(note);
+					$('.model-btn', host).addEventListener('click', (e) => {
+						e.stopPropagation();
+						const open = host.classList.contains('open');
+						$$('.switcher').forEach((s) => s.classList.remove('open'));
+						host.classList.toggle('open', !open);
+					});
+				});
+			}
+			document.addEventListener('click', () =>
+				$$('.switcher').forEach((s) => s.classList.remove('open'))
+			);
+			renderSwitchers();
+
+			/* ============================================================
+			   A turn
+			   ============================================================ */
+
+			const spread = $('#spread');
+			const scroll = $('#scroll');
+			const threads = $('#threads');
+			const composer = $('#composer');
+			const input = $('#ask-input');
+			const send = $('#send');
+			let busy = false;
+
+			$('#homeSlot').append(composer);
+
+			function enterConversation() {
+				if (document.body.classList.contains('talking')) return;
+				document.body.classList.add('talking');
+				$('#dockSlot').append(composer);
+			}
+
+			const toBottom = () => (scroll.scrollTop = scroll.scrollHeight);
+
+			/* The answer arrives a word at a time, each word already in place and
+			   only fading up, so a line never jumps as it fills. */
+			function sentenceOf(node) {
+				const span = document.createElement('span');
+				span.className = 'sentence';
+				node.s.split(' ').forEach((word, i) => {
+					const w = document.createElement('span');
+					w.className = 'w';
+					w.textContent = i ? ' ' + word : word;
+					span.append(w);
+				});
+				if (node.cite) {
+					span.classList.add('has-cite');
+					const c = CITES[node.cite];
+					const q = document.createElement('span');
+					q.className = 'cite w';
+					q.dataset.cite = node.cite;
+					q.tabIndex = 0;
+					q.innerHTML = `<span class="qm">“</span>${c.quote}<span class="qm">”</span><span class="stamp" data-status="pending" title="checking this quote against ${c.page.work_title}, p. ${c.page.printed_page}"></span>`;
+					span.append(' ', q);
+				}
+				span.append(' ');
+				return span;
+			}
+
+			async function reveal(p, node) {
+				const span = sentenceOf(node);
+				p.append(span);
+				const words = $$('.w', span);
+				if (reduced) {
+					words.forEach((w) => w.classList.add('on'));
+					return wait(90);
+				}
+				for (const w of words) {
+					w.classList.add('on');
+					toBottom();
+					await wait(w.classList.contains('cite') ? 200 : 32);
+				}
+			}
+
+			async function run(answer) {
+				if (busy) return;
+				busy = true;
+				send.disabled = true;
+				enterConversation();
+
+				const turn = document.createElement('div');
+				turn.className = 'turn';
+				turn.innerHTML = `<div class="question"></div>
+					<div class="work"><div class="work-live"></div></div>
+					<div class="answer"></div>`;
+				const margin = document.createElement('div');
+				margin.className = 'margin';
+				margin.innerHTML = '<svg class="ties" aria-hidden="true"></svg>';
+				spread.append(turn, margin);
+				$('.question', turn).textContent = answer.q;
+				toBottom();
+
+				const live = $('.work-live', turn);
+				for (const step of answer.steps) {
+					const line = document.createElement('div');
+					line.className = 'doing';
+					line.textContent = step;
+					$$('.doing', live).forEach((d) => d.classList.remove('doing'));
+					live.append(line);
+					toBottom();
+					await wait(reduced ? 90 : 520 + Math.random() * 380);
+				}
+				$$('.doing', live).forEach((d) => d.classList.remove('doing'));
+
+				// Once the answer starts, the search is apparatus.
+				const work = $('.work', turn);
+				work.dataset.open = 'false';
+				work.innerHTML = `<button class="work-sum"><span class="chev">▾</span><span>${answer.summary}</span></button>
+					<div class="work-detail">${answer.steps.map((s) => `<div>${s}</div>`).join('')}</div>`;
+				$('.work-sum', work).addEventListener('click', () => {
+					work.dataset.open =
+						work.dataset.open === 'true' ? 'false' : 'true';
+					layout(turn, margin);
+				});
+
+				const body = $('.answer', turn);
+				for (const para of answer.paras) {
+					const p = document.createElement('p');
+					body.append(p);
+					for (const node of para) await reveal(p, node);
+				}
+
+				// The answer is written. Nothing in it has been checked yet.
+				const foot = document.createElement('div');
+				foot.className = 'foot';
+				foot.innerHTML = `<span>checking ${answer.cites.length} quotes against their pages…</span>`;
+				body.append(foot);
+				toBottom();
+
+				drawNotes(turn, margin, answer);
+				await wait(reduced ? 120 : 750);
+				await resolve(turn, margin, answer, foot);
+				nameThread(answer);
+				busy = false;
+				send.disabled = !input.value.trim();
+			}
+
+			/* ---------- the margin ---------- */
+
+			function drawNotes(turn, margin, answer) {
+				for (const id of answer.cites) {
+					const c = CITES[id];
+					const note = document.createElement('div');
+					note.className = 'note appearing';
+					note.dataset.cite = id;
+					note.dataset.status = 'pending';
+					note.innerHTML = `<span class="handle">${c.handle}</span>
+						<span class="ref">${c.page.work_title}</span>
+						<span>${c.page.creator} — p. ${c.page.printed_page} (PDF p. ${c.page.page_no})</span>
+						<span class="verdict">checking…</span>`;
+					margin.append(note);
+					note.addEventListener('click', () => openPage(id));
+					note.addEventListener('mouseenter', () =>
+						light(turn, margin, id, true)
+					);
+					note.addEventListener('mouseleave', () =>
+						light(turn, margin, id, false)
+					);
+				}
+				layout(turn, margin);
+				requestAnimationFrame(() =>
+					$$('.note', margin).forEach((n) =>
+						n.classList.remove('appearing')
+					)
+				);
+
+				$$('.cite', turn).forEach((cite) => {
+					const id = cite.dataset.cite;
+					cite.addEventListener('click', () => openPage(id));
+					cite.addEventListener('keydown', (e) => {
+						if (e.key === 'Enter') openPage(id);
+					});
+					['mouseenter', 'focus'].forEach((ev) =>
+						cite.addEventListener(ev, () => light(turn, margin, id, true))
+					);
+					['mouseleave', 'blur'].forEach((ev) =>
+						cite.addEventListener(ev, () =>
+							light(turn, margin, id, false)
+						)
+					);
+				});
+			}
+
+			const inMargin = (margin) =>
+				getComputedStyle(margin).position !== 'static';
+
+			// Each note sits beside the words it supports, pushed down only as far
+			// as the note above it requires.
+			function layout(turn, margin) {
+				if (!inMargin(margin)) return;
+				const base = margin.getBoundingClientRect().top;
+				let floor = 0;
+				$$('.note', margin).forEach((note) => {
+					const cite = $(`.cite[data-cite="${note.dataset.cite}"]`, turn);
+					if (!cite) return;
+					const top = Math.max(
+						floor,
+						cite.getBoundingClientRect().top - base
+					);
+					note.style.top = top + 'px';
+					floor = top + note.offsetHeight + 14;
+				});
+			}
+
+			function relayout() {
+				$$('.turn').forEach((turn) => {
+					const margin = turn.nextElementSibling;
+					if (margin?.classList.contains('margin')) layout(turn, margin);
+				});
+			}
+			addEventListener('resize', relayout);
+
+			function light(turn, margin, id, on) {
+				const cite = $(`.cite[data-cite="${id}"]`, turn);
+				const note = $(`.note[data-cite="${id}"]`, margin);
+				if (!cite || !note) return;
+				cite.classList.toggle('lit', on);
+				note.classList.toggle('lit', on);
+				const svg = $('.ties', margin);
+				if (!svg) return;
+				svg.innerHTML = '';
+				if (!on || !inMargin(margin)) return;
+
+				// The hairline starts at the column's edge, level with the quote,
+				// never at the quote's own right edge — a citation that ends
+				// mid-line would otherwise drag the curve back across the prose.
+				const box = margin.getBoundingClientRect();
+				const a = cite.getBoundingClientRect();
+				const b = note.getBoundingClientRect();
+				const x1 = turn.getBoundingClientRect().right - box.left + 4;
+				const y1 = a.top - box.top + a.height / 2;
+				const y2 = b.top - box.top + 8;
+				const path = document.createElementNS(
+					'http://www.w3.org/2000/svg',
+					'path'
+				);
+				path.setAttribute(
+					'd',
+					`M ${x1} ${y1} C ${x1 / 2} ${y1}, -10 ${y2}, 0 ${y2}`
+				);
+				svg.append(path);
+				path.style.setProperty('--len', path.getTotalLength());
+				requestAnimationFrame(() => path.classList.add('draw'));
+			}
+
+			/* ---------- verification ---------- */
+
+			async function resolve(turn, margin, answer, foot) {
+				let verified = 0;
+				for (const id of answer.cites) {
+					const c = CITES[id];
+					const cite = $(`.cite[data-cite="${id}"]`, turn);
+					const note = $(`.note[data-cite="${id}"]`, margin);
+					const stamp = $('.stamp', cite);
+					stamp.dataset.status = c.status;
+					stamp.title = `${VERDICT[c.status === 'verified' ? 'verified' : c.reason]} — ${c.page.work_title}, p. ${c.page.printed_page} (${c.handle})`;
+					note.dataset.status = c.status;
+					$('.verdict', note).textContent =
+						VERDICT[c.status === 'verified' ? 'verified' : c.reason];
+					if (c.status === 'verified') verified++;
+					if (!reduced) {
+						note.animate(
+							[{ transform: 'translateX(3px)' }, { transform: 'none' }],
+							{ duration: 220, easing: 'cubic-bezier(.2,.8,.3,1)' }
+						);
+						await wait(290);
+					}
+				}
+				layout(turn, margin);
+
+				const n = answer.cites.length;
+				foot.innerHTML = `<span>${verified} of ${n} quote${n === 1 ? '' : 's'} found on the page it named — ${model.label}</span>
+					<button class="dim" aria-pressed="${document.body.classList.contains('only-cited')}">Only what's cited</button>`;
+				$('.dim', foot).addEventListener('click', dim);
+				toBottom();
+			}
+
+			function dim() {
+				const on = !document.body.classList.contains('only-cited');
+				document.body.classList.toggle('only-cited', on);
+				$$('.dim').forEach((b) =>
+					b.setAttribute('aria-pressed', String(on))
+				);
+			}
+
+			/* ---------- the rail ---------- */
+
+			async function nameThread(answer) {
+				document.body.classList.add('has-threads');
+				const t = document.createElement('button');
+				t.className = 'thread naming';
+				t.textContent = 'naming…';
+				threads.prepend(t);
+				setTimeout(relayout, 60);
+				await wait(reduced ? 70 : 1200);
+				t.classList.remove('naming');
+				t.classList.add('on');
+				t.textContent = answer.title;
+			}
+
+			/* ============================================================
+			   The page behind a citation
+			   ============================================================ */
+
+			const pv = $('#pageview');
+			function openPage(id) {
+				const c = CITES[id];
+				$('#pvTitle').textContent = c.page.work_title;
+				$('#pvSub').textContent =
+					`${c.page.creator} — p. ${c.page.printed_page} (PDF p. ${c.page.page_no}) — handle ${c.handle}`;
+
+				const body = $('#pvBody');
+				if (!c.context) {
+					body.innerHTML = `<div class="lead">${
+						c.status === 'unverifiable'
+							? 'This page has no text layer, so there is nothing to search. Scribe was shown it; the quote could not be checked either way.'
+							: 'These words are not on this page, in any reading of it. Either the page is not the one the model meant, or the quote is not the page&rsquo;s.'
+					}</div><p style="font-style:italic">“${c.quote}”</p>`;
+				} else {
+					const marked =
+						c.reason === 'partial_match'
+							? `<mark class="partial">${c.matched_prefix}</mark><span class="cut"> — matched to here</span>${c.context.text.slice(c.matched_prefix.length)}`
+							: `<mark>${c.context.text}</mark>`;
+					body.innerHTML = `<div class="lead">${
+						c.status === 'verified'
+							? 'The page&rsquo;s own words, with the quoted passage in place.'
+							: 'The quote begins here and then parts from the page — a scanning error, or a misquote. The page is what is shown; judge it yourself.'
+					}</div><p>…${c.context.before}${marked}${c.context.after}…</p>`;
+				}
+
+				$('#pvFoot').innerHTML = c.page.viewable
+					? `<button class="pv-act">See the scan</button><button class="pv-act">Read pp. ${c.page.page_no - 1}–${c.page.page_no + 1}</button>`
+					: 'This page has no scan to show.';
+				pv.classList.add('on');
+				pv.removeAttribute('aria-hidden');
+			}
+			const closePage = () => {
+				pv.classList.remove('on');
+				pv.setAttribute('aria-hidden', 'true');
+			};
+			$('#pvClose').addEventListener('click', closePage);
+
+			/* ============================================================
+			   Asking
+			   ============================================================ */
+
+			function ask(text) {
+				const known = ANSWERS.find(
+					(a) => a.q.toLowerCase() === text.toLowerCase().trim()
+				);
+				return known ? run(known) : unknown(text);
+			}
+
+			// The honest empty state: this prototype knows two questions.
+			function unknown(text) {
+				enterConversation();
+				const turn = document.createElement('div');
+				turn.className = 'turn';
+				turn.innerHTML = `<div class="question"></div>
+					<div class="answer"><p>This prototype answers two questions and invents nothing. Ask one of them and the whole apparatus runs — the search, the answer, and the check on every quote in it.</p></div>`;
+				$('.question', turn).textContent = text;
+				const margin = document.createElement('div');
+				margin.className = 'margin';
+				spread.append(turn, margin);
+
+				const list = document.createElement('div');
+				list.className = 'suggests';
+				ANSWERS.forEach((a, i) => {
+					const b = document.createElement('button');
+					b.className = 'suggest';
+					b.textContent = a.q;
+					b.addEventListener('click', () => run(ANSWERS[i]));
+					list.append(b);
+				});
+				$('.answer', turn).append(list);
+				toBottom();
+			}
+
+			input.addEventListener('input', () => {
+				send.disabled = !input.value.trim() || busy;
+				input.style.height = 'auto';
+				input.style.height = input.scrollHeight + 'px';
+			});
+			input.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' && !e.shiftKey) {
+					e.preventDefault();
+					submit();
+				}
+			});
+			send.addEventListener('click', submit);
+			function submit() {
+				const text = input.value.trim();
+				if (!text || busy) return;
+				input.value = '';
+				input.style.height = 'auto';
+				send.disabled = true;
+				ask(text);
+			}
+
+			$$('.suggest[data-q]').forEach((b) =>
+				b.addEventListener('click', () => run(ANSWERS[+b.dataset.q]))
+			);
+
+			$('#newq').addEventListener('click', () => {
+				if (busy) return;
+				spread.innerHTML = '';
+				document.body.classList.remove('talking');
+				$('#homeSlot').append(composer);
+				input.focus();
+			});
+
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') {
+					closePage();
+					$$('.switcher').forEach((s) => s.classList.remove('open'));
+				}
+				if (e.target === input) return;
+				if (e.key === '/') {
+					e.preventDefault();
+					input.focus();
+				}
+				if (e.key === 'c') dim();
+			});
+
+			/* ============================================================
+			   Add a book
+			   ============================================================ */
+
+			const drop = $('#drop');
+			['dragenter', 'dragover'].forEach((ev) =>
+				drop.addEventListener(ev, (e) => {
+					e.preventDefault();
+					drop.classList.add('over');
+				})
+			);
+			['dragleave', 'drop'].forEach((ev) =>
+				drop.addEventListener(ev, (e) => {
+					e.preventDefault();
+					drop.classList.remove('over');
+				})
+			);
+			drop.addEventListener('drop', (e) => {
+				for (const file of e.dataTransfer.files) accept(file.name);
+			});
+			$('#pick').addEventListener('click', () => {
+				const f = document.createElement('input');
+				f.type = 'file';
+				f.accept = 'application/pdf';
+				f.addEventListener('change', () => {
+					if (f.files[0]) accept(f.files[0].name);
+				});
+				f.click();
+			});
+			function accept(name) {
+				const row = document.createElement('div');
+				row.innerHTML = `<span>${name}</span><span>held — no ingestion behind this yet</span>`;
+				$('#queued').prepend(row);
+			}
+
+			/* ---------- go ----------
+			   Hash hooks so any screen can be captured without driving it by
+			   hand: #skip-launch, run=0|1, cite=c2, dim, tab=add, phone. */
+			if (location.hash.includes('phone'))
+				document.body.classList.add('mobile');
+			launch().then(async () => {
+				const hash = location.hash;
+				const tab = hash.match(/tab=(\w+)/);
+				if (tab) $(`.tab[data-panel="${tab[1]}"]`).click();
+				const r = hash.match(/run=(\d)/);
+				if (r) await run(ANSWERS[+r[1]]);
+				const cite = hash.match(/cite=(c\d)/);
+				if (cite) openPage(cite[1]);
+				if (/\bdim\b/.test(hash)) dim();
+			});
+		</script>
+	</body>
+</html>
