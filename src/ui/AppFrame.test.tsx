@@ -168,6 +168,23 @@ describe('the sessions rail', () => {
 		expect(container.querySelector('nav svg')).toBeTruthy();
 	});
 
+	// The round trip is started as the pointer arrives, so the click that
+	// follows has nothing left to wait for.
+	it('warms a conversation as the pointer reaches it', () => {
+		stubFetch();
+		const warmThread = vi.fn();
+		renderApp(<AppFrame />, { state: listed({ warmThread }) });
+
+		const row = screen.getByRole('button', {
+			name: 'The will to truth as faith',
+		});
+		fireEvent.pointerEnter(row);
+		expect(warmThread).toHaveBeenCalledWith('c1');
+
+		fireEvent.focus(row);
+		expect(warmThread).toHaveBeenCalledTimes(2);
+	});
+
 	// Wide, the rail never closes, so nothing else would take a reader off the
 	// shelves: the thread used to load into a panel nobody was looking at.
 	it('takes a reader to the conversation, from whatever tab they were on', () => {

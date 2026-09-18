@@ -135,6 +135,13 @@ between the halves.
 `onClose` and `onNavigate` separately: wide, the rail never closes, so passing
 one for the other loaded the thread into a panel nobody was looking at.
 
+**A conversation read once is kept.** `chat/threads.ts` holds what it fetched
+for the life of the tab, and the rail warms a conversation on `pointerenter`, so
+the click that follows usually has nothing to wait for — 245ms to 14ms, measured
+against a round trip. `forgetThread()` on every question asked, since that turn
+makes what was held wrong. The list is keyed on which conversation it is, so the
+switch reads as turning to one rather than a list rewritten in place.
+
 **`naming…` is a claim about right now.** It is said only while `ChatProvider`
 is actually polling for a title. A conversation that is still untitled after
 that is `untitled` — promising a name that is not coming is how `naming…` came

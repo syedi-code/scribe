@@ -18,6 +18,8 @@ export interface ChatState {
 	busy: boolean;
 	ask(text: string): void;
 	openThread(id: string): void;
+	/** A conversation the pointer is on, fetched before it is asked for. */
+	warmThread(id: string): void;
 	newQuestion(): void;
 	stop(): void;
 	retry(): void;
