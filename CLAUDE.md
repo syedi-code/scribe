@@ -65,6 +65,12 @@ all. A failed call says so and says why, rather than disappearing.
 the app looks for a citation, and `parse.test.ts` holds the awkward cases. When
 the server starts sending `marker` offsets, `markersFor()` prefers them.
 
+**A book's name is set by the stylesheet.** `@utility work-title` in
+`styles/theme.css`, used at every one of the five places a title is printed —
+the prose, the margin, the shelves, the drawer, the badge group. A component
+that writes `italic` for a title instead is a bug, and `styles/theme.test.ts`
+fails on one.
+
 **One copy file.** `copy.ts`. The honesty of this interface lives in its wording
 — _found on the page_, never a bare _verified_, never a tick — and wording
 scattered across components drifts.
@@ -85,9 +91,15 @@ screen's model line. A scrim and the panel it dims share a layer and are ordered
 by the DOM, scrim first.
 
 **No mobile fork.** One component tree, container queries on the app shell.
-Never `isMobile` inside a component, and never a second layout component for
-small screens. The one thing JavaScript asks the CSS is whether the margin notes
-are positioned or stacked.
+Never `isMobile` inside a component. The one thing JavaScript asks the CSS is
+whether the margin notes are positioned or stacked.
+
+There is one deliberate exception, and it is CSS that chooses it, not
+JavaScript: under the fold the margin notes give way to `ask/Shelf`, one entry
+per book with a badge per reference into it. Six citations into one work printed
+its title six times, which on a phone was most of the screen. Both forms are in
+the tree and `@max-fold` picks one, so there is still no component deciding
+which layout it is.
 
 **Every reported bug has a test.** `src/**/*.test.tsx` covers the parser and the
 handful of behaviours that have broken in front of a reader: the drawer closing,
@@ -110,6 +122,18 @@ title, and the search is done here so it never costs a second fetch.
 wrote nothing says so and offers to ask again. It is not a hypothetical: the
 server ran out of steps mid-tool-call in production and the reader was shown a
 list of everything it had read with nothing underneath it.
+
+**A page is reflowed before it is read.** A PDF's text layer breaks a line
+wherever the typesetter did, and printing those breaks gave a column of ragged
+half-lines in the drawer — worst on a phone, where the drawer is the screen.
+`reflow()` in `citations/page.ts` joins them and changes no words: a blank line
+is a paragraph, a single break is a space, and a line broken on a hyphen closes
+up _without_ one, so the hyphen the typesetter put there is still the only thing
+between the halves.
+
+**Opening a conversation is a move to the reading surface.** `Rail` takes
+`onClose` and `onNavigate` separately: wide, the rail never closes, so passing
+one for the other loaded the thread into a panel nobody was looking at.
 
 **`naming…` is a claim about right now.** It is said only while `ChatProvider`
 is actually polling for a title. A conversation that is still untitled after

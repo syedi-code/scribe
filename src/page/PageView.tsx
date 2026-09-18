@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { loadDocument, loadPages } from '../api/documents';
 import { COPY } from '../copy';
-import { locatePage } from '../citations/page';
+import { locatePage, reflow } from '../citations/page';
 import { presentationOf, verdictKey } from '../citations/status';
 import { useCitedPage } from '../citations/useCitedPage';
 import { useAsync } from '../lib/useAsync';
@@ -82,9 +82,15 @@ function WholePage({
 							})}
 						</p>
 					)}
-					<p className="m-0 whitespace-pre-line">
-						{page.text ?? COPY.pageView.noText}
-					</p>
+					{page.text ? (
+						reflow(page.text).map((paragraph, at) => (
+							<p key={at} className="mt-0 mb-3 last:mb-0">
+								{paragraph}
+							</p>
+						))
+					) : (
+						<p className="m-0">{COPY.pageView.noText}</p>
+					)}
 				</div>
 			))}
 		</>
@@ -270,7 +276,7 @@ export function PageView() {
 					<>
 						<header className="border-paper-deep flex items-start justify-between gap-4 border-b px-5 pt-4 pb-3">
 							<div>
-								<h3 className="m-0 text-[17px] leading-tight font-normal italic">
+								<h3 className="work-title m-0 text-[17px] leading-tight font-normal">
 									{page?.work_title ?? citation.handle}
 								</h3>
 								<p className="font-app text-small text-ink-soft mt-0.5">

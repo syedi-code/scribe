@@ -15,11 +15,14 @@ export function Workspace({
 	tab,
 	railOpen,
 	onCloseRail,
+	onNavigate,
 	railable,
 }: {
 	tab: Tab;
 	railOpen: boolean;
 	onCloseRail: () => void;
+	/** A conversation was chosen: whatever tab you were on, you are reading now. */
+	onNavigate: () => void;
 	railable: boolean;
 }) {
 	return (
@@ -30,7 +33,13 @@ export function Workspace({
 					: 'grid-cols-1'
 			}`}
 		>
-			{railable && <Rail open={railOpen} onClose={onCloseRail} />}
+			{railable && (
+				<Rail
+					open={railOpen}
+					onClose={onCloseRail}
+					onNavigate={onNavigate}
+				/>
+			)}
 
 			{tab === 'ask' ? <AskPanel /> : <BooksPanel />}
 

@@ -73,6 +73,24 @@ describe('the shelves', () => {
 		expect(screen.getAllByText('353 pages')).toHaveLength(3);
 	});
 
+	// The list is not an offer of the files behind it, and says so.
+	it('says it does not hand over the books', async () => {
+		stubFetch(CATALOGUE);
+		renderApp(<BooksPanel />);
+		await screen.findByText('Michel Foucault');
+
+		expect(screen.getByText(/does not provide the PDFs/)).toBeTruthy();
+		expect(screen.getByText(/alexandria API/)).toBeTruthy();
+	});
+
+	it('sets a book’s name as a book’s name', async () => {
+		stubFetch(CATALOGUE);
+		renderApp(<BooksPanel />);
+		expect(
+			(await screen.findByText('Discipline and Punish')).className
+		).toContain('work-title');
+	});
+
 	it('narrows on every word, across the title and the name', async () => {
 		stubFetch(CATALOGUE);
 		renderApp(<BooksPanel />);

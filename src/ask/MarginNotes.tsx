@@ -6,10 +6,12 @@ import {
 	useState,
 } from 'react';
 import { COPY } from '../copy';
+import { groupByDocument } from '../citations/group';
 import { describePage, locatePage } from '../citations/page';
 import { presentationOf } from '../citations/status';
 import { useCitedPage } from '../citations/useCitedPage';
 import { openPage } from '../state/reader';
+import { Shelf } from './Shelf';
 import type { AnswerCitation } from '../api/types';
 import type { CitationMarker } from '../citations/parse';
 
@@ -24,6 +26,12 @@ import type { CitationMarker } from '../citations/parse';
  *
  * Each note sits level with its quote, pushed down only as far as the note
  * above it requires.
+ *
+ * Under the fold the notes give way to one entry per book with a badge per
+ * reference into it: six references into one book printed its title six times,
+ * which on a phone was most of the screen. Both forms are in the tree and the
+ * container query picks one, so there is still no `isMobile` here and no
+ * second component deciding which layout it is.
  */
 
 const GAP = 14;
@@ -76,7 +84,9 @@ function Note({ index, marker, citation, lit, onLight }: NoteProps) {
 			<span className="text-ink-faint float-right">{marker.handle}</span>
 			{page ? (
 				<>
-					<span className="text-ink block">{page.work_title}</span>
+					<span className="work-title text-ink block">
+						{page.work_title}
+					</span>
 					<span className="block">
 						{page.creator} — {locatePage(page)}
 					</span>
@@ -214,7 +224,7 @@ export function MarginNotes({
 	return (
 		<div
 			ref={setMargin}
-			className="relative @max-fold:static @max-fold:mb-8 @max-fold:grid @max-fold:gap-2.5 @max-fold:border-t @max-fold:border-paper-deep @max-fold:pt-3"
+			className="relative @max-fold:static @max-fold:mb-8 @max-fold:border-t @max-fold:border-paper-deep @max-fold:pt-3"
 		>
 			<Tie
 				margin={margin}
@@ -222,16 +232,30 @@ export function MarginNotes({
 				index={lit}
 				anchor={lit === null ? null : (anchors.get(lit) ?? null)}
 			/>
-			{markers.map((marker, index) => (
-				<Note
-					key={index}
-					index={index}
-					marker={marker}
-					citation={index < resolved ? citations[index] : null}
-					lit={lit === index}
-					onLight={onLight}
-				/>
-			))}
+
+			<div className="@max-fold:hidden">
+				{markers.map((marker, index) => (
+					<Note
+						key={index}
+						index={index}
+						marker={marker}
+						citation={index < resolved ? citations[index] : null}
+						lit={lit === index}
+						onLight={onLight}
+					/>
+				))}
+			</div>
+
+			<div className="hidden @max-fold:grid @max-fold:gap-3">
+				{groupByDocument(markers, citations, resolved).map((group) => (
+					<Shelf
+						key={group.key}
+						group={group}
+						lit={lit}
+						onLight={onLight}
+					/>
+				))}
+			</div>
 		</div>
 	);
 }

@@ -13,7 +13,31 @@ import { useConversation } from '../chat/context';
  * `naming…` is said only while the server is actually being asked. A row that
  * is still untitled after that says so, rather than promising a name that is
  * no longer coming.
+ *
+ * Its head sticks, and is set at the same left margin as the wordmark above
+ * it, so the two read as one column of chrome rather than two things that
+ * happen to be near each other.
  */
+
+/** A plus, drawn. The app has no icon set and does not need one. */
+function Plus() {
+	return (
+		<svg
+			aria-hidden
+			viewBox="0 0 12 12"
+			className="size-3 shrink-0 opacity-70 transition-opacity group-hover/new:opacity-100"
+		>
+			<path
+				d="M6 1.5v9M1.5 6h9"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="1.3"
+				strokeLinecap="round"
+			/>
+		</svg>
+	);
+}
+
 export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 	const { threads, naming, activeId, openThread, newQuestion, busy } =
 		useConversation();
@@ -21,19 +45,34 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 	return (
 		<nav
 			aria-label="Earlier questions"
-			className="border-paper-deep h-full overflow-y-auto border-r px-4 py-4"
+			className="border-paper-deep h-full overflow-y-auto border-r px-5 pt-0 pb-4"
 		>
-			<button
-				type="button"
-				disabled={busy}
-				onClick={() => {
-					newQuestion();
-					onNavigate?.();
-				}}
-				className="font-app text-ui text-ink mb-2 block w-full py-1 text-left disabled:opacity-40"
-			>
-				{COPY.newQuestion}
-			</button>
+			<div className="bg-paper border-paper-deep sticky top-0 z-(--z-lifted) mb-2 border-b pt-4 pb-2.5">
+				<div className="flex items-baseline justify-between gap-2">
+					<span className="font-app text-small text-ink-soft">
+						{COPY.sessions}
+					</span>
+					<span
+						className="font-app text-tiny text-ink-faint"
+						aria-label={COPY.sessionCount(threads.length)}
+					>
+						{threads.length}
+					</span>
+				</div>
+
+				<button
+					type="button"
+					disabled={busy}
+					onClick={() => {
+						newQuestion();
+						onNavigate?.();
+					}}
+					className="group/new font-app text-ui text-ink-soft hover:text-ink mt-1.5 flex w-full items-center gap-1.5 py-0.5 text-left transition-colors disabled:opacity-40"
+				>
+					<Plus />
+					{COPY.newQuestion}
+				</button>
+			</div>
 
 			{threads.map((thread) => (
 				<button
@@ -44,7 +83,7 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 						onNavigate?.();
 					}}
 					aria-current={thread.id === activeId}
-					className={`font-app text-ui block w-full py-1 text-left leading-snug transition-colors hover:text-ink ${
+					className={`font-app text-ui hover:text-ink block w-full py-1 text-left leading-snug transition-colors ${
 						thread.title
 							? thread.id === activeId
 								? 'text-ink'

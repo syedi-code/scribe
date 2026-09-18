@@ -56,6 +56,33 @@ describe('the base stylesheet', () => {
 	});
 });
 
+/**
+ * Five places print a book's name. Each asks the stylesheet how a title is
+ * set, rather than writing `italic` and drifting from the other four.
+ */
+const PRINTS_A_BOOK_NAME = [
+	'src/ask/Answer.tsx', // in the prose
+	'src/ask/MarginNotes.tsx', // in the margin
+	'src/ask/Shelf.tsx', // under the fold
+	'src/books/BooksPanel.tsx', // on the shelves
+	'src/page/PageView.tsx', // in the drawer
+];
+
+describe('a work set as a work', () => {
+	it('is declared once, in the stylesheet', () => {
+		expect(THEME).toContain('@utility work-title');
+	});
+
+	it('is what every component that prints a book name reaches for', () => {
+		for (const path of PRINTS_A_BOOK_NAME) {
+			expect(
+				readFileSync(path, 'utf8'),
+				`${path} prints a book name without work-title`
+			).toContain('work-title');
+		}
+	});
+});
+
 describe('the stacking order', () => {
 	const LAYERS = ['lifted', 'rail', 'drawer', 'header', 'menu'];
 

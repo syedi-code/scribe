@@ -55,7 +55,7 @@ function Row({ work }: { work: Work }) {
 	return (
 		<li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 py-[3px]">
 			<span className="font-read text-ask text-ink font-light">
-				{work.title}
+				<span className="work-title">{work.title}</span>
 				{work.originally_published && (
 					<span className="font-app text-small text-ink-faint ml-2 whitespace-nowrap">
 						{work.originally_published}
@@ -97,6 +97,11 @@ export function BooksPanel() {
 						</span>
 					)}
 				</div>
+				{/* Said once, under the search, so nobody reads the list as an
+				    offer of the files behind it. */}
+				<p className="font-app text-small text-ink-faint max-w-doc mx-auto mt-2 mb-0 w-full">
+					{COPY.books.blurb}
+				</p>
 			</div>
 
 			<div className="overflow-y-auto px-5 py-5 @max-compact:px-3.5">

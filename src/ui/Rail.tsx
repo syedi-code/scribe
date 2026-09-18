@@ -9,13 +9,19 @@ import { ThreadRail } from './ThreadRail';
  * Narrow, the rail is an overlay, and an overlay says so: the page behind it
  * dims and a tap anywhere on it puts the rail away — including on the button
  * that opened it, which would otherwise reopen it on the same tap.
+ *
+ * Going to a conversation is not the same as putting the rail away, and the
+ * two are separate props for it: wide, the rail never closes, so a thread
+ * opened from the Books tab loaded into a panel nobody was looking at.
  */
 export function Rail({
 	open,
 	onClose,
+	onNavigate,
 }: {
 	open: boolean;
 	onClose: () => void;
+	onNavigate: () => void;
 }) {
 	const rail = useRef<HTMLDivElement>(null);
 
@@ -46,7 +52,7 @@ export function Rail({
 					open ? '' : '@max-compact:hidden'
 				}`}
 			>
-				<ThreadRail onNavigate={onClose} />
+				<ThreadRail onNavigate={onNavigate} />
 			</div>
 		</>
 	);
