@@ -236,24 +236,25 @@ export const COPY = {
 	/* ---- the page behind a citation ---- */
 	pageView: {
 		close: 'Close',
+		/**
+		 * Said only when something is wrong with the citation. A verified one
+		 * shows the passage and says nothing: the page is the evidence, and a
+		 * sentence explaining that it is was the drawer describing to the
+		 * reader what they are already looking at.
+		 */
 		lead: {
-			verified: 'The page’s own words, with the quoted passage in place.',
+			verified: '',
 			partial_match:
-				'The quote begins here and then parts from the page — a scanning error, or a misquote. The page is what is shown; judge it yourself.',
-			not_found:
-				'These words are not on this page, in any reading of it. Either the page is not the one the model meant, or the quote is not the page’s.',
+				'The quote parts from the page here — a scanning error, or a misquote.',
+			not_found: 'These words are not on this page. Read it and judge.',
 			quote_too_short:
-				'Under five words, which matches too much text by accident to count as evidence. The page is here; read it yourself.',
-			no_such_page:
-				'The handle names a page this document does not have.',
+				'Under five words, which matches too much by accident to be evidence.',
+			no_such_page: 'This document has no such page.',
 			unknown_handle:
-				'This handle was never given to a page in this conversation, so there is nothing to open.',
+				'This handle was never given to a page here, so there is nothing to open.',
 			no_text_layer:
-				'This page has no text layer, so there is nothing to search. Scribe was shown it; the quote could not be checked either way.',
+				'No text layer on this page, so the quote could not be checked either way.',
 		},
-		/** Shown when the server has not sent the matched window with the citation. */
-		wholePage:
-			'The whole page, as extracted. The match window is not in this answer’s payload, so the quote is not lit within it.',
 		quoted: 'The words the answer relied on',
 		matchedToHere: 'matched to here',
 		spansBreak: 'the match runs onto the next page',

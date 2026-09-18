@@ -1,19 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { COPY } from '../copy';
 import { useDismiss } from '../lib/useDismiss';
+import { BrandedLabel } from './BrandedLabel';
 import { useModels } from './context';
-
-/**
- * The one place a provider's own colour appears. Everywhere else in the app
- * colour means how the evidence came back, and nothing else; inside this menu
- * a dot per provider is worth more than the rule costs, and it is the whole of
- * the exception.
- */
-const PROVIDER_DOT: Record<string, string> = {
-	anthropic: 'bg-anthropic',
-	openai: 'bg-openai',
-	google: 'bg-google',
-};
 
 /**
  * `running Claude Haiku 4.5 ▾` — the one line that says which model is
@@ -48,7 +37,9 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 					onClick={() => setOpen((was) => !was)}
 					className="text-ink inline-flex max-w-[min(15rem,60cqw)] items-baseline border-b border-transparent leading-tight hover:border-paper-deep disabled:cursor-default"
 				>
-					<span className="truncate">{label}</span>
+					<span className="truncate">
+						<BrandedLabel label={label} />
+					</span>
 					<span
 						aria-hidden
 						className={`ml-1 inline-block text-[0.8em] transition-transform duration-200 ease-paper ${
@@ -86,15 +77,11 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 							>
 								<span className="flex min-w-0 items-baseline gap-2">
 									<span
-										aria-hidden
-										className={`size-1.5 shrink-0 translate-y-[-0.1em] rounded-full ${PROVIDER_DOT[model.provider] ?? 'bg-ink-faint'} ${
-											model.available ? '' : 'opacity-40'
+										className={`truncate ${model.suspended ? 'line-through' : ''} ${
+											model.available ? '' : 'opacity-60'
 										}`}
-									/>
-									<span
-										className={`truncate ${model.suspended ? 'line-through' : ''}`}
 									>
-										{model.label}
+										<BrandedLabel label={model.label} />
 									</span>
 								</span>
 								<span className="text-tiny text-ink-faint shrink-0 whitespace-nowrap">

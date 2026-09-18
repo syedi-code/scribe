@@ -290,8 +290,17 @@
 
 /* A work's name, wherever it is printed: in the prose, in the margin, on the
    shelves, in the drawer. Naming it means the next decision about how a title
-   is set is made once rather than in five components. */
+   is set is made once rather than in five components.
+
+   The face is pinned, not inherited. `font-style: italic` alone asks for an
+   italic of whatever family is in force, and GT Alpina Condensed ships
+   without one -- so the margin note, which is set in `--font-app`, got a
+   browser-sheared Condensed Regular while the other four sites got the real
+   drawn italic. Standard has a true italic at 300, 400 and 700, which is
+   every weight a title is set in. Medium 500 has none: do not set a title in
+   it. */
 @utility work-title {
+	font-family: var(--font-read);
 	font-style: italic;
 }
 

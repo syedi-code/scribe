@@ -81,6 +81,31 @@ describe('a work set as a work', () => {
 			).toContain('work-title');
 		}
 	});
+
+	// `font-style: italic` alone inherits the family, and Condensed has no
+	// italic cut -- the margin note was a browser-sheared Condensed Regular
+	// while the other four were the real drawn italic.
+	it('is set in the face that actually has an italic cut', () => {
+		const rule = THEME.slice(THEME.indexOf('@utility work-title'));
+		const body = rule.slice(0, rule.indexOf('}'));
+
+		expect(body).toContain('font-family: var(--font-read)');
+		expect(body).toContain('font-style: italic');
+	});
+
+	it('has a real italic file behind every weight a title is set in', () => {
+		for (const weight of [300, 400, 700]) {
+			const faces = THEME.split('@font-face');
+			const italic = faces.find(
+				(face) =>
+					face.includes(`font-weight: ${weight}`) &&
+					face.includes('font-style: italic') &&
+					face.includes('GT Alpina')
+			);
+			expect(italic, `no italic cut at weight ${weight}`).toBeDefined();
+			expect(italic).toContain('Italic.woff2');
+		}
+	});
 });
 
 describe('the stacking order', () => {

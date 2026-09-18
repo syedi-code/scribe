@@ -1,4 +1,5 @@
 import { inkFor } from './authors';
+import { sharedRun, wordsOf } from './overlap';
 import type { AnswerCitation } from '../api/types';
 
 /**
@@ -157,54 +158,40 @@ export type Paragraph = Sentence[];
    checked.
    ------------------------------------------------------------------------- */
 
-/** A quotation the prose has just closed, immediately before a citation. */
-const QUOTED_TAIL = /["“]([^"”]{12,})["”][\s,;:.]*$/;
-
-/** Folds the characters a PDF and a model disagree about, without moving any. */
-const align = (text: string) =>
-	text
-		.toLowerCase()
-		.replace(/[“”]/g, '"')
-		.replace(/[‘’]/g, "'")
-		.replace(/[–—]/g, '-');
-
-const loose = (text: string) =>
-	align(text)
-		.replace(/[^\p{L}\p{N}]+/gu, ' ')
-		.trim();
+/**
+ * A quotation the prose has just closed before a citation, and the clause that
+ * may trail it — *the "reciprocal kinship between knowledge and language" that
+ * characterized Classical thought [P28 "…"]*. Requiring the quotation to sit
+ * flush against the citation missed that, and printed the passage twice.
+ */
+const QUOTED_TAIL = /["“]([^"”]{12,})["”]([^"”]{0,80}?)[\s,;:.]*$/;
 
 interface Absorbed {
 	/** The prose to keep, with the duplicated quotation removed. */
 	prose: string;
 	quote: string;
 	checked: [number, number];
+	/** The clause that sat between the quotation and the citation, if any. */
+	trailing: string;
 }
 
-/** Whether `prose` ends with the quotation this citation is repeating. */
+
+/** Whether `prose` has just written out the passage this citation repeats. */
 function absorbQuotation(prose: string, quote: string): Absorbed | null {
 	const tail = QUOTED_TAIL.exec(prose);
 	if (!tail) return null;
 	const written = tail[1];
 
 	// The citation must be the same passage, not merely a neighbouring one.
-	const inside = align(written).indexOf(align(quote));
-	if (inside >= 0) {
-		return {
-			prose: prose.slice(0, tail.index),
-			quote: written,
-			checked: [inside, inside + quote.length],
-		};
-	}
-	// Same words, differently spaced or hyphenated: mark the whole quotation
-	// rather than guess at an offset inside it.
-	if (loose(written).includes(loose(quote)) && loose(quote).length > 0) {
-		return {
-			prose: prose.slice(0, tail.index),
-			quote: written,
-			checked: [0, written.length],
-		};
-	}
-	return null;
+	const shared = sharedRun(wordsOf(written), wordsOf(quote));
+	if (!shared) return null;
+
+	return {
+		prose: prose.slice(0, tail.index),
+		quote: written,
+		checked: shared,
+		trailing: tail[2] ?? '',
+	};
 }
 
 /** Where a sentence ends: terminal punctuation, then space, then a new start. */
@@ -214,7 +201,15 @@ const SENTENCE_END = /([.!?…]["”’)\]]*)(\s+)(?=[“"'(\p{Lu}\p{N}])/gu;
 const ABBREVIATION =
 	/(?:^|\s)(?:pp?|cf|e\.g|i\.e|etc|vol|ed|trans|ch|sec|no|fig|St|Mr|Mrs|Ms|Dr|Prof|\p{Lu})\.$/u;
 
-const EMPHASIS = /\*\*([^*]+)\*\*|(?<![\p{L}\p{N}])[*_]([^*_\n]+)[*_]/gu;
+/**
+ * The model writes markdown whatever the instructions say, and it nests it:
+ * `**1. Al-Ghazali's *Deliverance from Error* (11th century)**`. A single pass
+ * that refused an asterisk inside a bold never matched that at all -- it
+ * latched onto the second `*` instead and left `**` in the prose as literal
+ * text. Bold is found first, then emphasis inside whatever it holds.
+ */
+const BOLD = /\*\*([\s\S]+?)\*\*/g;
+const ITALIC = /(?<![\p{L}\p{N}])[*_]([^*_\n]+)[*_]/gu;
 
 /**
  * The works being discussed, set as works.
@@ -235,6 +230,15 @@ function setTitles(
 	const pattern = new RegExp(`(${quoted.join('|')})`, 'g');
 
 	return nodes.flatMap((node): AnswerNode[] => {
+		// The model italicises its own titles. That is a hint, not a claim:
+		// it earns `work-title` only if it names a work the answer cited,
+		// and otherwise stays the emphasis the model asked for. Without this
+		// a title the model marked up was never recognised as one at all.
+		if (node.kind === 'emphasis' && !node.strong) {
+			return names(node.text, titles)
+				? [{ kind: 'title', text: node.text }]
+				: [node];
+		}
 		if (node.kind !== 'text') return [node];
 		return node.text
 			.split(pattern)
@@ -244,6 +248,21 @@ function setTitles(
 					? { kind: 'title', text: piece }
 					: { kind: 'text', text: piece }
 			);
+	});
+}
+
+/**
+ * Whether an emphasised run names a cited work. A model shortens a title it
+ * has already given in full -- `Meditations` for `Meditations on First
+ * Philosophy` -- so a leading run of it counts, but nothing shorter than a
+ * word or two, which would catch `The` or `On`.
+ */
+function names(text: string, titles: readonly string[]): boolean {
+	const written = text.trim().toLowerCase();
+	if (written.length < 4) return false;
+	return titles.some((title) => {
+		const whole = title.toLowerCase();
+		return whole === written || whole.startsWith(written + ' ');
 	});
 }
 
@@ -281,24 +300,76 @@ function setAuthors(
 	});
 }
 
+const plain = (text: string, strong: boolean): AnswerNode =>
+	strong ? { kind: 'emphasis', text, strong: true } : { kind: 'text', text };
+
+/** Emphasis inside a run that is already bold, or inside one that is not. */
+function italicise(text: string, strong: boolean): AnswerNode[] {
+	const nodes: AnswerNode[] = [];
+	let cursor = 0;
+	for (const match of text.matchAll(ITALIC)) {
+		if (match.index > cursor) {
+			nodes.push(plain(text.slice(cursor, match.index), strong));
+		}
+		nodes.push({ kind: 'emphasis', text: match[1], strong: false });
+		cursor = match.index + match[0].length;
+	}
+	if (cursor < text.length) nodes.push(plain(text.slice(cursor), strong));
+	return nodes;
+}
+
 function emphasise(text: string): AnswerNode[] {
 	const nodes: AnswerNode[] = [];
 	let cursor = 0;
-	for (const match of text.matchAll(EMPHASIS)) {
+	for (const match of text.matchAll(BOLD)) {
 		if (match.index > cursor) {
-			nodes.push({ kind: 'text', text: text.slice(cursor, match.index) });
+			nodes.push(...italicise(text.slice(cursor, match.index), false));
 		}
-		nodes.push({
-			kind: 'emphasis',
-			text: match[1] ?? match[2],
-			strong: match[1] !== undefined,
-		});
+		nodes.push(...italicise(match[1], true));
 		cursor = match.index + match[0].length;
 	}
 	if (cursor < text.length) {
-		nodes.push({ kind: 'text', text: text.slice(cursor) });
+		nodes.push(...italicise(text.slice(cursor), false));
 	}
 	return nodes;
+}
+
+const HEADING = /^\s*#{1,6}\s+/;
+
+/** A line that is nothing but one bold run: a heading, written in bold. */
+const BOLD_LINE = /^\s*\*\*([\s\S]+?)\*\*\s*$/;
+
+/**
+ * A block split where the model put a heading, with the marks dropped.
+ *
+ * An answer is plain prose -- a heading in one would be a decision rather
+ * than a default -- but a model reaches for `## ` anyway on a question that
+ * wants a list, and the marks were printed to the reader as text. The break
+ * a heading implies is kept; the mark that asked for it is not.
+ */
+function unheaded(block: string): string[] {
+	const out: string[] = [];
+	let run: string[] = [];
+	const flush = () => {
+		if (run.length > 0) out.push(run.join(' '));
+		run = [];
+	};
+
+	for (const line of block.split('\n')) {
+		const bold = BOLD_LINE.exec(line);
+		if (HEADING.test(line)) {
+			flush();
+			out.push(line.replace(HEADING, ''));
+		} else if (bold) {
+			flush();
+			out.push(bold[1]);
+		} else {
+			run.push(line.trim());
+		}
+	}
+	flush();
+
+	return out.map((text) => text.trim()).filter(Boolean);
 }
 
 /** Splits prose into sentences, keeping the whitespace that followed each one. */
@@ -362,15 +433,20 @@ export function segmentAnswer(
 		const blocks = prose.split(/\n{2,}/);
 		blocks.forEach((block, index) => {
 			if (index > 0) closeParagraph();
-			const flat = block.replace(/\s*\n\s*/g, ' ');
-			const pieces = sentencePieces(flat);
-			pieces.forEach((piece, at) => {
-				nodes.push(
-					...setAuthors(setTitles(emphasise(piece), titles), surnames)
-				);
-				// Every piece but the last ends a sentence; the last may be
-				// continued by a citation or by the next chunk of prose.
-				if (at < pieces.length - 1) closeSentence();
+			unheaded(block).forEach((flat, n) => {
+				if (n > 0) closeParagraph();
+				const pieces = sentencePieces(flat);
+				pieces.forEach((piece, at) => {
+					nodes.push(
+						...setAuthors(
+							setTitles(emphasise(piece), titles),
+							surnames
+						)
+					);
+					// Every piece but the last ends a sentence; the last may
+					// be continued by a citation or the next chunk of prose.
+					if (at < pieces.length - 1) closeSentence();
+				});
 			});
 		});
 	};
@@ -402,6 +478,7 @@ export function segmentAnswer(
 			checked: absorbed ? absorbed.checked : [0, marker.quote.length],
 		});
 		cited = true;
+		if (absorbed?.trailing) addAfter(absorbed.trailing);
 		cursor = marker.end;
 	});
 

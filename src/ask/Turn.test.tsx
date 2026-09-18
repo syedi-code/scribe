@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
-import { assistant, renderApp, stubFetch } from '../test/harness';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+	assistant,
+	asProduction,
+	renderApp,
+	stubFetch,
+	verified,
+} from '../test/harness';
 import { Turn } from './Turn';
 
 /**
@@ -89,5 +95,80 @@ describe('a turn that never got to an answer', () => {
 		expect(
 			screen.getByText(/Foucault says the epistemes shift/)
 		).toBeTruthy();
+	});
+});
+
+/**
+ * A title and a surname in the prose came from `citation.page`, which
+ * production has never sent. Every fixture set it, so every test passed while
+ * the reading surface showed neither. The document behind the `ref` is the
+ * fallback the margin already used.
+ */
+describe('a cited work, when the server sends no page', () => {
+	const answered = () =>
+		assistant(
+			[
+				{ type: 'step-start' },
+				{
+					type: 'text',
+					text: 'Nietzsche calls it Beyond Good and Evil [P1 "the will to truth"].',
+				},
+			],
+			[
+				asProduction({
+					...verified('P1', 'the will to truth'),
+					ref: { document_id: 'doc-prose', page_no: 21 },
+				}),
+			]
+		);
+
+	const document = {
+		document: {
+			document_id: 'doc-prose',
+			work_id: 'w1',
+			work_title: 'Beyond Good and Evil',
+			creator: 'Friedrich Nietzsche',
+			page_count: 300,
+			page_offset: 12,
+			has_file: true,
+		},
+	};
+
+	// The name is also printed in the margin and on the shelf; this is about
+	// the prose, which is the surface that was showing neither.
+	const prose = async () =>
+		await waitFor(() => {
+			const found = window.document.querySelector('.text-prose');
+			expect(found?.querySelector('cite')).toBeTruthy();
+			return found as HTMLElement;
+		});
+
+	it('still inks the surname in the prose', async () => {
+		stubFetch(document);
+		renderApp(
+			<Turn
+				question="What does Nietzsche say?"
+				message={answered()}
+				streaming={false}
+			/>
+		);
+
+		const name = within(await prose()).getByText('Nietzsche');
+		expect(name.className).toMatch(/author-c[0-5]/);
+	});
+
+	it('still sets the work as a title in the prose', async () => {
+		stubFetch(document);
+		renderApp(
+			<Turn
+				question="What does Nietzsche say?"
+				message={answered()}
+				streaming={false}
+			/>
+		);
+
+		const title = within(await prose()).getByText('Beyond Good and Evil');
+		expect(title.tagName).toBe('CITE');
+		expect(title.className).toContain('work-title');
 	});
 });

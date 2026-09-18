@@ -104,6 +104,19 @@ export const assistant = (
 		: parts,
 });
 
+/**
+ * The same citation as production actually sends it.
+ *
+ * `page` is one of the four fields scribe is still waiting on, so every
+ * fixture that sets it is testing an API this app has never been given. A
+ * citation arrives with a `ref` and nothing else, and the client is supposed
+ * to fetch the document behind it.
+ */
+export const asProduction = (citation: AnswerCitation): AnswerCitation => {
+	const { page: _page, ...rest } = citation;
+	return rest as AnswerCitation;
+};
+
 export const verified = (handle: string, quote: string): AnswerCitation => ({
 	handle,
 	quote,

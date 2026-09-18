@@ -7,6 +7,7 @@ import {
 	trimHalfWrittenCitation,
 } from '../citations/parse';
 import { surnamesOf } from '../citations/authors';
+import { useCitedWorks } from '../citations/useCitedWorks';
 import { useStaggeredResolve } from '../citations/useResolve';
 import { readMessage, type ScribeMessage } from '../chat/message';
 import { useModels } from '../models/context';
@@ -56,32 +57,23 @@ export function Turn({
 		[message, streaming]
 	);
 
+	// Only works the server actually checked, so nothing is set as a title or
+	// inked as a name that the answer did not cite.
+	const { titles, creators } = useCitedWorks(read?.citations);
+
 	const { markers, paragraphs, citations } = useMemo(() => {
 		const written = read?.answer ?? '';
 		// Nothing half-written is shown: a citation appears whole or not yet.
 		const answer = streaming ? trimHalfWrittenCitation(written) : written;
 		const markers = markersFor(answer, read?.citations);
-		const titles = [
-			...new Set(
-				(read?.citations ?? []).flatMap((citation) =>
-					citation.page?.work_title ? [citation.page.work_title] : []
-				)
-			),
-		].sort((a, b) => b.length - a.length);
-		// Only creators the server actually checked, so nothing is inked that
-		// the answer did not cite.
-		const surnames = surnamesOf(
-			(read?.citations ?? []).flatMap((citation) =>
-				citation.page?.creator ? [citation.page.creator] : []
-			)
-		);
+		const surnames = surnamesOf(creators);
 
 		return {
 			markers,
 			paragraphs: segmentAnswer(answer, markers, titles, surnames),
 			citations: alignCitations(markers, read?.citations),
 		};
-	}, [read, streaming]);
+	}, [read, streaming, titles, creators]);
 
 	const resolved = useStaggeredResolve(
 		markers.length,
