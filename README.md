@@ -39,11 +39,15 @@ Nothing is ever optimistic, faked, or inferred on the client.
 answer, or `c`) fades every sentence no citation supports. On a good answer it
 changes little; on a bad one the paragraph nearly empties.
 
-**The passage appears once.** A model asked to cite as `[P7 "…"]` writes the
-passage out in its prose first and cites a few words of it after, so the
-renderer folds the citation back into the quotation the model already wrote: the
-reader sees it once, with the checked words set one weight heavier inside it.
-The stamp still reports only what the server checked.
+**The passage appears once, because it is only written once.** The model cites
+by wrapping the words it quotes — `<cite P7>the will to truth</cite>` — so the
+quotation, the evidence and the thing the server checks are the same words.
+Asking for the quote inside `[P7 "…"]` instead meant the model wrote the
+passage in its prose and cited it again, and the renderer had to guess which
+prose quotation each citation was repeating. It guessed right slightly more
+often than not. What it could not do was fix the deeper fault: the copy the
+reader saw was not the copy the server checked, so a quotation the model never
+cited at all was shown in quotation marks with no verdict on it.
 
 **What is not the answer.** An assistant message holds the text of _every_ step,
 and models narrate between tool calls however firmly the instructions ask them

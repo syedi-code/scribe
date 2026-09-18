@@ -16,8 +16,9 @@ import type { AnswerCitation } from '../api/types';
  * closing quotation mark for a long time, on the reasoning that a rule under a
  * twenty-word quote pulls the eye off the sentence it supports — but a mark
  * after the quote says nothing about *which* words were checked, and a reader
- * on a phone got a 10px square to aim a finger at. The rule is drawn under
- * exactly the words the server checked, thin and set clear of the descenders.
+ * on a phone got a 10px square to aim a finger at. The rule is drawn under the
+ * quoted words, which are exactly the words the server checked, thin and set
+ * clear of the descenders.
  *
  * Style carries the verdict as well as colour — solid found, wavy not found,
  * dotted unknown — so it survives being printed and a reader who cannot tell
@@ -27,7 +28,6 @@ import type { AnswerCitation } from '../api/types';
 export function Citation({
 	index,
 	quote,
-	checked,
 	citation,
 	lit,
 	onLight,
@@ -35,8 +35,6 @@ export function Citation({
 }: {
 	index: number;
 	quote: string;
-	/** The part of the quotation the server checked. */
-	checked: [number, number];
 	citation: AnswerCitation | null;
 	lit: boolean;
 	onLight: (index: number | null) => void;
@@ -56,13 +54,6 @@ export function Citation({
 			: verdict;
 	const open = (element: HTMLElement) =>
 		citation && openPage(citation, element);
-
-	// When the model wrote the passage out and then cited a few words of it,
-	// only those few words were checked — so only those carry the weight and
-	// the rule. The rest of the quotation is the model’s own sentence.
-	const before = quote.slice(0, checked[0]);
-	const evidence = quote.slice(checked[0], checked[1]);
-	const after = quote.slice(checked[1]);
 
 	return (
 		<span
@@ -86,9 +77,7 @@ export function Citation({
 			}`}
 		>
 			<span className="text-ink-faint">“</span>
-			{before}
-			<span className={`font-normal ${underline}`}>{evidence}</span>
-			{after}
+			<span className={`font-normal ${underline}`}>{quote}</span>
 			<span className="text-ink-faint">”</span>
 			<span className="sr-only">{` — ${label}`}</span>
 		</span>

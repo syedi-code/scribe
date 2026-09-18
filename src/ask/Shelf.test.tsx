@@ -216,4 +216,17 @@ describe('the shelf under the fold', () => {
 		expect(shelf).toContain('min-w-0');
 		expect(shelf).toContain('shrink-0');
 	});
+	/**
+	 * The rows are 2px apart and a pip reaches 1px above and below itself, so a
+	 * target is exactly the pitch. Reaching further would put two books' targets
+	 * over each other and open the one above or below the one aimed at.
+	 */
+	it('lets a pip reach the gap between rows and no further', () => {
+		const shelf = readFileSync('src/ask/Shelf.tsx', 'utf8');
+
+		expect(SOURCE).toContain('@max-fold:gap-0.5');
+		expect(shelf).toContain('h-8');
+		expect(shelf).toContain('after:-inset-y-px');
+	});
+
 });

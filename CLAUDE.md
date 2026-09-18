@@ -106,35 +106,38 @@ citation into an unverified one.
 is set as a work. Tying the italic to a verified citation meant a title the
 model marked up was never recognised as one at all.
 
-**A citation that repeats the prose is moved onto it.** Models write the
-passage out and _then_ cite it, which printed the same words twice and made
-good answers read as gibberish. `anchorsFor()` in `citations/parse.ts` finds
-the quotation in the prose that a citation repeats, draws the citation there
-— the rule under the prose's own quotation, the checked words one weight
-heavier inside it — and drops the copy. A quotation repeats a citation when
-the two share five words, or when the whole of a quotation of three or more
-words is inside the cited passage (`repeats()` in `citations/overlap.ts`):
-production's most common case is _“Plato is boring” [P10 "Plato is
-boring.-Ultimately my distrust…"]_, which no five-word floor can pair. It
-looks back to the previous citation, not just at the nearest quotation,
-because the nearest is often a different one and a clause of any length sits
-between; and a pile of citations after a sentence shares the prose before the
-pile, each finding its own quotation. A citation is never folded onto words it
-does not contain — _“identity of life and death”_ against _[P20 "identity of
-day and night"]_ is the same claim in different words, and a stamp on the
-prose would say words were found that were never checked. The instruction that
-asks the model not to do it is in alexandria's `conversations/instructions.ts`;
-the client does not rely on it. `absorb.test.ts` holds the production cases.
+**A quotation is written once, inside `<cite>`.** The model cites by wrapping
+the words it quotes — `<cite P7>the will to truth</cite>` — so the quotation,
+the evidence and the words the server checks are one copy of one thing.
+`citations/parse.ts` reads the tag and draws the citation where it was woven.
+
+It was `[P7 "…"]`, which put the quoted words somewhere the reader could not
+see them, so the model wrote them again in its prose and the answer said
+everything twice. Three revisions of alexandria's instructions failed to stop
+it, and `anchorsFor()` here tried to pair each citation with the prose
+quotation it repeated, by shared words. Across production it paired 42 of 92
+citations and missed the rest: a two-word quote is under any floor, an OCR
+error in the page breaks the match (production's _A Critique of Politi?al
+Economy_), and prose that quotes different words from the citation has nothing
+to pair. The pairing is gone. What it was patching was not duplication but its
+cause — the reader was shown one copy and the server checked the other, so
+35 quotations in 14 of 18 production answers carried quotation marks and no
+verdict at all.
+
+`[P7 "…"]` and `"…" [P7]` are still parsed, on both sides, because every answer
+saved before this is written in them. An old answer that quoted and then cited
+now shows both copies, as the model wrote them.
+
+**One citation regex.** `citations/parse.ts` mirrors alexandria's
+`conversations/citations.ts` and the two have to agree forever — on `<cite>`,
+on the bracketed forms, on curly quotes. Nothing else in the app looks for a
+citation, and `parse.test.ts` holds the awkward cases. When the server starts
+sending `marker` offsets, `markersFor()` prefers them.
 
 **The apparatus is tool calls, never narration.** A search and a read are facts
 and stay on screen once they have happened; narration is the model talking to
 itself, it rewrites itself as the model changes its mind, and it is not shown at
 all. A failed call says so and says why, rather than disappearing.
-
-**One citation regex.** `citations/parse.ts` mirrors alexandria's
-`conversations/citations.ts` and the two have to agree forever. Nothing else in
-the app looks for a citation, and `parse.test.ts` holds the awkward cases. When
-the server starts sending `marker` offsets, `markersFor()` prefers them.
 
 **A book's name is set by the stylesheet.** `@utility work-title` in
 `styles/theme.css`, used at every one of the six places a title is printed —
@@ -301,10 +304,13 @@ token was minted over.
 
 **The margin under the fold is one line per book.** `ask/Shelf.tsx`: the name,
 and its pips ranged right on the same line — a ledger entry. Two lines per book
-was most of a phone screen of apparatus under every answer about four books. A
-pip is drawn 36px and reaches the 44 a finger wants by taking the 8px gap above
-and below it, which is why that gap is what `MarginNotes` sets and not a number
-chosen for looks: two rows' targets meet and never overlap. The name is set at
+was most of a phone screen of apparatus under every answer about four books. The
+rows are tight — a 32px row, 2px apart, so four books cost 136px of a phone
+rather than 176. A pip takes the gap above and below it to reach a 34px target,
+which is the pitch and not the 44 a finger is usually promised: the trade that
+buys the compactness. What a target may never do is overlap the row above or
+below, which would open the wrong book, so its reach is exactly the gap — which
+is why that gap is what `MarginNotes` sets and not a number chosen for looks. The name is set at
 the size the margin sets its notes at, because this *is* the margin note,
 folded, and it truncates before the pips give up any room — a shortened title is
 still a title, a missing verdict is a missing fact.
@@ -346,7 +352,7 @@ without re-shuffling when verification lands. Only a verdict of
 **The shelf is a name and its pips, not a card.** A pip per reference, and
 past five one pip and a count per verdict, never a single total: seven found
 and one not is the fact, and a total would hide the one that failed. A pip is
-44px tall and only as wide as its rhythm needs.
+34px tall and only as wide as its rhythm needs.
 
 **The wordmark travels.** Leaving the home screen, the big mark is flown into
 the header's corner rather than vanishing and reappearing there. The home mark
