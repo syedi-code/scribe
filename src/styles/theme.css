@@ -92,20 +92,25 @@
 	   how the evidence came back; colour on a *word* means whose name it is.
 	   Nothing else in the app may be coloured at all.
 
-	   L 0.46 in OKLCH with hues 62, 104, 148, 213, 258 and 338 — each at least
-	   25 degrees clear of verdigris (178), rubric (30) and slate (298).
+	   Six hues that hold their colour on cream at the size prose is set in:
+	   orange 44, green 148, blue 258, violet 300, rose 345, sea green 168, all
+	   at L 0.44 to 0.50 and 5.5:1 or better against the paper.
 
-	   They were a band darker, close enough to the prose that a reader could
-	   not see one at all. Raised to here they share a lightness band with the
-	   verdicts, so what keeps the two systems apart is the rule above and not
-	   the palette: a verdict lands on a mark, a name lands on a word, and
-	   nothing in this app is both. */
-	--author-c0: #814800; /* bronze */
-	--author-c1: #615a00; /* moss */
-	--author-c2: #1d6930; /* forest */
-	--author-c3: #006372; /* steel */
-	--author-c4: #2c5797; /* indigo */
-	--author-c5: #7f3b6e; /* damson */
+	   Gold and olive are gone because they go muddy on cream, and turquoise
+	   because sRGB cannot saturate it at this lightness -- 0.08 chroma against
+	   0.17 for violet -- so it could only ever arrive washed out. The two
+	   greens are the closest pair here, which is a smaller price than a slot
+	   nobody can see.
+
+	   They share a lightness band with the verdicts, so what keeps the two
+	   systems apart is the rule above and not the palette: a verdict lands on
+	   a mark, a name lands on a word, and nothing in this app is both. */
+	--author-c0: #9f4414; /* orange */
+	--author-c1: #156d2e; /* green */
+	--author-c2: #1b58ac; /* blue */
+	--author-c3: #6633a5; /* violet */
+	--author-c4: #94296f; /* rose */
+	--author-c5: #006249; /* sea green */
 
 	/* Provider marks, used only as a dot in the model switcher. */
 	--color-anthropic: #cc785c;
