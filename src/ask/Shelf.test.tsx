@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
-import { renderApp, stubFetch, verified } from '../test/harness';
+import {
+	assistant,
+	chat,
+	renderApp,
+	stubFetch,
+	verified,
+} from '../test/harness';
 import { groupByDocument } from '../citations/group';
 import { MarginNotes } from './MarginNotes';
 import type { AnswerCitation } from '../api/types';
@@ -82,5 +88,99 @@ describe('references grouped by the book they are into', () => {
 					?.startsWith('found on the page')
 			);
 		expect(badges).toHaveLength(CITATIONS.length);
+	});
+});
+
+describe('a book whose references have not been checked yet', () => {
+	// While the answer was still being written every entry printed `a page it
+	// was never shown` as its title, which is a failure that had not happened.
+	const searched = assistant([
+		{
+			type: 'tool-search_pages',
+			toolCallId: 't1',
+			state: 'output-available',
+			input: { query: 'will to truth' },
+			output: [
+				{
+					handle: 'P0',
+					ref: { document_id: GENEALOGY, page_no: 146 },
+					work_id: 'w-genealogy',
+					work_title: 'On the Genealogy of Morals',
+					creator: 'Friedrich Nietzsche',
+					printed_page: '146',
+				},
+			],
+		} as never,
+	]);
+
+	it('is named from the search that showed it, not called a failure', () => {
+		stubFetch();
+		renderApp(
+			<MarginNotes
+				markers={[marker('P0', 0)]}
+				citations={[null]}
+				resolved={0}
+				lit={null}
+				onLight={() => {}}
+				turn={null}
+				anchors={new Map()}
+			/>,
+			{ state: chat({ messages: [searched], atHome: false }) }
+		);
+
+		expect(
+			screen.getAllByText('On the Genealogy of Morals').length
+		).toBeGreaterThan(0);
+		expect(screen.queryByText('a page it was never shown')).toBeNull();
+	});
+
+	it('says it is checking when nothing has named it yet', () => {
+		stubFetch();
+		renderApp(
+			<MarginNotes
+				markers={[marker('P9', 0)]}
+				citations={[null]}
+				resolved={0}
+				lit={null}
+				onLight={() => {}}
+				turn={null}
+				anchors={new Map()}
+			/>
+		);
+		expect(screen.queryByText('a page it was never shown')).toBeNull();
+	});
+});
+
+describe('a book with more references than a row can count', () => {
+	it('shows each verdict once, with how many', () => {
+		const many = Array.from({ length: 7 }, (_, at) =>
+			into(GENEALOGY, 140 + at, `the will to truth ${at}`)
+		);
+		const missed = {
+			...into(GENEALOGY, 150, 'a faith in the ascetic ideal'),
+			status: 'unverified',
+			reason: 'not_found',
+		} as AnswerCitation;
+		const citations = [...many, missed];
+		stubFetch();
+		renderApp(
+			<MarginNotes
+				markers={citations.map((_, at) => marker(`P${at}`, at))}
+				citations={citations}
+				resolved={citations.length}
+				lit={null}
+				onLight={() => {}}
+				turn={null}
+				anchors={new Map()}
+			/>
+		);
+
+		expect(
+			screen.getByRole('button', { name: '7 quotes: found on the page' })
+		).toBeTruthy();
+		// The one that failed is not lost inside a total.
+		expect(
+			screen.getByRole('button', { name: '1 quote: not on this page' })
+		).toBeTruthy();
 	});
 });

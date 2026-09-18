@@ -1,6 +1,6 @@
 import { COPY } from '../copy';
 import { describePage } from '../citations/page';
-import { presentationOf } from '../citations/status';
+import { presentationOf, verdictKey } from '../citations/status';
 import { useCitedPage } from '../citations/useCitedPage';
 import { openPage } from '../state/reader';
 import { AuthorName } from '../ui/AuthorName';
@@ -9,17 +9,31 @@ import type { CitationGroup, GroupedCitation } from '../citations/group';
 /**
  * One book, and every reference an answer made into it.
  *
- * The badge is the stamp from the prose at reading size: filled when the words
- * were on the page, open when they were not, dotted when the page had no text
- * to check against. The shape carries the verdict and the colour reinforces
- * it, so a row of eight badges can be read at a glance and still survives
- * being printed.
+ * Not a card: the book's name, and a pip per reference under it. The pip is
+ * the stamp from the prose at reading size — filled when the words were on
+ * the page, open when they were not, dotted when the page had no text to check
+ * against — so a row of them reads at a glance and still survives printing.
  *
- * Every badge is the way into its page, and says in words what the square says
- * in shape — a screen reader is told the page and the verdict, never a colour.
+ * Past five a row of pips stops being countable at a glance, so each verdict
+ * becomes one pip and a number. Kept per verdict rather than one total: seven
+ * found and one not is the fact the reader needs, and a single count would
+ * hide the one that failed.
+ *
+ * A pip is 44px tall to take a finger and only as wide as its rhythm needs;
+ * 44 both ways put more space between the marks than the marks themselves.
  */
 
-function Badge({
+const SINGLY = 5;
+
+const pip = (stamp: string) =>
+	`block size-4 border-2 transition-[background-color,border-color] duration-300 ease-paper ${stamp}`;
+
+const cell = (lit: boolean) =>
+	`hover:bg-bubble -my-2 flex h-11 items-center justify-center rounded-md transition-colors disabled:cursor-default ${
+		lit ? 'bg-bubble' : ''
+	}`;
+
+function Pip({
 	entry,
 	lit,
 	onLight,
@@ -47,16 +61,59 @@ function Badge({
 			onBlur={() => onLight(null)}
 			aria-label={label}
 			title={label}
-			className={`hover:bg-bubble grid size-7 place-items-center rounded-md transition-colors ${
-				lit ? 'bg-bubble' : ''
-			}`}
+			className={`${cell(lit)} w-7`}
 		>
-			<span
-				aria-hidden
-				className={`block size-3 border-2 transition-[background-color,border-color,transform] duration-300 ease-paper ${stamp}`}
-			/>
+			<span aria-hidden className={pip(stamp)} />
 		</button>
 	);
+}
+
+/** Every reference with one verdict, as a pip and how many; opens the first. */
+function Tally({
+	entries,
+	lit,
+	onLight,
+}: {
+	entries: GroupedCitation[];
+	lit: number | null;
+	onLight: (index: number | null) => void;
+}) {
+	const [first] = entries;
+	const { verdict, stamp } = presentationOf(first.citation);
+	const label = COPY.tallyLabel(entries.length, verdict);
+
+	return (
+		<button
+			type="button"
+			disabled={!first.citation}
+			onClick={(event) =>
+				first.citation && openPage(first.citation, event.currentTarget)
+			}
+			onFocus={() => onLight(first.index)}
+			onBlur={() => onLight(null)}
+			aria-label={label}
+			title={label}
+			className={`${cell(entries.some((entry) => entry.index === lit))} gap-1.5 px-1.5`}
+		>
+			<span aria-hidden className={pip(stamp)} />
+			<span
+				aria-hidden
+				className="font-app text-small text-ink-soft tabular-nums"
+			>
+				{entries.length}
+			</span>
+		</button>
+	);
+}
+
+/** References with the same mark, in the order the marks are first met. */
+function byMark(entries: GroupedCitation[]): GroupedCitation[][] {
+	const marks = new Map<string, GroupedCitation[]>();
+	for (const entry of entries) {
+		const { stamp } = presentationOf(entry.citation);
+		marks.set(stamp, [...(marks.get(stamp) ?? []), entry]);
+	}
+	return [...marks.values()];
 }
 
 export function Shelf({
@@ -69,33 +126,50 @@ export function Shelf({
 	onLight: (index: number | null) => void;
 }) {
 	const { page } = useCitedPage(group.named);
+	const title = page?.work_title ?? group.shown?.work_title;
+	const creator = page?.creator ?? group.shown?.creator;
+	// Only a verdict can say the page was never shown. Before one lands the
+	// book is simply not known yet, which is a different claim.
+	const never =
+		group.named !== null && verdictKey(group.named) === 'unknown_handle';
 
 	return (
-		<div className="bg-paper-lift border-paper-deep rounded-xl border px-3 pt-2.5 pb-2">
-			<div className="flex items-baseline justify-between gap-3">
-				<span className="work-title font-read text-ask text-ink leading-snug">
-					{page?.work_title ?? COPY.verdict.unknown_handle}
-				</span>
-				<span className="font-app text-tiny text-ink-faint shrink-0">
-					{group.entries.length}
-				</span>
-			</div>
-			{page && (
-				<span className="font-app text-small text-ink-soft mt-0.5 block">
-					<AuthorName creator={page.creator} />
-				</span>
-			)}
-			{/* The squares carry the verdicts, so the rule above them is the
-			    only thing separating a book from what was taken out of it. */}
-			<div className="border-paper-deep -ml-1.5 mt-2 flex flex-wrap items-center gap-0.5 border-t pt-1.5">
-				{group.entries.map((entry) => (
-					<Badge
-						key={entry.index}
-						entry={entry}
-						lit={lit === entry.index}
-						onLight={onLight}
-					/>
-				))}
+		<div>
+			<p className="text-ask m-0 leading-snug">
+				{title ? (
+					<span className="work-title text-ink">{title}</span>
+				) : (
+					<span className="font-app text-small text-ink-faint">
+						{never
+							? COPY.verdict.unknown_handle
+							: COPY.verdict.pending}
+					</span>
+				)}
+				{creator && (
+					<span className="font-app text-small text-ink-soft">
+						{' · '}
+						<AuthorName creator={creator} />
+					</span>
+				)}
+			</p>
+			<div className="-ml-1.5 flex flex-wrap items-center">
+				{group.entries.length > SINGLY
+					? byMark(group.entries).map((entries) => (
+							<Tally
+								key={entries[0].index}
+								entries={entries}
+								lit={lit}
+								onLight={onLight}
+							/>
+						))
+					: group.entries.map((entry) => (
+							<Pip
+								key={entry.index}
+								entry={entry}
+								lit={lit === entry.index}
+								onLight={onLight}
+							/>
+						))}
 			</div>
 		</div>
 	);

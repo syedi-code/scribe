@@ -78,7 +78,8 @@ to be forbidden here on the grounds that a model forgets and a forgotten tag
 shows the reader markup. Both halves are true and neither is fatal: it forgets
 sometimes, so `useLibraryNames` runs the whole catalogue behind it as a
 fallback, and markup only reaches the reader if we print it, so a stray or
-unclosed tag is swept. It buys the one thing no rule of ours could — the model
+unclosed tag is swept, and one closed with a bare `>` — production has
+`<author>Plato>’s` — is read as closed. It buys the one thing no rule of ours could — the model
 knows Newton is a person and Sufism is not, and every heuristic for that is a
 list of words to be wrong about.
 
@@ -92,18 +93,25 @@ citation into an unverified one.
 is set as a work. Tying the italic to a verified citation meant a title the
 model marked up was never recognised as one at all.
 
-**A citation that repeats the prose is folded into it.** Models write the
-passage out and _then_ cite a few words of it, which printed the same sentence
-twice and made good answers read as gibberish. `absorbQuotation()` in
-`citations/parse.ts` drops the duplicate and sets only the checked words one
-weight heavier inside the quotation the model wrote. It folds on the longest
-run of words the two share (`citations/overlap.ts`, five words minimum, the
-same floor a citation clears to be evidence), not on one containing the other:
-in production the prose quotes a fragment and the citation quotes a longer
-passage, so the two overlap with neither inside the other. A clause is allowed
-between the closing quote and the citation, because the model puts one there. The instruction that asks
-the model not to do it in the first place is in alexandria's
-`conversations/instructions.ts`; the client does not rely on it.
+**A citation that repeats the prose is moved onto it.** Models write the
+passage out and _then_ cite it, which printed the same words twice and made
+good answers read as gibberish. `anchorsFor()` in `citations/parse.ts` finds
+the quotation in the prose that a citation repeats, draws the citation there
+— the stamp on the prose's own quotation, the checked words one weight
+heavier inside it — and drops the copy. A quotation repeats a citation when
+the two share five words, or when the whole of a quotation of three or more
+words is inside the cited passage (`repeats()` in `citations/overlap.ts`):
+production's most common case is _“Plato is boring” [P10 "Plato is
+boring.-Ultimately my distrust…"]_, which no five-word floor can pair. It
+looks back to the previous citation, not just at the nearest quotation,
+because the nearest is often a different one and a clause of any length sits
+between; and a pile of citations after a sentence shares the prose before the
+pile, each finding its own quotation. A citation is never folded onto words it
+does not contain — _“identity of life and death”_ against _[P20 "identity of
+day and night"]_ is the same claim in different words, and a stamp on the
+prose would say words were found that were never checked. The instruction that
+asks the model not to do it is in alexandria's `conversations/instructions.ts`;
+the client does not rely on it. `absorb.test.ts` holds the production cases.
 
 **The apparatus is tool calls, never narration.** A search and a read are facts
 and stay on screen once they have happened; narration is the model talking to
@@ -121,12 +129,14 @@ the prose, the margin, the shelves, the drawer, the badge group. A component
 that writes `italic` for a title instead is a bug, and `styles/theme.test.ts`
 fails on one.
 
-It sets the face as well as the slant. `font-style: italic` alone asks for an
+It sets the face, the slant and the weight. `font-style: italic` alone asks for an
 italic of whatever family is in force, and GT Alpina Condensed ships without
 one — so the margin note, set in `--font-app`, got a browser-sheared
 `GTAlpina-CondRegular` while the other four sites got the drawn
 `GTAlpina-LtIt`. Standard has a true italic at 300, 400 and 700. Medium 500
-has none: do not set a title in it.
+has none, and a run-in head is set at 500, so a title inside one inherited a
+synthesised medium that read as bold. `work-title` pins 400: a title is a
+slant, never a weight.
 
 **One copy file.** `copy.ts`. The honesty of this interface lives in its wording
 — _found on the page_, never a bare _verified_, never a tick — and wording
@@ -193,6 +203,12 @@ by the DOM, scrim first.
 Never `isMobile` inside a component. The one thing JavaScript asks the CSS is
 whether the margin notes are positioned or stacked.
 
+Under the compact breakpoint Sessions is a tab of its own, level with Ask and
+Books, and takes the whole page; wide it is the rail beside the page and the
+tab is not offered. `Workspace` renders both, and the container query decides
+which one a narrow screen shows. A list of conversations is a destination, not
+an overlay — it was a drawer over a screen one column wide.
+
 There is one deliberate exception, and it is CSS that chooses it, not
 JavaScript: under the fold the margin notes give way to `ask/Shelf`, one entry
 per book with a badge per reference into it. Six citations into one work printed
@@ -202,7 +218,7 @@ which layout it is.
 
 **Every reported bug has a test.** `src/**/*.test.tsx` covers the parser and the
 handful of behaviours that have broken in front of a reader: the drawer closing,
-the rail closing, the switcher's stacking, the duplicated quotation, the drawer
+the switcher's stacking, the duplicated quotation, the drawer
 belonging to `main` rather than the shell, the body never taking the document
 scroller away from a phone, the stacking order being read from the scale, and a
 turn that never got to an answer saying so. CI runs them on every pull request,
@@ -242,8 +258,35 @@ up _without_ one, so the hyphen the typesetter put there is still the only thing
 between the halves.
 
 **Opening a conversation is a move to the reading surface.** `Rail` takes
-`onClose` and `onNavigate` separately: wide, the rail never closes, so passing
-one for the other loaded the thread into a panel nobody was looking at.
+`onNavigate`, and it switches the tab to Ask from wherever the reader was —
+the shelves, or narrow, the Sessions tab itself. Wide, the rail never closes,
+so anything short of a tab switch loaded the thread into a panel nobody was
+looking at.
+
+**Pending is not unknown.** A citation whose check has not come back has not
+failed. The shelf under the fold used to print `a page it was never shown` as
+the title of every entry while the answer was being written. The book is
+known before the verdict is: the handle was given out by a search or a read
+already in the conversation, and `chat/shown.ts` reads which page it was, so
+the margin and the shelf name the book from the first render and group it
+without re-shuffling when verification lands. Only a verdict of
+`unknown_handle` may say the page was never shown.
+
+**The shelf is a name and its pips, not a card.** A pip per reference, and
+past five one pip and a count per verdict, never a single total: seven found
+and one not is the fact, and a total would hide the one that failed. A pip is
+44px tall and only as wide as its rhythm needs.
+
+**The wordmark travels.** Leaving the home screen, the big mark is flown into
+the header's corner rather than vanishing and reappearing there. The home mark
+records its box as it unmounts (`ui/departure.ts`); `ui/Travel` flies one copy
+from that box onto the header's mark over the fold's 300ms, with the header's
+own mark hidden until it lands, because the fold clips and fades and cannot
+carry it. Wide, the rail rises into that corner on the home screen and steps
+down out of the way as the mark arrives, so the corner is never an empty hole.
+The header is transparent to the pointer where it holds nothing, since the
+risen rail is under it. A file and a component that differ only in case — this
+was `travel.ts` beside `Travel.tsx` — do not compile on Windows.
 
 **One press, everywhere.** `@utility press` in `styles/theme.css` is what a
 pressable row does under a finger — a session name, a question on the home
@@ -261,8 +304,8 @@ in the gutter. Right angles are what the rest of this interface is made of.
 
 **Transition `translate`, not `transform`.** Tailwind v4's translate utilities
 set the `translate` longhand, so a transition on `transform` animates nothing —
-which is how the mobile rail came to snap open instead of sliding. See
-`@utility rail-slide`.
+which is how the mobile rail came to snap open instead of sliding. `ui/Travel`
+flies the wordmark on the longhands for the same reason.
 
 **A conversation read once is kept.** `chat/threads.ts` holds what it fetched
 for the life of the tab, and the rail warms a conversation on `pointerenter`, so
@@ -330,7 +373,7 @@ what is on the screen and in what order; they hold no helpers, no effects and no
 markup beyond nesting. Opening the session is `ui/SessionGate`, the arrival
 sequence is `ask/settle.ts`, the questions are `ask/Suggestions`, the keyboard
 is `ui/useShortcuts`. State stays in a root only when two of its children both
-need it — `tab` and `railOpen` in `AppFrame`, and nothing else.
+need it — `tab` in `AppFrame`, and nothing else.
 
 **Comments are brief, and only where the code is not immediately readable.** A
 comment says why, or names a trap; it never narrates what the next line does. If

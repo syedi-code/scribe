@@ -306,7 +306,7 @@ export function PageView() {
 					<>
 						<header className="border-paper-deep flex items-start justify-between gap-4 border-b px-5 pt-4 pb-3">
 							<div>
-								<h3 className="work-title m-0 text-[17px] leading-tight font-normal">
+								<h3 className="work-title m-0 text-[17px] leading-tight">
 									{page?.work_title ?? citation.handle}
 								</h3>
 								<p className="font-app text-small text-ink-soft mt-0.5">

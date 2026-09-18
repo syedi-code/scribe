@@ -53,7 +53,7 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 	return (
 		<nav
 			aria-label="Earlier questions"
-			className="border-paper-deep h-full overflow-y-auto border-r px-5 pt-0 pb-4"
+			className="border-paper-deep h-full overflow-y-auto border-r px-5 pt-0 pb-4 @max-compact:border-r-0 @max-compact:px-3.5"
 		>
 			<div className="bg-paper border-paper-deep sticky top-0 z-(--z-lifted) mb-2 border-b pt-4 pb-2.5">
 				<div className="flex items-baseline justify-between gap-2">

@@ -312,12 +312,16 @@
    italic of whatever family is in force, and GT Alpina Condensed ships
    without one -- so the margin note, which is set in `--font-app`, got a
    browser-sheared Condensed Regular while the other four sites got the real
-   drawn italic. Standard has a true italic at 300, 400 and 700, which is
-   every weight a title is set in. Medium 500 has none: do not set a title in
-   it. */
+   drawn italic. Standard has a true italic at 300, 400 and 700.
+
+   The weight is pinned for the same reason. A run-in head is set at 500,
+   which has no italic, so a title inherited a synthesised medium that read
+   as bold and competed with the heading it sat in. A title is a slant, never
+   a weight, wherever it lands. */
 @utility work-title {
 	font-family: var(--font-read);
 	font-style: italic;
+	font-weight: 400;
 }
 
 /* One class per ink, so a component names the slot and the stylesheet owns the
@@ -346,19 +350,6 @@
 }
 .author-c5 {
 	color: var(--author-c5);
-}
-
-/* The rail slides in and out rather than switching. `visibility` is in the
-   transition on purpose: it takes the rail out of the tab order the way
-   `display: none` did, and unlike `display` it waits for the slide to finish
-   before it does. Written here because an arbitrary Tailwind value cannot hold
-   the comma between two properties. */
-@utility rail-slide {
-	/* `translate`, not `transform`: Tailwind v4's translate utilities set the
-	   longhand, and transitioning `transform` animates nothing at all. */
-	transition-property: translate, visibility;
-	transition-duration: 300ms;
-	transition-timing-function: var(--ease-paper);
 }
 
 /* Something you push: a row in the rail, a question on the home screen. It
