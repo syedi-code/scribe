@@ -86,6 +86,24 @@
 	--color-rubric: #9b2c21;
 	--color-slate: #7c7789;
 
+	/* The author inks. A surname hashes to one of these and keeps it for ever
+	   (citations/authors.ts). They are not a fourth, fifth and sixth status:
+	   colour on a *mark* — the stamp, the margin rule, the verdict line — means
+	   how the evidence came back; colour on a *word* means whose name it is.
+	   Nothing else in the app may be coloured at all.
+
+	   Chosen against the prose rather than against the paper: L 0.34 in OKLCH,
+	   the same band the text sits in, so a name reads as ink from a different
+	   inkwell and not as a highlight. Every hue is at least 25 degrees clear of
+	   verdigris (178), rubric (30) and slate (298), and all six sit a whole
+	   lightness band below them, which is what keeps the two systems apart. */
+	--author-c0: #512f01; /* bronze */
+	--author-c1: #3e3900; /* moss */
+	--author-c2: #1f420c; /* forest */
+	--author-c3: #00404a; /* steel */
+	--author-c4: #003c5c; /* indigo */
+	--author-c5: #1d3666; /* iris */
+
 	/* Provider marks, used only as a dot in the model switcher. */
 	--color-anthropic: #cc785c;
 	--color-openai: #3d7f6a;
@@ -256,12 +274,15 @@
    The few things utilities cannot say
    --------------------------------------------------------------------------- */
 
-/* The hairline between a quote and its note. Its length is measured in JS and
-   handed over as --len, because only the browser knows the path. */
-@utility tie-path {
+/* The leader between a quote and its note: out, across, in. Its length is
+   measured in JS and handed over as --len, because only the browser knows the
+   path. The round join is what keeps the corner from reading as a kink. */
+@utility leader-path {
 	fill: none;
 	stroke: var(--color-ink-faint);
 	stroke-width: 1;
+	stroke-linecap: round;
+	stroke-linejoin: round;
 	stroke-dasharray: var(--len);
 	stroke-dashoffset: var(--len);
 	animation: var(--animate-draw);
@@ -272,6 +293,59 @@
    is set is made once rather than in five components. */
 @utility work-title {
 	font-style: italic;
+}
+
+/* One class per ink, so a component names the slot and the stylesheet owns the
+   value. Weight is deliberately not touched: a name sits mid-sentence and has
+   to stay in the same cut as its neighbours. */
+@utility author-c0 {
+	color: var(--author-c0);
+}
+@utility author-c1 {
+	color: var(--author-c1);
+}
+@utility author-c2 {
+	color: var(--author-c2);
+}
+@utility author-c3 {
+	color: var(--author-c3);
+}
+@utility author-c4 {
+	color: var(--author-c4);
+}
+@utility author-c5 {
+	color: var(--author-c5);
+}
+
+/* The rail slides in and out rather than switching. `visibility` is in the
+   transition on purpose: it takes the rail out of the tab order the way
+   `display: none` did, and unlike `display` it waits for the slide to finish
+   before it does. Written here because an arbitrary Tailwind value cannot hold
+   the comma between two properties. */
+@utility rail-slide {
+	/* `translate`, not `transform`: Tailwind v4's translate utilities set the
+	   longhand, and transitioning `transform` animates nothing at all. */
+	transition-property: translate, visibility;
+	transition-duration: 300ms;
+	transition-timing-function: var(--ease-paper);
+}
+
+/* Something you push: a row in the rail, a question on the home screen. It
+   gives under the finger and comes back. One treatment for all of them, so a
+   press means the same thing wherever a reader finds one — and so the next
+   pressable row does not invent its own. */
+@utility press {
+	transition:
+		transform 140ms var(--ease-paper),
+		background-color 220ms var(--ease-paper);
+
+	&:active {
+		transform: scale(0.983);
+	}
+
+	&:disabled:active {
+		transform: none;
+	}
 }
 
 /* Quoted words keep their background through a line break. */

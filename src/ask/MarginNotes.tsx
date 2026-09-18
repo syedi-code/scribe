@@ -11,6 +11,8 @@ import { describePage, locatePage } from '../citations/page';
 import { presentationOf } from '../citations/status';
 import { useCitedPage } from '../citations/useCitedPage';
 import { openPage } from '../state/reader';
+import { AuthorName } from '../ui/AuthorName';
+import { stackNotes } from './stack';
 import { Shelf } from './Shelf';
 import type { AnswerCitation } from '../api/types';
 import type { CitationMarker } from '../citations/parse';
@@ -33,8 +35,6 @@ import type { CitationMarker } from '../citations/parse';
  * container query picks one, so there is still no `isMobile` here and no
  * second component deciding which layout it is.
  */
-
-const GAP = 14;
 
 interface NoteProps {
 	index: number;
@@ -88,7 +88,8 @@ function Note({ index, marker, citation, lit, onLight }: NoteProps) {
 						{page.work_title}
 					</span>
 					<span className="block">
-						{page.creator} — {locatePage(page)}
+						<AuthorName creator={page.creator} /> —{' '}
+						{locatePage(page)}
 					</span>
 				</>
 			) : (
@@ -107,11 +108,16 @@ function Note({ index, marker, citation, lit, onLight }: NoteProps) {
 }
 
 /**
- * The hairline. It starts at the column's edge, level with the quote — never at
- * the quote's own right edge, or a citation that ends mid-line drags the curve
- * back across the prose.
+ * The leader: a hairline from the column's edge across to the note, turning a
+ * right angle where the two rows differ.
+ *
+ * It was a bezier for a while and read as a stray wobble in the gutter. Right
+ * angles are what a drawn leader does on a printed page, and they are what the
+ * rest of this interface is made of — rules, squares, a margin. It starts at
+ * the column's edge rather than at the quote's own right edge, or a citation
+ * that ends mid-line drags the line back across the prose.
  */
-function Tie({
+function Leader({
 	margin,
 	turn,
 	anchor,
@@ -146,9 +152,15 @@ function Tie({
 		const y1 = quote.top - box.top + quote.height / 2;
 		const y2 = target.top - box.top + 8;
 
+		// Out from the column, across the gutter, then in to the note. The
+		// turn is made at the halfway point so neither leg is a stub.
+		const corner = Math.round(x1 / 2);
+		const straight = Math.abs(y1 - y2) < 1.5;
 		line.setAttribute(
 			'd',
-			`M ${x1} ${y1} C ${x1 / 2} ${y1}, -10 ${y2}, 0 ${y2}`
+			straight
+				? `M ${x1} ${y1} H 0`
+				: `M ${x1} ${y1} H ${corner} V ${y2} H 0`
 		);
 		line.style.setProperty('--len', String(line.getTotalLength()));
 	}, [margin, turn, anchor, index]);
@@ -158,7 +170,7 @@ function Tie({
 			aria-hidden
 			className="pointer-events-none absolute inset-0 overflow-visible @max-fold:hidden"
 		>
-			<path ref={path} className="tie-path" />
+			<path ref={path} className="leader-path" />
 		</svg>
 	);
 }
@@ -191,17 +203,15 @@ export function MarginNotes({
 			return;
 		}
 		const base = margin.getBoundingClientRect().top;
-		let floor = 0;
-		for (const note of notes) {
+		const beside = notes.map((note) => {
 			const anchor = anchors.get(Number(note.dataset.note));
-			if (!anchor) continue;
-			const top = Math.max(
-				floor,
-				anchor.getBoundingClientRect().top - base
-			);
-			note.style.top = `${top}px`;
-			floor = top + note.offsetHeight + GAP;
-		}
+			return anchor ? anchor.getBoundingClientRect().top - base : null;
+		});
+		const tops = stackNotes(
+			beside,
+			notes.map((note) => note.offsetHeight)
+		);
+		notes.forEach((note, at) => (note.style.top = `${tops[at]}px`));
 	}, [margin, anchors]);
 
 	useLayoutEffect(place);
@@ -226,7 +236,7 @@ export function MarginNotes({
 			ref={setMargin}
 			className="relative @max-fold:static @max-fold:mb-8 @max-fold:border-t @max-fold:border-paper-deep @max-fold:pt-3"
 		>
-			<Tie
+			<Leader
 				margin={margin}
 				turn={turn}
 				index={lit}
@@ -246,7 +256,7 @@ export function MarginNotes({
 				))}
 			</div>
 
-			<div className="hidden @max-fold:grid @max-fold:gap-3">
+			<div className="hidden @max-fold:grid @max-fold:gap-2.5">
 				{groupByDocument(markers, citations, resolved).map((group) => (
 					<Shelf
 						key={group.key}

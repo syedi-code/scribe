@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { libraryWorks } from '../api/library';
 import { COPY } from '../copy';
 import { useAsync } from '../lib/useAsync';
+import { AuthorName } from '../ui/AuthorName';
 import type { Work } from '../api/types';
 
 /**
@@ -130,7 +131,7 @@ export function BooksPanel() {
 							{/* The name is the only thing set against the paper;
 							    everything under it is the work itself. */}
 							<h2 className="font-app text-ui text-ink-soft border-paper-deep m-0 mb-1 border-b pb-1 font-normal">
-								{shelf.creator}
+								<AuthorName creator={shelf.creator} />
 							</h2>
 							<ul className="m-0 list-none p-0">
 								{shelf.works.map((work) => (

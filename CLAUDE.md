@@ -76,10 +76,28 @@ fails on one.
 scattered across components drifts.
 
 **Tokens, not values.** Every colour, face, size and width is a `@theme`
-variable in `styles/theme.css`. No arbitrary hex in a component, ever. Three
-status inks and nothing else is coloured, so colour always means the same thing
-— with one deliberate exception, a provider dot inside the model switcher, which
-never appears on the reading surface.
+variable in `styles/theme.css`. No arbitrary hex in a component, ever.
+
+**Colour on a mark is a verdict; colour on a word is a name.** That is the whole
+of what colour means here. The three status inks land only on marks — the stamp,
+the margin rule, the verdict line. The six author inks (`--author-c0…5`) land
+only on a surname, in the prose and in every reference to it. Nothing else in
+the app is coloured, with one exception that never reaches the reading surface:
+a provider dot inside the model switcher.
+
+The author inks are chosen against the prose rather than against the paper: L
+0.34 in OKLCH, the band the text itself sits in, so a name reads as ink from
+another inkwell and not as a highlight. Every hue is at least 25° clear of
+verdigris, rubric and slate, and all six sit a whole lightness band below them —
+that separation, not hue, is what keeps the two systems from being confused. A
+surname hashes to its ink for ever (`citations/authors.ts`, FNV-1a over the
+lowercased name with apostrophes normalised, because `Ibn 'Arabī` arrives three
+ways). Collisions are expected and harmless: the ink links mentions, it never
+claims to identify anyone.
+
+Only creators the server actually checked are inked, the same discipline the
+titles follow, and only whole words — `Kantian` stays prose. A surname inside a
+cited title belongs to the title.
 
 **One stacking order.** `--z-lifted`, `--z-rail`, `--z-drawer`, `--z-header`,
 `--z-menu`, declared once in `styles/theme.css` and read as `z-(--z-rail)`. A
@@ -134,6 +152,25 @@ between the halves.
 **Opening a conversation is a move to the reading surface.** `Rail` takes
 `onClose` and `onNavigate` separately: wide, the rail never closes, so passing
 one for the other loaded the thread into a panel nobody was looking at.
+
+**One press, everywhere.** `@utility press` in `styles/theme.css` is what a
+pressable row does under a finger — a session name, a question on the home
+screen, New question. A row that invents its own is a row that feels different
+for no reason.
+
+**The margin is stacked by a rule, not by a loop.** `ask/stack.ts` decides where
+each note goes: level with its quote, never over the note above it, and a note
+whose quote has not been measured yet still gets a place. Skipping it left `top`
+unset, which put every unplaced note at the top of the margin on top of the
+others.
+
+**The leader turns a right angle.** It was a bezier and read as a stray wobble
+in the gutter. Right angles are what the rest of this interface is made of.
+
+**Transition `translate`, not `transform`.** Tailwind v4's translate utilities
+set the `translate` longhand, so a transition on `transform` animates nothing —
+which is how the mobile rail came to snap open instead of sliding. See
+`@utility rail-slide`.
 
 **A conversation read once is kept.** `chat/threads.ts` holds what it fetched
 for the life of the tab, and the rail warms a conversation on `pointerenter`, so

@@ -6,6 +6,7 @@ import {
 	segmentAnswer,
 	trimHalfWrittenCitation,
 } from '../citations/parse';
+import { surnamesOf } from '../citations/authors';
 import { useStaggeredResolve } from '../citations/useResolve';
 import { readMessage, type ScribeMessage } from '../chat/message';
 import { useModels } from '../models/context';
@@ -67,10 +68,17 @@ export function Turn({
 				)
 			),
 		].sort((a, b) => b.length - a.length);
+		// Only creators the server actually checked, so nothing is inked that
+		// the answer did not cite.
+		const surnames = surnamesOf(
+			(read?.citations ?? []).flatMap((citation) =>
+				citation.page?.creator ? [citation.page.creator] : []
+			)
+		);
 
 		return {
 			markers,
-			paragraphs: segmentAnswer(answer, markers, titles),
+			paragraphs: segmentAnswer(answer, markers, titles, surnames),
 			citations: alignCitations(markers, read?.citations),
 		};
 	}, [read, streaming]);

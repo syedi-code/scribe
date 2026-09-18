@@ -34,7 +34,10 @@ export function TabBar({
 					onClick={onRail}
 					aria-expanded={railOpen}
 					data-rail-toggle
-					className={`font-app text-ui hidden transition-colors @max-compact:block ${
+					// The same face and size as the tabs beside it: in the
+					// condensed face it neither matched them nor sat on their
+					// line.
+					className={`${tabClass('ask')} hidden @max-compact:block ${
 						railOpen ? 'text-ink' : 'text-ink-faint hover:text-ink'
 					}`}
 				>
