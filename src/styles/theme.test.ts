@@ -57,8 +57,8 @@ describe('the base stylesheet', () => {
 });
 
 /**
- * Five places print a book's name. Each asks the stylesheet how a title is
- * set, rather than writing `italic` and drifting from the other four.
+ * Six places print a book's name. Each asks the stylesheet how a title is
+ * set, rather than writing `italic` and drifting from the other five.
  */
 const PRINTS_A_BOOK_NAME = [
 	'src/ask/Answer.tsx', // in the prose
@@ -66,6 +66,7 @@ const PRINTS_A_BOOK_NAME = [
 	'src/ask/Shelf.tsx', // under the fold
 	'src/books/BooksPanel.tsx', // on the shelves
 	'src/page/PageView.tsx', // in the drawer
+	'src/page/ScanView.tsx', // over the scan
 ];
 
 describe('a work set as a work', () => {
@@ -268,7 +269,9 @@ describe('the highlight', () => {
 		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 	};
 	const contrast = (a: string, b: string) => {
-		const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+		const [light, dark] = [luminance(a), luminance(b)].sort(
+			(x, y) => y - x
+		);
 		return (light + 0.05) / (dark + 0.05);
 	};
 
@@ -293,4 +296,3 @@ describe('the highlight', () => {
 		}
 	});
 });
-

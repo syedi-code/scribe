@@ -60,7 +60,9 @@ The full reasoning, and the prototype these decisions were made in, are in
 React 19 · TypeScript 5.9 (strict) · Tailwind v4, CSS-first · Vite 7 · Vercel AI
 SDK v7 (`useChat` + `DefaultChatTransport`) · Cloudflare Pages with one Pages
 Function. No component library and no state library: the app is a chat and a
-drawer, which `useChat` plus two small contexts covers.
+drawer, which `useChat` plus two small contexts covers. The one heavy
+dependency is pdf.js, which draws the scan behind a citation and is not
+imported until a reader asks for one.
 
 ```bash
 npm install
@@ -124,6 +126,12 @@ The day they land, the fallbacks stop being used and nothing else changes.
 
 **A tick or a cross.** The check means the words are on the page. It does not
 mean they support the claim, and a tick would be read as endorsing the argument.
+
+**A PDF handed to the browser.** The scan is drawn in the app, at the page
+that was cited. A signed link into the browser's own viewer opens a new tab, is
+blocked as a popup on iOS because it follows an `await`, and lands on page 1
+of four hundred when it does open, since Safari ignores `#page=`. The whole
+file is still one tap away from the scan, as a link.
 
 **Client-side verification, or retrying a failed citation.** The check belongs
 on the server, after the answer. A quote that came back not found stays not

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { api } from '../api/client';
-import { loadDocument, loadPages } from '../api/documents';
+import { loadPages } from '../api/documents';
 import { COPY } from '../copy';
 import { locatePage, reflow } from '../citations/page';
 import { presentationOf, verdictKey } from '../citations/status';
@@ -9,6 +8,7 @@ import { useCitedPage } from '../citations/useCitedPage';
 import { findQuote } from '../citations/window';
 import { useAsync } from '../lib/useAsync';
 import { closePage, useOpenPage } from '../state/reader';
+import { ScanView } from './ScanView';
 import type { AnswerCitation, PageText, QuoteContext } from '../api/types';
 
 /**
@@ -197,46 +197,17 @@ const Quoted = ({ quote }: { quote: string }) => (
 	</p>
 );
 
-function Scan({ documentId, pageNo }: { documentId: string; pageNo: number }) {
-	const document = useAsync(() => loadDocument(documentId), [documentId]);
-	const key = document.value?.file_key;
-
-	const open = async () => {
-		if (!key) return;
-		const { token } = await api.post<{ token: string }>('/files/sign', {
-			path: key,
-		});
-		window.open(
-			`/api/files/${key}?token=${encodeURIComponent(token)}#page=${pageNo}`,
-			'_blank',
-			'noopener'
-		);
-	};
-
-	if (!key)
-		return (
-			<span className="font-app text-small text-ink-soft">
-				{COPY.pageView.noScan}
-			</span>
-		);
-
-	return (
-		<button
-			type="button"
-			onClick={() => void open()}
-			className="font-app text-small text-ink-soft hover:text-ink border-paper-deep border-b"
-		>
-			{COPY.pageView.seeScan}
-		</button>
-	);
-}
-
 export function PageView() {
 	const open = useOpenPage();
 	const drawer = useRef<HTMLDivElement>(null);
 	const opener = useRef<HTMLElement | null>(null);
 	const { page } = useCitedPage(open?.citation ?? null);
 	const showing = open !== null;
+	// Which citation's scan is open, rather than whether one is: a second
+	// citation opened over the first is a different page of a different book,
+	// and the scan does not carry over to it.
+	const [scanned, setScanned] = useState<AnswerCitation | null>(null);
+	const scanning = scanned !== null && scanned === open?.citation;
 
 	// The drawer takes focus, and gives it back to whatever opened it — on the
 	// way *out* only. Opening a second citation over the first must not throw
@@ -258,7 +229,12 @@ export function PageView() {
 	useEffect(() => {
 		if (!showing) return;
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') closePage();
+			// Escape puts away the topmost thing, which is the scan when the
+			// reader has one open and the drawer underneath it when they do not.
+			if (event.key === 'Escape') {
+				if (scanning) setScanned(null);
+				else closePage();
+			}
 			if (event.key !== 'Tab' || !drawer.current) return;
 			const focusable = drawer.current.querySelectorAll<HTMLElement>(
 				'button, [href], textarea, [tabindex]:not([tabindex="-1"])'
@@ -276,7 +252,7 @@ export function PageView() {
 		};
 		document.addEventListener('keydown', onKeyDown);
 		return () => document.removeEventListener('keydown', onKeyDown);
-	}, [showing]);
+	}, [showing, scanning]);
 
 	const citation = open?.citation ?? null;
 
@@ -337,17 +313,33 @@ export function PageView() {
 						</div>
 
 						<footer className="border-paper-deep mt-auto flex gap-4 border-t px-5 pt-3 pb-3.5">
-							{page && page.viewable ? (
-								<Scan
-									documentId={page.document_id}
-									pageNo={page.page_no}
-								/>
+							{page?.viewable ? (
+								<button
+									type="button"
+									onClick={() => setScanned(citation)}
+									className="font-app text-small text-ink-soft hover:text-ink border-paper-deep border-b"
+								>
+									{COPY.pageView.seeScan}
+								</button>
 							) : (
 								<span className="font-app text-small text-ink-soft">
 									{COPY.pageView.noScan}
 								</span>
 							)}
 						</footer>
+
+						{/* Over the passage rather than beside it: on a phone
+						    the drawer is the screen, and a scan is worth the
+						    whole of it. Last in the drawer, so it stacks on
+						    what it covers without a layer of its own. */}
+						{scanning && page && (
+							<ScanView
+								documentId={page.document_id}
+								pageNo={page.page_no}
+								title={page.work_title}
+								onClose={() => setScanned(null)}
+							/>
+						)}
 					</>
 				)}
 			</aside>

@@ -245,7 +245,7 @@ export function MarginNotes({
 	return (
 		<div
 			ref={setMargin}
-			className="relative @max-fold:static @max-fold:mb-8 @max-fold:border-t @max-fold:border-paper-deep @max-fold:pt-3"
+			className="relative @max-fold:static @max-fold:mb-6 @max-fold:border-t @max-fold:border-paper-deep @max-fold:pt-2"
 		>
 			<Leader
 				margin={margin}
@@ -268,7 +268,9 @@ export function MarginNotes({
 				))}
 			</div>
 
-			<div className="hidden @max-fold:grid @max-fold:gap-3">
+			{/* One line per book, and the 8px between them is what each pip
+			    borrows above and below to reach a 44px target. */}
+			<div className="hidden @max-fold:grid @max-fold:gap-2">
 				{groupByDocument(markers, citations, resolved, shown).map(
 					(group) => (
 						<Shelf

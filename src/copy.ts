@@ -273,6 +273,23 @@ export const COPY = {
 		noScan: 'This page has no scan to show.',
 	},
 
+	/* ---- the scan itself ----
+	   The page as it was printed, drawn here rather than handed to the
+	   browser, because a PDF opened in a tab lands on page 1 on a phone. It
+	   carries no verdict: it is the paper, not a check of anything. */
+	scan: {
+		back: 'Back to the passage',
+		loading: 'drawing the page…',
+		unreachable: 'The scan could not be drawn just now.',
+		where: (page: number, of: number) => `PDF p. ${page} of ${of}`,
+		previous: 'Previous page',
+		next: 'Next page',
+		/** Tapping the page magnifies it; the label says which way it will go. */
+		magnify: 'Magnify the page',
+		fit: 'Fit the page',
+		download: 'Open the PDF',
+	},
+
 	/* ---- failures, in the reader's terms ---- */
 	signedOut: 'Your session has expired. Reload the page to sign in again.',
 	notFound: 'That is not there any more.',

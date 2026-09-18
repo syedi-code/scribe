@@ -124,10 +124,10 @@ the app looks for a citation, and `parse.test.ts` holds the awkward cases. When
 the server starts sending `marker` offsets, `markersFor()` prefers them.
 
 **A book's name is set by the stylesheet.** `@utility work-title` in
-`styles/theme.css`, used at every one of the five places a title is printed —
-the prose, the margin, the shelves, the drawer, the badge group. A component
-that writes `italic` for a title instead is a bug, and `styles/theme.test.ts`
-fails on one.
+`styles/theme.css`, used at every one of the six places a title is printed —
+the prose, the margin, the shelves, the drawer, the badge group, the scan. A
+component that writes `italic` for a title instead is a bug, and
+`styles/theme.test.ts` fails on one.
 
 It sets the face, the slant and the weight. `font-style: italic` alone asks for an
 italic of whatever family is in force, and GT Alpina Condensed ships without
@@ -237,6 +237,33 @@ title, and the search is done here so it never costs a second fetch.
 wrote nothing says so and offers to ask again. It is not a hypothetical: the
 server ran out of steps mid-tool-call in production and the reader was shown a
 list of everything it had read with nothing underneath it.
+
+**The scan is drawn here, not handed to the browser.** A signed link into the
+browser's own PDF viewer is the one thing that cannot work on a phone: iOS
+ignores `#page=`, so a citation to p. 147 opened page 1 of a four-hundred-page
+book, and the tab was opened after an `await` on `/files/sign`, which Safari
+blocks as a popup — so on an iPhone the button did nothing at all. `page/pdf.ts`
+renders the cited page with pdf.js and `page/ScanView.tsx` shows it over the
+drawer: the right page, in the app, back with one tap. pdf.js and its worker are
+a megabyte and most readers never open a scan, so nothing is imported until one
+does. The decoders, standard fonts, cmaps and colour profiles it needs beside
+its code — a scanned page is JBIG2 or JPEG 2000 and a typeset one names fonts it
+does not carry — are served from `/pdf` by the plugin in `vite.config.ts`;
+without them a page draws blank. The page is drawn at the size it is shown and
+redrawn when it is magnified, capped at 2×, so type is sharp and a 3× phone does
+not pay for nine times the pixels. The whole file is still one tap away, as a
+link rather than a window opened later. Escape puts away the scan before the
+drawer.
+
+**The margin under the fold is one line per book.** `ask/Shelf.tsx`: the name,
+and its pips ranged right on the same line — a ledger entry. Two lines per book
+was most of a phone screen of apparatus under every answer about four books. A
+pip is drawn 36px and reaches the 44 a finger wants by taking the 8px gap above
+and below it, which is why that gap is what `MarginNotes` sets and not a number
+chosen for looks: two rows' targets meet and never overlap. The name is set at
+the size the margin sets its notes at, because this *is* the margin note,
+folded, and it truncates before the pips give up any room — a shortened title is
+still a title, a missing verdict is a missing fact.
 
 **The drawer shows a passage, not a page.** `citation.context` is another field
 the server does not send, so every citation fell through to the branch that
