@@ -335,6 +335,11 @@
 	font-family: var(--font-read);
 	font-style: italic;
 	font-weight: var(--weight-text);
+	/* Never a drawn-on slant or a faked weight. If the cut is missing the
+	   fallback supplies its own real italic, which is a different face but
+	   still an italic; a synthesised one is a roman sheared over and thickened,
+	   and that is the thing being complained about. */
+	font-synthesis: none;
 }
 
 /* One class per ink, so a component names the slot and the stylesheet owns the

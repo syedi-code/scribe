@@ -23,6 +23,29 @@
 			href="/fonts/GT-Alpina-Standard-Bold.woff2"
 			crossorigin
 		/>
+		<!--
+			The two italics, which are the whole of what is set in a slant here: a
+			work's title, and the wordmark. Without these the roman arrives first and
+			the italic is discovered only once the stylesheet has been parsed, so on a
+			phone the prose paints in GT Alpina Light while every book name beside it
+			is still in the fallback — Iowan Old Style on iOS, which is a far darker
+			face. A title next to prose it is two shades heavier than does not read as
+			an italic. It reads as bold, and that is what it was reported as, twice.
+		-->
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			href="/fonts/GT-Alpina-Standard-Bold-Italic.woff2"
+			crossorigin
+		/>
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			href="/fonts/GT-Alpina-Standard-Light-Italic.woff2"
+			crossorigin
+		/>
 		<title>scribe-lm</title>
 	</head>
 	<body>

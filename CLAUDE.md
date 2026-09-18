@@ -154,6 +154,21 @@ the body stayed Light fixed the run-in head and made every title in the app
 read as emphasised instead, since 400 is the step a checked quotation is set
 in. A title is a slant, never a weight.
 
+**An italic is preloaded, or it arrives too late to be one.** A roman is
+discovered in the markup; an italic only once the stylesheet has been parsed.
+On a phone that gap is long enough to paint, and what painted was the prose in
+GT Alpina Light with every book name beside it still in the fallback — Iowan
+Old Style on iOS, a far darker face. A title two shades heavier than the
+sentence it sits in does not read as an italic, it reads as bold, and that is
+what it was reported as twice while the weight was blamed both times.
+`index.html` preloads the two italics that are on screen before a reader does
+anything — the title's cut and the wordmark's — and `styles/theme.test.ts`
+fails if either stops being preloaded. Regular Italic is deliberately not
+preloaded: only an italic inside a 500 run-in head reaches it, and a third
+135kB face fetched up front costs the phone more than it saves. `work-title`
+also sets `font-synthesis: none`, so a missing cut falls back to a real italic
+rather than a roman sheared over and thickened.
+
 **One copy file.** `copy.ts`. The honesty of this interface lives in its wording
 — _found on the page_, never a bare _verified_, never a tick — and wording
 scattered across components drifts.
