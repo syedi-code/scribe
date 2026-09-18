@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
-import { renderApp, stubFetch, verified } from '../test/harness';
+import { asProduction, renderApp, stubFetch, verified } from '../test/harness';
 import { closePage, openPage } from '../state/reader';
 import { PageView } from './PageView';
 
@@ -199,9 +199,7 @@ describe('the passage behind a citation', () => {
 		act(() => openPage(cited));
 
 		await screen.findByText(/will to truth/);
-		expect(
-			screen.queryByText('The words the answer relied on')
-		).toBeNull();
+		expect(screen.queryByText('The words the answer relied on')).toBeNull();
 	});
 
 	// A verified citation shows the page and says nothing about itself.
@@ -216,3 +214,66 @@ describe('the passage behind a citation', () => {
 	});
 });
 
+/**
+ * A citation arrives with a `ref` and no `page`, so which book it is — and
+ * whether that book has a scan — is a round trip away. The footer answered
+ * before the round trip landed, and told every reader of every citation that
+ * the page had no scan to show.
+ */
+describe('before the document behind a citation has arrived', () => {
+	const hanging = () => {
+		let land: (body: unknown) => void = () => {};
+		const arrived = new Promise<unknown>((resolve) => (land = resolve));
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => ({
+				ok: true,
+				status: 200,
+				json: async () => await arrived,
+			}))
+		);
+		return (body: unknown) => act(() => void land(body));
+	};
+
+	const cited = (documentId: string) =>
+		asProduction({
+			...verified('P1', 'the will to truth'),
+			ref: { document_id: documentId, page_no: 21 },
+		});
+
+	it('says nothing about a scan it has not heard about yet', () => {
+		hanging();
+		renderApp(<PageView />);
+		act(() => openPage(cited('doc-pending')));
+
+		expect(screen.queryByText('This page has no scan to show.')).toBeNull();
+		expect(
+			screen.queryByRole('button', { name: 'See the scan' })
+		).toBeNull();
+	});
+
+	it('offers the scan once the document says there is one', async () => {
+		const land = hanging();
+		renderApp(<PageView />);
+		act(() => openPage(cited('doc-lands')));
+
+		land({
+			document: {
+				document_id: 'doc-lands',
+				page_offset: 0,
+				page_count: 232,
+				text: 'searchable',
+				has_file: true,
+				work_id: 'w1',
+				work_title: 'Beyond Good and Evil',
+				creator: 'Friedrich Nietzsche',
+				file_key: 'works/x.pdf',
+			},
+		});
+
+		expect(
+			await screen.findByRole('button', { name: 'See the scan' })
+		).toBeTruthy();
+		expect(screen.queryByText('This page has no scan to show.')).toBeNull();
+	});
+});

@@ -255,6 +255,19 @@ not pay for nine times the pixels. The whole file is still one tap away, as a
 link rather than a window opened later. Escape puts away the scan before the
 drawer.
 
+**A scan that will not draw is not a book without a scan.** Three outcomes,
+kept apart in `ScanView`: the document has no file, the file is there and could
+not be drawn, or here is the page. Collapsing the middle into the first printed
+_this page has no scan to show_ over a book whose scan is in the bucket — for
+every citation, since every failure landed there. The drawer's footer had the
+same fault one step earlier: whether a document has a scan is a round trip
+away, and it answered before the round trip landed. It now says nothing until
+it knows. When drawing does fail the reader gets the reason and keeps the link
+to the file, which is the moment the link is worth most. The key in that link
+is encoded a path segment at a time: six of the library's filenames carry a
+space or a comma, and unencoded the path the browser sent was not the path the
+token was minted over.
+
 **The margin under the fold is one line per book.** `ask/Shelf.tsx`: the name,
 and its pips ranged right on the same line — a ledger entry. Two lines per book
 was most of a phone screen of apparatus under every answer about four books. A

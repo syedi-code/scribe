@@ -15,16 +15,24 @@ import type { AnswerCitation } from '../api/types';
  */
 
 const drawn: { page: number; width: number }[] = [];
+/** Set by a test that wants opening the file to fail the way production did. */
+let refuse: string | null = null;
 
 vi.mock('./pdf', () => ({
 	openScan: () =>
-		Promise.resolve({
-			pages: 300,
-			draw: (page: number, _canvas: HTMLCanvasElement, width: number) => {
-				drawn.push({ page, width });
-				return { done: Promise.resolve(), cancel: () => {} };
-			},
-		}),
+		refuse
+			? Promise.reject(new Error(refuse))
+			: Promise.resolve({
+					pages: 300,
+					draw: (
+						page: number,
+						_canvas: HTMLCanvasElement,
+						width: number
+					) => {
+						drawn.push({ page, width });
+						return { done: Promise.resolve(), cancel: () => {} };
+					},
+				}),
 }));
 
 /** jsdom lays nothing out, and the page is drawn to the width it is shown at. */
@@ -38,6 +46,7 @@ beforeAll(() => {
 afterEach(() => {
 	act(() => closePage());
 	drawn.length = 0;
+	refuse = null;
 });
 
 /** One book per test: a signed scan is fetched once and kept for the tab. */
@@ -51,6 +60,20 @@ const into = (documentId: string, pageNo: number): AnswerCitation => {
 };
 
 const SIGNED = { document: { file_key: 'works/nietzsche.pdf' }, token: 't0k' };
+const HAS_FILE = {
+	document: {
+		document_id: 'doc-x',
+		page_offset: 0,
+		page_count: 232,
+		text: 'searchable',
+		has_file: true,
+		work_id: 'w1',
+		work_title: 'Beyond Good and Evil',
+		creator: 'Friedrich Nietzsche',
+		file_key: 'works/Kant, Immanuel - What is Enlightenment.pdf',
+	},
+	token: 't0k',
+};
 
 const openScanFor = async (citation: AnswerCitation) => {
 	stubFetch(SIGNED);
@@ -137,5 +160,69 @@ describe('going back from the scan', () => {
 
 		fireEvent.keyDown(document, { key: 'Escape' });
 		expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+	});
+});
+
+/**
+ * What a reader was told when the scan did not appear: *This page has no scan
+ * to show* — about a book whose scan is in the bucket. Every failure between
+ * the citation and the canvas came out as that one sentence, which is the
+ * interface asserting a fact it had not established.
+ */
+describe('when the scan cannot be drawn', () => {
+	it('says so, rather than saying the book has no scan', async () => {
+		refuse = 'the file could not be read';
+		await openScanFor(into('doc-refused', 21));
+
+		expect(
+			await screen.findByText('The scan could not be drawn just now.')
+		).toBeTruthy();
+		expect(screen.queryByText('This page has no scan to show.')).toBeNull();
+	});
+
+	it('keeps the file within reach, which is when it matters most', async () => {
+		refuse = 'the file could not be read';
+		await openScanFor(into('doc-refused-link', 21));
+
+		await screen.findByText('The scan could not be drawn just now.');
+		const out = screen.getByRole('link', { name: 'Open the PDF' });
+		expect(out.getAttribute('href')).toContain('/api/files/');
+	});
+
+	it('shows what went wrong, so it can be reported', async () => {
+		refuse = 'MissingPDFException: 404';
+		await openScanFor(into('doc-refused-why', 21));
+
+		expect(await screen.findByText(/MissingPDFException/)).toBeTruthy();
+	});
+
+	// The message is only true when the document really has no file.
+	it('still says there is no scan when there is no file', async () => {
+		stubFetch({ document: { file_key: null }, token: null });
+		renderApp(<PageView />);
+		act(() => openPage(into('doc-fileless', 21)));
+		fireEvent.click(screen.getByRole('button', { name: 'See the scan' }));
+
+		expect(
+			await screen.findByText('This page has no scan to show.')
+		).toBeTruthy();
+	});
+});
+
+/**
+ * Six of the library's keys carry a space or a comma. Unencoded, the path the
+ * browser sent was not the path the token was minted over.
+ */
+describe('a file whose name has to be encoded', () => {
+	it('is asked for a path segment at a time', async () => {
+		stubFetch(HAS_FILE);
+		renderApp(<PageView />);
+		act(() => openPage(into('doc-spaced', 21)));
+		fireEvent.click(screen.getByRole('button', { name: 'See the scan' }));
+
+		const out = await screen.findByRole('link', { name: 'Open the PDF' });
+		expect(out.getAttribute('href')).toBe(
+			'/api/files/works/Kant%2C%20Immanuel%20-%20What%20is%20Enlightenment.pdf?token=t0k#page=21'
+		);
 	});
 });

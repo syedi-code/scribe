@@ -102,7 +102,11 @@ function Body({ citation }: { citation: AnswerCitation }) {
 			verdictKey(citation) as keyof typeof COPY.pageView.lead
 		];
 
-	const from = page ? (spread ? Math.max(1, page.page_no - 1) : page.page_no) : 0;
+	const from = page
+		? spread
+			? Math.max(1, page.page_no - 1)
+			: page.page_no
+		: 0;
 	const to = page ? (spread ? page.page_no + 1 : page.page_no) : 0;
 	const fetched = useAsync(
 		page && citation.status !== 'unverifiable'
@@ -160,7 +164,9 @@ function Body({ citation }: { citation: AnswerCitation }) {
 			{!context && <Quoted quote={citation.quote} />}
 
 			{lead && citation.status !== 'verified' && <Note>{lead}</Note>}
-			{context?.spans_page_break && <Note>{COPY.pageView.spansBreak}</Note>}
+			{context?.spans_page_break && (
+				<Note>{COPY.pageView.spansBreak}</Note>
+			)}
 
 			{!spread && (
 				<button
@@ -201,7 +207,7 @@ export function PageView() {
 	const open = useOpenPage();
 	const drawer = useRef<HTMLDivElement>(null);
 	const opener = useRef<HTMLElement | null>(null);
-	const { page } = useCitedPage(open?.citation ?? null);
+	const { page, loading } = useCitedPage(open?.citation ?? null);
 	const showing = open !== null;
 	// Which citation's scan is open, rather than whether one is: a second
 	// citation opened over the first is a different page of a different book,
@@ -312,7 +318,12 @@ export function PageView() {
 							/>
 						</div>
 
-						<footer className="border-paper-deep mt-auto flex gap-4 border-t px-5 pt-3 pb-3.5">
+						{/* Whether there is a scan is a fact about the document,
+						    and until the document is here it is not a fact we
+						    have. Saying so anyway is how every citation came to
+						    be captioned *no scan to show* while the fetch was
+						    still in the air. */}
+						<footer className="border-paper-deep mt-auto flex h-11 shrink-0 items-center gap-4 border-t px-5">
 							{page?.viewable ? (
 								<button
 									type="button"
@@ -321,9 +332,13 @@ export function PageView() {
 								>
 									{COPY.pageView.seeScan}
 								</button>
-							) : (
+							) : page ? (
 								<span className="font-app text-small text-ink-soft">
 									{COPY.pageView.noScan}
+								</span>
+							) : loading ? null : (
+								<span className="font-app text-small text-ink-soft">
+									{COPY.pageView.unreachable}
 								</span>
 							)}
 						</footer>

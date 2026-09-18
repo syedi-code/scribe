@@ -24,6 +24,12 @@ const MAGNIFIED = 2.4;
 /** The paper is inset from the edges, so the page reads as a sheet on a table. */
 const GUTTER = 12;
 
+/** What came back when the reader asked for the scan. */
+type Opened =
+	| { kind: 'none' }
+	| { kind: 'drawn'; url: string; scan: Scan }
+	| { kind: 'undrawable'; url: string; why: string };
+
 interface Focus {
 	/** Where the tap was, as a fraction of the page, and where on screen. */
 	x: number;
@@ -53,14 +59,28 @@ export function ScanView({
 	const canvas = useRef<HTMLCanvasElement>(null);
 	const focus = useRef<Focus | null>(null);
 
-	const opened = useAsync(async (): Promise<{
-		scan: Scan;
-		url: string;
-	} | null> => {
+	/**
+	 * Three outcomes, kept apart, because they are three different things to
+	 * tell a reader: the document has no file behind it, the file is there and
+	 * could not be drawn, or here is the scan. Collapsing the middle one into
+	 * the first said *this page has no scan to show* about a book whose scan
+	 * is sitting in the bucket — which is the interface asserting a fact it
+	 * had not established, in the one app that exists to not do that.
+	 */
+	const opened = useAsync(async (): Promise<Opened> => {
 		const url = await scanUrl(documentId);
-		return url ? { scan: await openScan(url), url } : null;
+		if (!url) return { kind: 'none' };
+		try {
+			return { kind: 'drawn', url, scan: await openScan(url) };
+		} catch (error) {
+			return { kind: 'undrawable', url, why: String(error) };
+		}
 	}, [documentId]);
-	const scan = opened.value?.scan ?? null;
+	const state = opened.value;
+	const scan = state?.kind === 'drawn' ? state.scan : null;
+	// The file is worth offering whenever we know where it is, and most worth
+	// offering when we could not draw it.
+	const url = state && 'url' in state ? state.url : null;
 
 	// The drawer mounts this on the page a citation named and unmounts it when
 	// the reader goes back, so there is no stale page to reset: opening a scan
@@ -148,8 +168,10 @@ export function ScanView({
 		setZoom((at) => (at === 1 ? MAGNIFIED : 1));
 	};
 
-	const missing = !opened.loading && !opened.value;
-	const broken = Boolean(opened.error) || failed || missing;
+	// `failed` is a page that would not draw; the rest arrived with the file.
+	const trouble =
+		failed || Boolean(opened.error) || state?.kind === 'undrawable';
+	const nothing = state?.kind === 'none';
 
 	return (
 		<div className="bg-paper absolute inset-0 flex flex-col">
@@ -186,23 +208,31 @@ export function ScanView({
 					onClick={magnify}
 					className={`bg-paper-lift block shadow-[0_1px_3px_rgba(36,31,26,0.18)] ${
 						zoom > 1 ? 'cursor-zoom-out' : 'mx-auto cursor-zoom-in'
-					} ${broken ? 'hidden' : ''}`}
+					} ${trouble || nothing ? 'hidden' : ''}`}
 				/>
 
-				{(opened.loading || drawing || broken) && (
+				{(opened.loading || drawing || trouble || nothing) && (
 					<p
 						role="status"
 						className={`font-app text-small text-ink-soft m-0 ${
-							broken
+							trouble || nothing
 								? ''
 								: 'absolute inset-x-0 top-1/2 text-center'
 						}`}
 					>
-						{broken
-							? missing
-								? COPY.pageView.noScan
-								: COPY.scan.unreachable
-							: COPY.scan.loading}
+						{nothing
+							? COPY.pageView.noScan
+							: trouble
+								? COPY.scan.unreachable
+								: COPY.scan.loading}
+					</p>
+				)}
+
+				{/* What actually went wrong, for the reader who wants to say
+				    what they saw. The sentence above is for everyone else. */}
+				{trouble && state?.kind === 'undrawable' && (
+					<p className="font-app text-tiny text-ink-faint mt-2 break-words">
+						{state.why}
 					</p>
 				)}
 			</div>
@@ -237,9 +267,9 @@ export function ScanView({
 				>
 					{zoom > 1 ? COPY.scan.fit : COPY.scan.magnify}
 				</button>
-				{opened.value && (
+				{url && (
 					<a
-						href={`${opened.value.url}#page=${page}`}
+						href={`${url}#page=${page}`}
 						target="_blank"
 						rel="noopener"
 						className="font-app text-small text-ink-soft hover:text-ink border-paper-deep ml-auto border-b"

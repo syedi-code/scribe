@@ -72,7 +72,14 @@ export function scanUrl(documentId: string): Promise<string | null> {
 					'/files/sign',
 					{ path: file_key }
 				);
-				return `/api/files/${file_key}?token=${encodeURIComponent(token)}`;
+				// A segment at a time: the key keeps its slashes, and a
+				// filename with a space or a comma in it — six of the
+				// library's have one — survives the trip.
+				const path = file_key
+					.split('/')
+					.map(encodeURIComponent)
+					.join('/');
+				return `/api/files/${path}?token=${encodeURIComponent(token)}`;
 			})
 			.catch((error: unknown) => {
 				scans.delete(documentId);
