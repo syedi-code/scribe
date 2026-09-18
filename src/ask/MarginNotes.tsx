@@ -245,7 +245,7 @@ export function MarginNotes({
 	return (
 		<div
 			ref={setMargin}
-			className="relative @max-fold:static @max-fold:mb-6 @max-fold:border-t @max-fold:border-paper-deep @max-fold:pt-2"
+			className="relative @max-fold:static @max-fold:mb-4 @max-fold:border-t @max-fold:border-paper-deep @max-fold:pt-1.5"
 		>
 			<Leader
 				margin={margin}
@@ -268,8 +268,10 @@ export function MarginNotes({
 				))}
 			</div>
 
-			{/* One line per book, and the 8px between them is what each pip
-			    borrows above and below to reach a 44px target.
+			{/* One line per book, set tight: the 2px between them is what each pip
+			    borrows above and below, so a target is the pitch and never more.
+			    Overlapping targets would open the book above or below the one
+			    aimed at.
 
 			    The column is `minmax(0, 1fr)` and not `1fr`, because a grid track
 			    is min-content wide by default and a book with a long name is wider
@@ -278,7 +280,7 @@ export function MarginNotes({
 			    the part that carries the verdict — somewhere past the edge. The
 			    `truncate` on the name inside could never fire, because nothing
 			    above it was ever narrower than the name. */}
-			<div className="hidden @max-fold:grid @max-fold:grid-cols-[minmax(0,1fr)] @max-fold:gap-2">
+			<div className="hidden @max-fold:grid @max-fold:grid-cols-[minmax(0,1fr)] @max-fold:gap-0.5">
 				{groupByDocument(markers, citations, resolved, shown).map(
 					(group) => (
 						<Shelf

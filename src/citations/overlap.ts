@@ -1,10 +1,8 @@
 /**
  * How much two passages have to share to be the same passage.
  *
- * Used twice: to tell whether a citation is repeating a quotation the prose
- * has just written out, and to find a quote on the page it names. Both have
- * to survive a scanning error in the middle of the passage, so neither can
- * ask for an exact match.
+ * Used to find a quote on the page it names, which has to survive a scanning
+ * error in the middle of the passage, so it cannot ask for an exact match.
  */
 
 /** Folds the characters a PDF and a model disagree about, without moving any. */
@@ -72,23 +70,8 @@ export function sharedRun(
 }
 
 /**
- * Where a quotation the prose wrote repeats a citation's quote, as a span of
- * the prose's quotation.
- *
- * Five shared words, or the whole of a shorter quotation. In production the
- * prose quotes three words -- *“Plato is boring”* -- and the citation quotes
- * the sentence they came from, which no five-word floor can pair. Under
- * three words a quotation is a scare quote, not a passage.
- */
-export function repeats(written: Word[], quote: Word[]): [number, number] | null {
-	if (written.length < SHORTEST_QUOTATION) return null;
-	return sharedRun(written, quote, Math.min(SHARED_WORDS, written.length));
-}
-
-/**
  * How much overlap makes two passages the same passage. Five words is what
  * alexandria asks a citation to quote at minimum, so it is the shortest run
  * that can be a quotation rather than a coincidence of common words.
  */
 const SHARED_WORDS = 5;
-const SHORTEST_QUOTATION = 3;

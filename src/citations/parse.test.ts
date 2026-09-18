@@ -182,49 +182,82 @@ describe('segmentAnswer', () => {
 	});
 });
 
-describe('a citation that repeats what the prose just quoted', () => {
-	const QUOTE =
-		'that unconditional will to truth, is faith in the ascetic ideal';
-	const text = `He writes: "However, the compulsion towards it, ${QUOTE}, even if as an unconscious imperative" [P1 "${QUOTE}"]. That is his claim.`;
-
-	const only = () => {
-		const nodes = nodesIn(segmentAnswer(text, parseCitations(text)));
-		const citation = nodes.find((node) => node.kind === 'citation');
-		if (citation?.kind !== 'citation') throw new Error('no citation');
-		return { nodes, citation };
-	};
-
-	it('shows the passage once, not twice', () => {
-		const { nodes } = only();
-		const shown = nodes
+/**
+ * The model quoted in its prose and cited the same words again, and the reader
+ * was shown one copy while the server checked the other. Production's Marx
+ * answer (d2763b7f) printed "A Critique of Political Economy" and then the
+ * citation that repeats it, because an OCR error in the page — Politi?al —
+ * kept the two from pairing. Now the quoted words are the citation.
+ */
+describe('a quotation written as <cite>', () => {
+	const text =
+		'The bourgeois has, without knowing it, <cite P1>a Hitler inside him</cite>, and more.';
+	const blocks = () => segmentAnswer(text, parseCitations(text));
+	/** Printed as a reader sees it: `printedIn` leaves a citation's words out. */
+	const shown = () =>
+		nodesIn(blocks())
 			.map((node) => ('text' in node ? node.text : node.quote))
 			.join('');
-		expect(shown.split(QUOTE)).toHaveLength(2);
+
+	it('reads the handle and the quoted words', () => {
+		expect(parseCitations(text)).toEqual([
+			{ handle: 'P1', quote: 'a Hitler inside him', start: 39, end: 74 },
+		]);
 	});
 
-	it('keeps the model’s own wording of the passage', () => {
-		expect(only().citation.quote).toContain('However, the compulsion');
+	it('is drawn where it was woven, in the middle of the sentence', () => {
+		expect(nodesIn(blocks()).map((node) => node.kind)).toEqual([
+			'text',
+			'citation',
+			'text',
+		]);
+		expect(shown()).toBe(
+			'The bourgeois has, without knowing it, a Hitler inside him, and more.'
+		);
 	});
 
-	it('marks exactly the words the server checked', () => {
-		const { citation } = only();
-		const [from, to] = citation.checked;
-		expect(citation.quote.slice(from, to)).toBe(QUOTE);
+	it('shows the words once', () => {
+		expect(shown().split('a Hitler inside him')).toHaveLength(2);
 	});
 
-	it('leaves the prose that introduced it in place', () => {
-		const { nodes } = only();
-		expect(nodes[0].kind).toBe('text');
-		expect('text' in nodes[0] ? nodes[0].text : '').toContain('He writes:');
+	it('reads several in one sentence, in order', () => {
+		const two =
+			'He sees <cite P2>an identity of day and night</cite> and <cite P7>a war with itself</cite>.';
+		expect(parseCitations(two).map((one) => one.handle)).toEqual(['P2', 'P7']);
 	});
 
-	it('does not fold in a quotation that is a different passage', () => {
-		const other =
-			'He writes: "something else entirely here" [P1 "a quote of five words"].';
-		const nodes = nodesIn(segmentAnswer(other, parseCitations(other)));
-		const citation = nodes.find((node) => node.kind === 'citation');
-		expect(citation?.kind === 'citation' && citation.quote).toBe(
-			'a quote of five words'
+	it('tolerates a quoted handle', () => {
+		const [citation] = parseCitations(
+			'<cite ref="P3">no one colonizes innocently</cite>'
+		);
+		expect(citation).toMatchObject({
+			handle: 'P3',
+			quote: 'no one colonizes innocently',
+		});
+	});
+
+	it('strips a name marked inside the quote before it is checked', () => {
+		const marked =
+			'<cite P1>what he cannot forgive <author>Hitler</author> for</cite>';
+		const [node] = nodesIn(segmentAnswer(marked, parseCitations(marked)));
+		expect(node.kind === 'citation' && node.quote).toBe(
+			'what he cannot forgive Hitler for'
+		);
+	});
+
+	it('still reads an answer saved in the bracketed form', () => {
+		const old = 'He says [P1 "he has a Hitler inside him"] there.';
+		const [, node] = nodesIn(segmentAnswer(old, parseCitations(old)));
+		expect(node.kind === 'citation' && node.quote).toBe(
+			'he has a Hitler inside him'
+		);
+	});
+
+	it('shows the words of a malformed tag as prose, never the tag', () => {
+		const broken = 'He says <cite>a Hitler inside him</cite> here.';
+		expect(parseCitations(broken)).toEqual([]);
+		expect(printedIn(segmentAnswer(broken, []))).toBe(
+			'He says a Hitler inside him here.'
 		);
 	});
 });
@@ -238,6 +271,22 @@ describe('trimHalfWrittenCitation', () => {
 		'The claim stands [P7: “the will to truth',
 	])('holds back %j until it is finished', (text) => {
 		expect(trimHalfWrittenCitation(text)).toBe('The claim stands');
+	});
+
+	it.each([
+		'The claim stands <',
+		'The claim stands <ci',
+		'The claim stands <cite P',
+		'The claim stands <cite P7>',
+		'The claim stands <cite P7>the will to',
+		'The claim stands <cite P7>the will to truth</ci',
+	])('holds back %j until the cite is closed', (text) => {
+		expect(trimHalfWrittenCitation(text)).toBe('The claim stands');
+	});
+
+	it('leaves a finished cite alone', () => {
+		const done = 'The claim stands <cite P7>the will to truth</cite>';
+		expect(trimHalfWrittenCitation(done)).toBe(done);
 	});
 
 	it('leaves a finished citation alone', () => {
@@ -303,5 +352,22 @@ describe('the people an answer names', () => {
 		);
 		expect(nodes.filter((node) => node.kind === 'author')).toHaveLength(0);
 		expect(nodes.filter((node) => node.kind === 'title')).toHaveLength(1);
+	});
+});
+
+/**
+ * Production's Marx answer (d2763b7f) wrote `<author>W. Lough>` — a tag closed
+ * with a bare `>`, which `untag` reads. The sentence splitter cut it in half
+ * at the initial first, because an initial only counted as an abbreviation
+ * after a space, and the reader was shown `W. Lough>`.
+ */
+describe('a name that begins with an initial', () => {
+	const text =
+		'Theses on Feuerbach, translated by <author>W. Lough>. The text includes the thesis.';
+
+	it('is not cut in half by the full stop after the initial', () => {
+		const printed = printedIn(segmentAnswer(text, []));
+		expect(printed).toContain('W. Lough');
+		expect(printed).not.toContain('>');
 	});
 });

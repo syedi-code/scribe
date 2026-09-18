@@ -64,7 +64,6 @@ function Node({ node, marks }: { node: AnswerNode; marks: Marks }) {
 		<Citation
 			index={node.index}
 			quote={node.quote}
-			checked={node.checked}
 			citation={
 				node.index < marks.resolved ? marks.citations[node.index] : null
 			}

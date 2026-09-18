@@ -8,7 +8,8 @@ import { Answer } from './Answer';
  *
  * The regression these exist for: on production the model wrote the passage
  * out in its own prose and then cited a few words of it, and the interface
- * printed the same sentence twice running.
+ * printed the same sentence twice running. A quote is now written once,
+ * inside <cite>, and that is the copy the server checks.
  */
 
 function renderAnswer(text: string, citations = [verified('P1', 'a quote')]) {
@@ -30,25 +31,51 @@ function renderAnswer(text: string, citations = [verified('P1', 'a quote')]) {
 const QUOTE =
 	'that unconditional will to truth, is faith in the ascetic ideal itself';
 
-describe('an answer that quotes and then cites the same words', () => {
-	const text = `He writes: "However, the compulsion towards it, ${QUOTE}, even if as an unconscious imperative" [P1 "${QUOTE}"]. That is his claim.`;
+describe('a quotation the model wove into its sentence', () => {
+	const text = `The compulsion towards it is <cite P1>${QUOTE}</cite>. That is his claim.`;
 
-	it('prints the passage once', () => {
+	it('prints the quoted words once', () => {
 		renderAnswer(text, [verified('P1', QUOTE)]);
 		const shown = document.body.textContent ?? '';
-		const occurrences = shown.split(QUOTE).length - 1;
-		expect(occurrences).toBe(1);
+		expect(shown.split(QUOTE).length - 1).toBe(1);
+	});
+
+	it('leaves no tag in the prose', () => {
+		renderAnswer(text, [verified('P1', QUOTE)]);
+		expect(document.body.textContent).not.toContain('<cite');
+		expect(document.body.textContent).not.toContain('P1');
+	});
+
+	it('sets the quoted words one weight heavier, being what was checked', () => {
+		renderAnswer(text, [verified('P1', QUOTE)]);
+		expect(document.querySelector('.font-normal')?.textContent).toBe(QUOTE);
+	});
+
+	it('keeps the rest of the sentence around it', () => {
+		renderAnswer(text, [verified('P1', QUOTE)]);
+		expect(document.body.textContent).toContain('The compulsion towards it');
+		expect(document.body.textContent).toContain('That is his claim.');
+	});
+});
+
+/**
+ * Answers written before <cite> are saved in the database in the bracketed
+ * form, and are still read. The client no longer tries to work out which
+ * prose quotation a citation was repeating — that guesswork is what <cite>
+ * replaced — so an old answer that quoted and then cited shows both copies,
+ * as the model wrote them.
+ */
+describe('an answer saved before <cite>', () => {
+	const text = `He writes: "However, the compulsion towards it, ${QUOTE}" [P1 "${QUOTE}"]. That is his claim.`;
+
+	it('prints the quotation from the citation', () => {
+		renderAnswer(text, [verified('P1', QUOTE)]);
+		expect(document.querySelector('.font-normal')?.textContent).toBe(QUOTE);
 	});
 
 	it('leaves no citation marker in the prose', () => {
 		renderAnswer(text, [verified('P1', QUOTE)]);
 		expect(document.body.textContent).not.toContain('[P1');
-	});
-
-	it('sets only the checked words one weight heavier', () => {
-		renderAnswer(text, [verified('P1', QUOTE)]);
-		const heavier = document.querySelector('.font-normal');
-		expect(heavier?.textContent).toBe(QUOTE);
 	});
 
 	it('keeps the rest of the sentence around it', () => {

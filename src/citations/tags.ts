@@ -25,9 +25,11 @@ const TAGGED = /<(title|author)>([^<>]*?)(?:<\/\1>|>)/g;
  * A tag opened and not closed, or closed and never opened. Mid-stream the
  * first happens constantly — the closer is a few tokens behind — and at the
  * end of an answer it means the model lost its place. Either way the reader
- * sees the words, never the brackets.
+ * sees the words, never the brackets. A `<cite>` that became a citation is
+ * gone before this runs, so one left here is malformed — no handle, or no
+ * closer — and its words are shown as plain prose.
  */
-const STRAY = /<\/?(?:title|author)>/g;
+const STRAY = /<[/]?(?:title|author|cite)(?:[ ][^<>]*)?>/g;
 
 export const stripTags = (text: string) => text.replace(STRAY, '');
 

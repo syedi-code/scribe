@@ -1,25 +1,29 @@
 import { inkFor } from './authors';
 import { blocksOf, localise } from './blocks';
-import { stripTags, untag, untagQuote } from './tags';
-import { repeats, wordsOf } from './overlap';
+import { untag, untagQuote } from './tags';
 import type { AnswerCitation } from '../api/types';
 
 /**
  * Finding a citation in the text of an answer.
  *
- * This regex mirrors `parseCitations()` in alexandria's
- * `conversations/citations.ts`, and the two have to agree forever — including
- * on curly quotes, `[P7: "…"]`, and quotes that contain quotes. When they
- * drift, an answer renders with a citation the reader can see in the margin
- * and cannot find in the prose.
+ * The model cites by wrapping the words it quotes: `<cite P7>the will to
+ * truth</cite>`. Those words are the quotation, the evidence and the thing the
+ * server checks, all at once, so they are written once and read once. They
+ * used to be written twice — in the prose, then again inside `[P7 "…"]` —
+ * and the reader was shown one copy while the server checked the other.
  *
- * So it lives here, once, with a test file of the awkward cases beside it, and
- * nothing else in the app looks for a citation. The proper fix is for the
- * server to send marker offsets — `plans/scribe-citations-api.md`, change 3 —
- * and `markersFor()` below prefers them the day they arrive.
+ * `[P7 "…"]` and `"…" [P7]` are still read, because every answer saved before
+ * `<cite>` is written in them.
+ *
+ * This regex mirrors `parseCitations()` in alexandria's
+ * `conversations/citations.ts`, and the two have to agree forever. When they
+ * drift, an answer renders with a citation the reader can see in the margin
+ * and cannot find in the prose. The proper fix is for the server to send
+ * marker offsets — `docs/scribe-citations-api.md`, change 3 — and
+ * `markersFor()` below prefers them the day they arrive.
  */
 const CITATION =
-	/\[(P\d+)\s*[:,]?\s*["“](.+?)["”]\s*\]|["“]([^"”]+)["”]\s*\[(P\d+)\]/g;
+	/<cite\s+(?:ref=)?["']?(P\d+)["']?\s*>([\s\S]+?)<\/cite>|\[(P\d+)\s*[:,]?\s*["“](.+?)["”]\s*\]|["“]([^"”]+)["”]\s*\[(P\d+)\]/g;
 
 export interface CitationMarker {
 	handle: string;
@@ -31,10 +35,11 @@ export interface CitationMarker {
 
 export function parseCitations(text: string): CitationMarker[] {
 	return [...text.matchAll(CITATION)].map((match) => {
-		const [whole, handle, quote, quoteBefore, handleAfter] = match;
+		const [whole, citeHandle, citeQuote, handle, quote, quoteBefore, handleAfter] =
+			match;
 		return {
-			handle: handle ?? handleAfter,
-			quote: (quote ?? quoteBefore).trim(),
+			handle: citeHandle ?? handle ?? handleAfter,
+			quote: (citeQuote ?? quote ?? quoteBefore).trim(),
 			start: match.index,
 			end: match.index + whole.length,
 		};
@@ -44,15 +49,22 @@ export function parseCitations(text: string): CitationMarker[] {
 /**
  * A citation half-written.
  *
- * Markers arrive a token at a time, so mid-stream the prose ends in `[P7 "the
- * will to` and the reader watches the machinery instead of the answer. The
- * unfinished tail is held back until its closing bracket lands, which is a
- * fraction of a second later.
+ * Markers arrive a token at a time, so mid-stream the prose ends in `<cite
+ * P7>the will to` and the reader watches the machinery instead of the answer.
+ * The unfinished tail is held back until `</cite>` lands, which is a fraction
+ * of a second later: a cite is five to twenty words. A half-typed `<ci` is
+ * held back too, and so is the older bracketed form.
  */
-const HALF_WRITTEN = /\s*\[(?:P(?:\d+(?:\s*[:,]?\s*(?:["“][^"”]*)?)?)?)?$/;
+const HALF_WRITTEN_CITE = /\s*<cite\b(?:(?!<\/cite>)[\s\S])*$/;
+const HALF_TYPED_TAG = /\s*<(?:c(?:i(?:t(?:e(?:\s[^<>]*)?)?)?)?)?$/;
+const HALF_WRITTEN_BRACKET =
+	/\s*\[(?:P(?:\d+(?:\s*[:,]?\s*(?:["“][^"”]*)?)?)?)?$/;
 
 export const trimHalfWrittenCitation = (text: string) =>
-	text.replace(HALF_WRITTEN, '');
+	text
+		.replace(HALF_WRITTEN_CITE, '')
+		.replace(HALF_TYPED_TAG, '')
+		.replace(HALF_WRITTEN_BRACKET, '');
 
 /** Loose identity, for pairing one parse of a quote with another parse of it. */
 const sameQuote = (a: string, b: string) =>
@@ -132,10 +144,8 @@ export type AnswerNode =
 			kind: 'citation';
 			index: number;
 			handle: string;
-			/** The quotation as the reader should see it, once. */
+			/** The quoted words: what the reader sees and what the server checked. */
 			quote: string;
-			/** The part of it the server checked, as [start, end) within `quote`. */
-			checked: [number, number];
 	  };
 
 export interface Sentence {
@@ -165,88 +175,18 @@ export type Block =
 /** A citation, and which of the answer's citations it is. */
 export type NumberedMarker = CitationMarker & { index: number };
 
-/* -------------------------------------------------------------------------
-   The model quotes twice.
-
-   The instructions ask for the quotation inside the citation — `[P7 "…"]` —
-   and models write the passage out in their own prose first anyway, then cite
-   it. Rendering both prints the same words twice running, which is how a
-   perfectly good answer reads as gibberish.
-
-   So a citation that repeats a quotation the prose has already written is
-   moved onto it: the stamp goes where the quoted words are, the words the
-   server actually checked are set one weight heavier inside them, and the
-   copy after is dropped. Nothing is dropped except the duplicate, and the
-   stamp still reports only what was checked.
-
-   Production writes this every way it can. The quotation is not always the
-   one nearest the citation — *“at war with itself,” and calls it “a mighty
-   conflict” [P9 "Spirit is at war with itself"]* — a clause of any length can
-   sit between them, and the citations are sometimes all piled up after the
-   sentence, where only the first had any prose in front of it. A pile shares
-   the prose before it, and each citation in it finds its own quotation there.
-   ------------------------------------------------------------------------- */
-
-const PROSE_QUOTATION = /["“]([^"”\n]+)["”]/g;
-
-/** Where a citation is drawn, when it has been moved onto the prose's quotation. */
-interface Anchor {
-	start: number;
-	end: number;
-	/** The quotation as the prose wrote it. */
-	quote: string;
-	checked: [number, number];
-}
-
-/** Nothing but space and punctuation between two citations: one pile. */
-const PILED = /^[\s,;:.]*$/;
-
-function anchorsFor(
-	text: string,
-	markers: readonly NumberedMarker[]
-): (Anchor | null)[] {
-	const claimed: [number, number][] = [];
-	const inMarker = (at: number) =>
-		markers.some((marker) => at >= marker.start && at < marker.end);
-	const taken = (at: number) =>
-		claimed.some(([start, end]) => at >= start && at < end);
-
-	let from = 0;
-	return markers.map((marker, at) => {
-		const previous = markers[at - 1];
-		if (previous && !PILED.test(text.slice(previous.end, marker.start))) {
-			from = previous.end;
-		}
-		const quote = wordsOf(untagQuote(marker.quote));
-		const written = [
-			...text.slice(0, marker.start).matchAll(PROSE_QUOTATION),
-		].filter(
-			(match) =>
-				match.index >= from &&
-				!inMarker(match.index) &&
-				!taken(match.index)
-		);
-
-		// Nearest first: a quotation further back is only the one being
-		// repeated when the nearer ones are not.
-		for (const match of written.reverse()) {
-			const inner = stripTags(match[1]);
-			const shared = repeats(wordsOf(inner), quote);
-			if (!shared) continue;
-			const end = match.index + match[0].length;
-			claimed.push([match.index, end]);
-			return { start: match.index, end, quote: inner, checked: shared };
-		}
-		return null;
-	});
-}
-
 /** Where a sentence ends: terminal punctuation, then space, then a new start. */
 const SENTENCE_END = /([.!?…]["”’)\]]*)(\s+)(?=[“"'(\p{Lu}\p{N}])/gu;
 
-/** Not sentence ends, however much they look like them. */
+/**
+ * Not sentence ends, however much they look like them.
+ *
+ * An initial counts after a tag as well as after a space: production wrote
+ * `<author>W. Lough>`, the split landed inside the tag, and the reader was
+ * shown the bare `>` the sweep could no longer see.
+ */
 const ABBREVIATION =
-	/(?:^|\s)(?:pp?|cf|e\.g|i\.e|etc|vol|ed|trans|ch|sec|no|fig|St|Mr|Mrs|Ms|Dr|Prof|\p{Lu})\.$/u;
+	/(?:^|[\s>])(?:pp?|cf|e\.g|i\.e|etc|vol|ed|trans|ch|sec|no|fig|St|Mr|Mrs|Ms|Dr|Prof|\p{Lu})\.$/u;
 
 /**
  * The model writes markdown whatever the instructions say, and it nests it:
@@ -482,48 +422,20 @@ function sentencesOf(
 		addProse(prose.slice(split[1].length));
 	};
 
-	// Each citation is drawn at its anchor when it has one, and its own
-	// marker is then only the duplicate, dropped with the space before it.
-	const anchors = anchorsFor(text, markers);
-	const events = markers
-		.flatMap((marker, at) => {
-			const anchor = anchors[at];
-			const quote = untagQuote(marker.quote);
-			const node: AnswerNode = {
-				kind: 'citation',
-				index: marker.index,
-				handle: marker.handle,
-				quote: anchor ? anchor.quote : quote,
-				checked: anchor ? anchor.checked : [0, quote.length],
-			};
-			const drawn = anchor ?? marker;
-			return [
-				{ start: drawn.start, end: drawn.end, node },
-				...(anchor
-					? [{ start: marker.start, end: marker.end, node: null }]
-					: []),
-			];
-		})
-		.sort((a, b) => a.start - b.start);
-
-	// Prose is held until a citation interrupts it, so the text either side
-	// of a dropped duplicate is still read as one run of sentences.
-	let pending = '';
 	let cursor = 0;
-	for (const event of events) {
-		pending += text.slice(cursor, event.start);
-		cursor = event.end;
-		if (!event.node) {
-			pending = pending.trimEnd();
-			continue;
-		}
-		addAfter(pending);
-		pending = '';
-		nodes.push(event.node);
+	for (const marker of markers) {
+		addAfter(text.slice(cursor, marker.start));
+		cursor = marker.end;
+		nodes.push({
+			kind: 'citation',
+			index: marker.index,
+			handle: marker.handle,
+			quote: untagQuote(marker.quote),
+		});
 		cited = true;
 	}
 
-	addAfter(pending + text.slice(cursor));
+	addAfter(text.slice(cursor));
 	closeSentence();
 
 	return sentences;
