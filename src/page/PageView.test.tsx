@@ -146,3 +146,73 @@ describe('the page view', () => {
 		);
 	});
 });
+
+/**
+ * The drawer printed the whole page under three stacked explanations, because
+ * the server sends no match window. It finds one itself now.
+ */
+describe('the passage behind a citation', () => {
+	const QUOTE = 'the will to truth, which will still tempt us';
+	const padding = (side: string) =>
+		Array.from(
+			{ length: 40 },
+			(_, at) => `${side} sentence number ${at} of padding here.`
+		).join(' ');
+	const HEAD = padding('Opening');
+	const TAIL = padding('Closing');
+	// Its own document: `loadPages` holds one promise per id for the life of
+	// the module, and the tests above have already asked for doc-1 p. 21.
+	const cited = {
+		...citation,
+		quote: QUOTE,
+		ref: { document_id: 'doc-window', page_no: 21 },
+		page: { ...citation.page!, document_id: 'doc-window' },
+	};
+	const page = {
+		pages: [
+			{
+				ref: { document_id: 'doc-window', page_no: 21 },
+				printed_page: '9',
+				text: `${HEAD} ${QUOTE} to many a venture. ${TAIL}`,
+			},
+		],
+	};
+
+	it('shows the quote lit in the page, not the whole page', async () => {
+		stubFetch(page);
+		renderApp(<PageView />);
+		act(() => openPage(cited));
+
+		const found = await screen.findByText(/will to truth/);
+		expect(found.tagName).toBe('MARK');
+
+		// The far ends of the page are not in the drawer.
+		expect(screen.queryByText(/Opening sentence number 0 /)).toBeNull();
+		expect(screen.queryByText(/Closing sentence number 39 /)).toBeNull();
+	});
+
+	// It is already lit in the passage above; printing it again was the same
+	// words twice on a screen that is mostly drawer.
+	it('does not print the quote a second time underneath', async () => {
+		stubFetch(page);
+		renderApp(<PageView />);
+		act(() => openPage(cited));
+
+		await screen.findByText(/will to truth/);
+		expect(
+			screen.queryByText('The words the answer relied on')
+		).toBeNull();
+	});
+
+	// A verified citation shows the page and says nothing about itself.
+	it('explains nothing when there is nothing wrong', async () => {
+		stubFetch(page);
+		renderApp(<PageView />);
+		act(() => openPage(cited));
+
+		await screen.findByText(/will to truth/);
+		expect(screen.queryByText(/match window/)).toBeNull();
+		expect(screen.queryByText(/The page.s own words/)).toBeNull();
+	});
+});
+

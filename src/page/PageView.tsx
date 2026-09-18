@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { api } from '../api/client';
 import { loadDocument, loadPages } from '../api/documents';
 import { COPY } from '../copy';
 import { locatePage, reflow } from '../citations/page';
 import { presentationOf, verdictKey } from '../citations/status';
 import { useCitedPage } from '../citations/useCitedPage';
+import { findQuote } from '../citations/window';
 import { useAsync } from '../lib/useAsync';
 import { closePage, useOpenPage } from '../state/reader';
-import type { AnswerCitation, QuoteContext } from '../api/types';
+import type { AnswerCitation, PageText, QuoteContext } from '../api/types';
 
 /**
  * The page behind a citation.
@@ -31,8 +33,8 @@ function Passage({
 	partial: string | undefined;
 }) {
 	return (
-		<p className="m-0">
-			…{context.before}
+		<p className="font-read text-ask m-0 leading-[1.7]">
+			<span className="text-ink-faint">…{context.before}</span>
 			{partial ? (
 				<>
 					<mark className="passage-partial">{partial}</mark>
@@ -45,36 +47,18 @@ function Passage({
 			) : (
 				<mark className="passage-found">{context.text}</mark>
 			)}
-			{context.after}…
+			<span className="text-ink-faint">{context.after}…</span>
 		</p>
 	);
 }
 
-/** The whole page, for the answers whose citations arrive without a match window. */
-function WholePage({
-	documentId,
-	from,
-	to,
-}: {
-	documentId: string;
-	from: number;
-	to: number;
-}) {
-	const pages = useAsync(
-		() => loadPages(documentId, from, to),
-		[documentId, from, to]
-	);
-
-	if (pages.loading)
-		return <p className="text-ink-soft m-0">{COPY.pageView.loading}</p>;
-	if (pages.error || !pages.value?.length)
-		return <p className="text-ink-soft m-0">{COPY.pageView.unreachable}</p>;
-
+/** The page entire, for a quote that could not be found anywhere on it. */
+function WholePage({ pages }: { pages: PageText[] }) {
 	return (
 		<>
-			{pages.value.map((page) => (
+			{pages.map((page) => (
 				<div key={page.ref.page_no} className="mb-5 last:mb-0">
-					{pages.value!.length > 1 && (
+					{pages.length > 1 && (
 						<p className="font-app text-small text-ink-faint mb-1">
 							{locatePage({
 								printed_page: page.printed_page,
@@ -84,7 +68,10 @@ function WholePage({
 					)}
 					{page.text ? (
 						reflow(page.text).map((paragraph, at) => (
-							<p key={at} className="mt-0 mb-3 last:mb-0">
+							<p
+								key={at}
+								className="font-read mt-0 mb-3 leading-[1.7] last:mb-0"
+							>
 								{paragraph}
 							</p>
 						))
@@ -97,75 +84,118 @@ function WholePage({
 	);
 }
 
+/**
+ * What the drawer shows, in one decision.
+ *
+ * The quote lit in its own paragraph is the whole point of opening this, and
+ * everything else earns its place or is not shown. The verdict is already in
+ * the header, so a paragraph restating it is cut; a citation that came back
+ * verified needs no prose explaining that it did. Only a citation with
+ * something wrong with it gets a line of explanation, and only the words that
+ * say what is wrong.
+ */
 function Body({ citation }: { citation: AnswerCitation }) {
 	const { page } = useCitedPage(citation);
-	const [spread, setSpread] = useState<[number, number] | null>(null);
-	const context = citation.context ?? null;
+	const [spread, setSpread] = useState(false);
 	const lead =
 		COPY.pageView.lead[
 			verdictKey(citation) as keyof typeof COPY.pageView.lead
 		];
 
+	const from = page ? (spread ? Math.max(1, page.page_no - 1) : page.page_no) : 0;
+	const to = page ? (spread ? page.page_no + 1 : page.page_no) : 0;
+	const fetched = useAsync(
+		page && citation.status !== 'unverifiable'
+			? () => loadPages(page.document_id, from, to)
+			: null,
+		[page?.document_id, from, to, citation.status]
+	);
+
 	if (!page) {
 		return <p className="font-app text-small text-ink-soft m-0">{lead}</p>;
 	}
 
-	const around: [number, number] = [
-		Math.max(1, page.page_no - 1),
-		page.page_no + 1,
-	];
+	if (citation.status === 'unverifiable') {
+		return (
+			<>
+				<Quoted quote={citation.quote} />
+				<Note>{lead}</Note>
+			</>
+		);
+	}
+
+	if (fetched.loading) {
+		return <p className="text-ink-soft m-0">{COPY.pageView.loading}</p>;
+	}
+	if (fetched.error || !fetched.value?.length) {
+		return <p className="text-ink-soft m-0">{COPY.pageView.unreachable}</p>;
+	}
+
+	const pages = fetched.value;
+	const partial =
+		citation.status === 'unverified' && citation.reason === 'partial_match'
+			? citation.matched_prefix
+			: undefined;
+
+	// The server's window when it sends one, and otherwise the same window
+	// found here in the page it already fetched.
+	const context =
+		citation.context ??
+		findQuote(
+			pages.flatMap((one) => reflow(one.text ?? '')).join('\n\n'),
+			partial ?? citation.quote
+		);
 
 	return (
 		<>
-			<p className="font-app text-small text-ink-soft border-paper-deep mb-3.5 border-b pb-3">
-				{lead}
-				{!context && citation.status !== 'unverifiable' && (
-					<> {COPY.pageView.wholePage}</>
-				)}
-				{context?.spans_page_break && <> {COPY.pageView.spansBreak}</>}
-			</p>
-
 			{context ? (
-				<Passage
-					context={context}
-					partial={
-						citation.status === 'unverified' &&
-						citation.reason === 'partial_match'
-							? citation.matched_prefix
-							: undefined
-					}
-				/>
-			) : citation.status === 'unverifiable' ? (
-				<p className="m-0 italic">“{citation.quote}”</p>
+				<Passage context={context} partial={partial} />
 			) : (
-				<WholePage
-					documentId={page.document_id}
-					from={spread?.[0] ?? page.page_no}
-					to={spread?.[1] ?? page.page_no}
-				/>
+				<WholePage pages={pages} />
 			)}
 
-			{!context && citation.status !== 'unverifiable' && (
-				<p className="border-paper-deep text-ink-soft mt-4 border-t pt-3">
-					<span className="font-app text-small block">
-						{COPY.pageView.quoted}
-					</span>
-					<span className="italic">“{citation.quote}”</span>
-				</p>
-			)}
+			{/* The quote is lit in the passage above; repeating it underneath
+			    was the same words twice. It is only worth printing when it is
+			    nowhere to be found on the page. */}
+			{!context && <Quoted quote={citation.quote} />}
 
-			{!spread && !context && citation.status !== 'unverifiable' && (
+			{lead && citation.status !== 'verified' && <Note>{lead}</Note>}
+			{context?.spans_page_break && <Note>{COPY.pageView.spansBreak}</Note>}
+
+			{!spread && (
 				<button
 					type="button"
-					onClick={() => setSpread(around)}
-					className="font-app text-small text-ink-soft hover:text-ink border-paper-deep mt-4 border-b"
+					onClick={() => setSpread(true)}
+					className="font-app text-small text-ink-soft hover:text-ink border-paper-deep mt-5 border-b"
 				>
-					{COPY.pageView.around(around[0], around[1])}
+					{COPY.pageView.around(
+						Math.max(1, page.page_no - 1),
+						page.page_no + 1
+					)}
 				</button>
 			)}
 		</>
 	);
 }
+
+/** A short line about the citation, never about the interface. */
+const Note = ({ children }: { children: ReactNode }) => (
+	<p className="font-app text-small text-ink-soft border-paper-deep mt-4 border-t pt-3">
+		{children}
+	</p>
+);
+
+/** The quote on its own, for when the page cannot show it in place. */
+const Quoted = ({ quote }: { quote: string }) => (
+	<p className="m-0">
+		<span className="font-app text-small text-ink-soft mb-1 block">
+			{COPY.pageView.quoted}
+		</span>
+		<span className="font-read text-ask leading-[1.7] italic">
+			“{quote}”
+		</span>
+	</p>
+);
 
 function Scan({ documentId, pageNo }: { documentId: string; pageNo: number }) {
 	const document = useAsync(() => loadDocument(documentId), [documentId]);

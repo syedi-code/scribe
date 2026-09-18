@@ -47,11 +47,34 @@ all come from `CITATION_STATUS` in `citations/status.ts`. A colour written
 inline in a component is a bug: the next status would be added in four places
 and shown in three.
 
+**The model writes Markdown whatever it is told.** Headings, bold, and bold
+wrapped around an italic. None of it is rendered, so any mark left in the text
+is shown to the reader as the character the model typed — production had ten
+literal `**` and a `##` in one answer. `emphasise()` finds bold first and
+emphasis inside it; `unheaded()` drops a heading's marks and keeps the break
+they implied, and treats a line that is nothing but one bold run as the heading
+it is. The instruction asking for none of it is in alexandria's
+`conversations/instructions.ts`; the client does not rely on it.
+
+**An italic the model wrote is a hint, not a claim.** It marks its own book
+titles with `*…*`, which looks exactly like `work-title` and asserts nothing. An
+emphasised run becomes a real title only when it names a work the answer cited —
+`setTitles` walks emphasis nodes for that, and a shortened title counts, since a
+model writes `Meditations` for a work it has already named in full. Anything
+else stays the emphasis it asked for. Before this, a title the model marked up
+was never recognised as a title at all: `emphasise` ran first and `setTitles`
+only walked plain text.
+
 **A citation that repeats the prose is folded into it.** Models write the
 passage out and _then_ cite a few words of it, which printed the same sentence
 twice and made good answers read as gibberish. `absorbQuotation()` in
 `citations/parse.ts` drops the duplicate and sets only the checked words one
-weight heavier inside the quotation the model wrote. The instruction that asks
+weight heavier inside the quotation the model wrote. It folds on the longest
+run of words the two share (`citations/overlap.ts`, five words minimum, the
+same floor a citation clears to be evidence), not on one containing the other:
+in production the prose quotes a fragment and the citation quotes a longer
+passage, so the two overlap with neither inside the other. A clause is allowed
+between the closing quote and the citation, because the model puts one there. The instruction that asks
 the model not to do it in the first place is in alexandria's
 `conversations/instructions.ts`; the client does not rely on it.
 
@@ -70,6 +93,13 @@ the server starts sending `marker` offsets, `markersFor()` prefers them.
 the prose, the margin, the shelves, the drawer, the badge group. A component
 that writes `italic` for a title instead is a bug, and `styles/theme.test.ts`
 fails on one.
+
+It sets the face as well as the slant. `font-style: italic` alone asks for an
+italic of whatever family is in force, and GT Alpina Condensed ships without
+one — so the margin note, set in `--font-app`, got a browser-sheared
+`GTAlpina-CondRegular` while the other four sites got the drawn
+`GTAlpina-LtIt`. Standard has a true italic at 300, 400 and 700. Medium 500
+has none: do not set a title in it.
 
 **One copy file.** `copy.ts`. The honesty of this interface lives in its wording
 — _found on the page_, never a bare _verified_, never a tick — and wording
@@ -98,6 +128,23 @@ claims to identify anyone.
 Only creators the server actually checked are inked, the same discipline the
 titles follow, and only whole words — `Kantian` stays prose. A surname inside a
 cited title belongs to the title.
+
+**What was checked is asked for, not read off the payload.** `citation.page` is
+one of the four fields alexandria does not send yet, so a pass that read it got
+an empty list and quietly did nothing: neither an inked surname nor a set title
+has ever appeared in a production answer. Every component already fell back to
+the document behind `ref` through `useCitedPage`; the prose now does the same
+through `citations/useCitedWorks`. The fixture that hid this set `page`, which
+is the API we are waiting for — `asProduction()` in the test harness strips it,
+and is what a citation test should be written against.
+
+**A model's maker is the one name not hashed.** `models/brand.ts` assigns
+`Claude`, `GPT` and `Gemini` their makers' own colours, because `gpt` and
+`gemini` hash to the same slot and those two sit two rows apart in one short
+list, where a collision reads as a bug rather than the coincidence it is
+between two authors. It replaces the provider dot: one mark, not two systems in
+one row. None of it reaches the reading surface — the model does not talk about
+itself — so a brand colour never lands beside an author's ink.
 
 **One stacking order.** `--z-lifted`, `--z-rail`, `--z-drawer`, `--z-header`,
 `--z-menu`, declared once in `styles/theme.css` and read as `z-(--z-rail)`. A
@@ -140,6 +187,17 @@ title, and the search is done here so it never costs a second fetch.
 wrote nothing says so and offers to ask again. It is not a hypothetical: the
 server ran out of steps mid-tool-call in production and the reader was shown a
 list of everything it had read with nothing underneath it.
+
+**The drawer shows a passage, not a page.** `citation.context` is another field
+the server does not send, so every citation fell through to the branch that
+printed the entire page — several hundred words under three stacked
+explanations of why. `citations/window.ts` finds the quote in the page text the
+drawer has already fetched and shows a window around it, matched on a run of
+words rather than characters because these pages are scanned and a faithfully
+copied quote still misses by a letter. What is left is what earns its place: a
+verified citation shows the passage and says nothing, since the verdict is
+already in the header and the quote is already lit in place. The quote is
+printed on its own only when it is nowhere to be found on the page.
 
 **A page is reflowed before it is read.** A PDF's text layer breaks a line
 wherever the typesetter did, and printing those breaks gave a column of ragged

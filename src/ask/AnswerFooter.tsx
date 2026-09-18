@@ -1,3 +1,4 @@
+import { BrandedLabel } from '../models/BrandedLabel';
 import { COPY } from '../copy';
 import { toggleOnlyCited, useOnlyCited } from '../state/reader';
 import type { AnswerCitation } from '../api/types';
@@ -37,7 +38,12 @@ export function AnswerFooter({
 					: checking
 						? COPY.checking(total)
 						: COPY.tally(found, total)}
-				{model && !checking ? ` — ${model}` : ''}
+				{model && !checking ? (
+					<>
+						{' — '}
+						<BrandedLabel label={model} />
+					</>
+				) : null}
 			</span>
 			<button
 				type="button"
