@@ -34,7 +34,7 @@ function Row({
 		<button
 			type="button"
 			onClick={() => onAsk(suggestion.question)}
-			className="group/ask hover:bg-bubble/45 grid grid-cols-[0.9rem_minmax(0,1fr)] items-start gap-x-2 rounded-[4px] px-1 py-1.5 text-left transition-colors duration-300 ease-paper"
+			className="group/ask press hover:bg-bubble/45 grid grid-cols-[0.9rem_minmax(0,1fr)] items-start gap-x-2 rounded-[4px] px-1 py-1.5 text-left"
 		>
 			{/* The rule hangs in the composer's left margin and reaches for the
 			    question under the pointer. */}

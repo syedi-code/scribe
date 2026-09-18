@@ -1,3 +1,4 @@
+import { inkFor } from './authors';
 import type { AnswerCitation } from '../api/types';
 
 /**
@@ -121,6 +122,7 @@ export function markersFor(
 export type AnswerNode =
 	| { kind: 'text'; text: string }
 	| { kind: 'title'; text: string }
+	| { kind: 'author'; text: string; ink: number }
 	| { kind: 'emphasis'; text: string; strong: boolean }
 	| {
 			kind: 'citation';
@@ -245,6 +247,40 @@ function setTitles(
 	});
 }
 
+/**
+ * The people being discussed, written in their own ink.
+ *
+ * Same discipline as the titles: the surnames come from the creators of
+ * works the server actually checked, so nothing is inked that the answer did
+ * not cite. Only whole words match, so `Kantian` stays prose while `Kant`
+ * does not, and a surname inside a work's title is left to the title.
+ */
+function setAuthors(
+	nodes: AnswerNode[],
+	surnames: readonly string[]
+): AnswerNode[] {
+	if (surnames.length === 0) return nodes;
+	const quoted = surnames.map((name) =>
+		name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	);
+	const pattern = new RegExp(
+		`(?<![\\p{L}])(${quoted.join('|')})(?![\\p{L}])`,
+		'gu'
+	);
+
+	return nodes.flatMap((node): AnswerNode[] => {
+		if (node.kind !== 'text') return [node];
+		return node.text
+			.split(pattern)
+			.filter((piece) => piece !== '')
+			.map((piece) =>
+				surnames.includes(piece)
+					? { kind: 'author', text: piece, ink: inkFor(piece) }
+					: { kind: 'text', text: piece }
+			);
+	});
+}
+
 function emphasise(text: string): AnswerNode[] {
 	const nodes: AnswerNode[] = [];
 	let cursor = 0;
@@ -293,7 +329,9 @@ export function segmentAnswer(
 	text: string,
 	markers: CitationMarker[],
 	/** Work titles the answer cited, set in italics where the prose names them. */
-	titles: readonly string[] = []
+	titles: readonly string[] = [],
+	/** Surnames of the creators it cited, written in their own ink. */
+	surnames: readonly string[] = []
 ): Paragraph[] {
 	const paragraphs: Paragraph[] = [];
 	let sentences: Paragraph = [];
@@ -327,7 +365,9 @@ export function segmentAnswer(
 			const flat = block.replace(/\s*\n\s*/g, ' ');
 			const pieces = sentencePieces(flat);
 			pieces.forEach((piece, at) => {
-				nodes.push(...setTitles(emphasise(piece), titles));
+				nodes.push(
+					...setAuthors(setTitles(emphasise(piece), titles), surnames)
+				);
 				// Every piece but the last ends a sentence; the last may be
 				// continued by a citation or by the next chunk of prose.
 				if (at < pieces.length - 1) closeSentence();

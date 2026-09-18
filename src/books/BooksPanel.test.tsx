@@ -52,13 +52,20 @@ const CATALOGUE = {
 
 const search = () => screen.getByRole('searchbox');
 
+// A creator's name is now one span per ink, so no single text node holds it:
+// the shelf is found by the heading's own text instead.
+const heading = (name: string) => (_: string, element: Element | null) =>
+	element?.tagName === 'H2' && element.textContent === name;
+const shelf = (name: string) => screen.findByText(heading(name));
+const noShelf = (name: string) => screen.queryByText(heading(name));
+
 describe('the shelves', () => {
 	it('lists every work under whoever wrote it, once', async () => {
 		stubFetch(CATALOGUE);
 		renderApp(<BooksPanel />);
 
-		expect(await screen.findByText('Michel Foucault')).toBeTruthy();
-		expect(screen.getAllByText('Frantz Fanon')).toHaveLength(1);
+		expect(await shelf('Michel Foucault')).toBeTruthy();
+		expect(screen.getAllByText(heading('Frantz Fanon'))).toHaveLength(1);
 		expect(screen.getByText('Discipline and Punish')).toBeTruthy();
 		expect(screen.getByText('The Wretched of the Earth')).toBeTruthy();
 		expect(screen.getByText('4 works · 2 names')).toBeTruthy();
@@ -67,7 +74,7 @@ describe('the shelves', () => {
 	it('says which works cannot be searched, rather than listing them alike', async () => {
 		stubFetch(CATALOGUE);
 		renderApp(<BooksPanel />);
-		await screen.findByText('Michel Foucault');
+		await shelf('Michel Foucault');
 
 		expect(screen.getByText('scan only')).toBeTruthy();
 		expect(screen.getAllByText('353 pages')).toHaveLength(3);
@@ -77,7 +84,7 @@ describe('the shelves', () => {
 	it('says it does not hand over the books', async () => {
 		stubFetch(CATALOGUE);
 		renderApp(<BooksPanel />);
-		await screen.findByText('Michel Foucault');
+		await shelf('Michel Foucault');
 
 		expect(screen.getByText(/does not provide the PDFs/)).toBeTruthy();
 		expect(screen.getByText(/alexandria API/)).toBeTruthy();
@@ -94,19 +101,19 @@ describe('the shelves', () => {
 	it('narrows on every word, across the title and the name', async () => {
 		stubFetch(CATALOGUE);
 		renderApp(<BooksPanel />);
-		await screen.findByText('Michel Foucault');
+		await shelf('Michel Foucault');
 
 		fireEvent.change(search(), { target: { value: 'foucault order' } });
 		expect(screen.getByText('The Order of Things')).toBeTruthy();
 		expect(screen.queryByText('Discipline and Punish')).toBeNull();
-		expect(screen.queryByText('Frantz Fanon')).toBeNull();
+		expect(noShelf('Frantz Fanon')).toBeNull();
 		expect(screen.getByText('1 work · 1 name')).toBeTruthy();
 	});
 
 	it('says so when nothing matches, in the reader’s words', async () => {
 		stubFetch(CATALOGUE);
 		renderApp(<BooksPanel />);
-		await screen.findByText('Michel Foucault');
+		await shelf('Michel Foucault');
 
 		fireEvent.change(search(), { target: { value: 'kierkegaard' } });
 		expect(screen.getByText(/Nothing on the shelves matches/)).toBeTruthy();

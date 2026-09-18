@@ -74,7 +74,7 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 						newQuestion();
 						onNavigate?.();
 					}}
-					className="group/new font-app text-ui text-ink-soft hover:text-ink mt-1.5 flex w-full items-center gap-1.5 py-0.5 text-left transition-colors disabled:opacity-40"
+					className="group/new press font-app text-ui text-ink-soft hover:text-ink mt-1.5 flex w-full items-center gap-1.5 rounded-[4px] py-0.5 text-left disabled:opacity-40"
 				>
 					<Plus />
 					{COPY.newQuestion}
@@ -94,7 +94,7 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 					onPointerEnter={() => warmThread(thread.id)}
 					onFocus={() => warmThread(thread.id)}
 					aria-current={thread.id === activeId}
-					className={`font-app text-ui hover:text-ink block w-full py-1 text-left leading-snug transition-colors ${
+					className={`press font-app text-ui hover:text-ink hover:bg-bubble/45 -mx-1 block w-[calc(100%+0.5rem)] rounded-[4px] px-1 py-1 text-left leading-snug ${
 						thread.title
 							? thread.id === activeId
 								? 'text-ink'

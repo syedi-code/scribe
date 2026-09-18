@@ -6,6 +6,7 @@ import {
 	segmentAnswer,
 	trimHalfWrittenCitation,
 } from './parse';
+import { inkFor } from './authors';
 import type { AnswerCitation } from '../api/types';
 
 /**
@@ -252,5 +253,60 @@ describe('trimHalfWrittenCitation', () => {
 		expect(trimHalfWrittenCitation('an aside (of sorts)')).toBe(
 			'an aside (of sorts)'
 		);
+	});
+});
+
+describe('the people an answer names', () => {
+	const inked = (text: string, surnames: string[]) =>
+		segmentAnswer(text, [], [], surnames)
+			.flat()
+			.flatMap((sentence) => sentence.nodes)
+			.filter((node) => node.kind === 'author');
+
+	it('writes a cited surname in its own ink', () => {
+		const found = inked('Nietzsche treats truth as a faith.', [
+			'Nietzsche',
+		]);
+		expect(found).toHaveLength(1);
+		expect(found[0]).toMatchObject({ kind: 'author', text: 'Nietzsche' });
+		expect(found[0].kind === 'author' && found[0].ink).toBe(
+			inkFor('Nietzsche')
+		);
+	});
+
+	it('gives the same person the same ink every time they are named', () => {
+		const found = inked('Nietzsche asks, and Nietzsche answers.', [
+			'Nietzsche',
+		]);
+		expect(found).toHaveLength(2);
+		const inks = found.map((node) =>
+			node.kind === 'author' ? node.ink : -1
+		);
+		expect(inks[0]).toBe(inks[1]);
+	});
+
+	// Only whole words: an adjective is prose, not an attribution.
+	it('leaves a word that merely starts with a surname alone', () => {
+		expect(inked('Kantian ethics, after Kant.', ['Kant'])).toHaveLength(1);
+	});
+
+	it('inks nobody the answer did not cite', () => {
+		expect(inked('Nietzsche and Hegel disagree.', ['Nietzsche'])).toEqual([
+			expect.objectContaining({ text: 'Nietzsche' }),
+		]);
+	});
+
+	// A surname inside a work's title belongs to the title.
+	it('leaves a surname inside a cited title to the title', () => {
+		const nodes = segmentAnswer(
+			'He read Nietzsche and Philosophy closely.',
+			[],
+			['Nietzsche and Philosophy'],
+			['Nietzsche']
+		)
+			.flat()
+			.flatMap((sentence) => sentence.nodes);
+		expect(nodes.filter((node) => node.kind === 'author')).toHaveLength(0);
+		expect(nodes.filter((node) => node.kind === 'title')).toHaveLength(1);
 	});
 });

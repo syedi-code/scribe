@@ -1,3 +1,4 @@
+import { inkClass } from '../citations/authors';
 import { useOnlyCited } from '../state/reader';
 import { Citation } from './Citation';
 import type { Paragraph } from '../citations/parse';
@@ -75,6 +76,16 @@ export function Answer({
 										<cite key={at} className="work-title">
 											{node.text}
 										</cite>
+									);
+								}
+								if (node.kind === 'author') {
+									return (
+										<span
+											key={at}
+											className={inkClass(node.ink)}
+										>
+											{node.text}
+										</span>
 									);
 								}
 								if (node.kind === 'emphasis') {
