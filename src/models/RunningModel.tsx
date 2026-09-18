@@ -85,8 +85,11 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 									</span>
 								</span>
 								<span className="text-tiny text-ink-faint shrink-0 whitespace-nowrap">
+									{/* A held-back model says so by being struck through and
+										    unpickable. A label beside it as well was the same fact
+										    twice, and the only one of the three that needed words. */}
 									{model.comingSoon
-										? COPY.comingSoon
+										? ''
 										: !model.available
 											? COPY.noKey
 											: inUse
@@ -96,9 +99,6 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 							</button>
 						);
 					})}
-					<p className="font-app text-tiny text-ink-faint mt-1 border-t border-paper-deep px-3 pt-2 pb-1">
-						{COPY.modelNote}
-					</p>
 				</div>
 			</span>
 		</div>

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
 import { renderApp, stubFetch, verified } from '../test/harness';
 import { alignCitations, markersFor, segmentAnswer } from '../citations/parse';
 import { Answer } from './Answer';
@@ -68,14 +67,27 @@ describe('an answer that cites without quoting first', () => {
 		expect(document.body.textContent).not.toContain('[P1');
 	});
 
-	it('gives every citation a stamp naming its verdict and page', () => {
+	// The verdict is a rule under the checked words, so it says which words
+	// were checked and not merely that something was. Colour alone would be
+	// no verdict at all in print or to a reader who cannot separate the two
+	// inks, so the rule carries a style as well.
+	it('draws the verdict under the words that were checked', () => {
 		renderAnswer('Nietzsche says as much [P1 "the will to truth"].', [
 			verified('P1', 'the will to truth'),
 		]);
-		const stamp = screen.getByRole('img');
-		expect(stamp.getAttribute('aria-label')).toContain('found on the page');
-		expect(stamp.getAttribute('aria-label')).toContain(
-			'Beyond Good and Evil'
-		);
+		const checked = document.querySelector('.font-normal');
+		expect(checked?.textContent).toBe('the will to truth');
+		expect(checked?.className).toContain('underline');
+		expect(checked?.className).toContain('decoration-verdigris');
+	});
+
+	// The square said the verdict in words to a screen reader. It is gone;
+	// the words are not.
+	it('still says the verdict and the page in words', () => {
+		renderAnswer('Nietzsche says as much [P1 "the will to truth"].', [
+			verified('P1', 'the will to truth'),
+		]);
+		expect(document.body.textContent).toContain('found on the page');
+		expect(document.body.textContent).toContain('Beyond Good and Evil');
 	});
 });

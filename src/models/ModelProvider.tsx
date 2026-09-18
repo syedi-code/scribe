@@ -19,8 +19,12 @@ import type { Model, ModelsResponse } from '../api/types';
  * Held back from the switcher for now, and shown as held back rather than
  * quietly dropped: a reader can see what Scribe could run, and that the reason
  * it is not running is a decision rather than a missing key.
+ *
+ * Gemini has never run here. Haiku has, and is held back on cost: it is five
+ * times Luna's input and four times its output, for a lower score, and every
+ * step of the agent loop pays that again.
  */
-const COMING_SOON = new Set(['gemini-3.8-flash']);
+const COMING_SOON = new Set(['gemini-3.8-flash', 'claude-haiku-4-5-20251001']);
 
 /**
  * Luna first: a fifth of Haiku's input price and a quarter of its output, and

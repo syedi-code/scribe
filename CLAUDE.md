@@ -42,10 +42,23 @@ apparatus — narration and tool calls. Rendering every text part in sequence
 shows the reader the model thinking out loud and calls it the answer. See
 `chat/message.ts`.
 
-**One status map.** Verdict wording, stamp shape, rule colour and verdict colour
-all come from `CITATION_STATUS` in `citations/status.ts`. A colour written
-inline in a component is a bug: the next status would be added in four places
-and shown in three.
+**One status map.** Verdict wording, pip shape, the rule under a quotation,
+margin rule colour and verdict colour all come from `CITATION_STATUS` in
+`citations/status.ts`. A colour written inline in a component is a bug: the
+next status would be added in four places and shown in three.
+
+**A verdict is a rule under the words it is about.** `ask/Citation.tsx` draws
+`CITATION_STATUS[…].underline` under exactly the span the server checked —
+solid verdigris found, wavy rubric not found, dotted slate unknown, dotted
+faint while the check is still out. It was a small square after the closing
+quotation mark for a long time, on the reasoning that a rule under a twenty-
+word quote pulls the eye off the sentence it supports. Two things were wrong
+with it: a mark after the quote says nothing about _which_ words were checked,
+and on a phone it was a 10px target. The style carries the verdict as well as
+the colour, so it survives being printed and a reader who cannot separate
+verdigris from rubric still reads it correctly; the square also said the
+verdict in words to a screen reader, and that is kept as an `sr-only` span.
+The pips on the shelf are still squares — that is what `stamp` is for.
 
 **Markdown is rendered, not stripped.** Asking the model for plain prose was a
 fight we lost every turn — production carried ten literal `**` and a `##` in one
@@ -97,7 +110,7 @@ model marked up was never recognised as one at all.
 passage out and _then_ cite it, which printed the same words twice and made
 good answers read as gibberish. `anchorsFor()` in `citations/parse.ts` finds
 the quotation in the prose that a citation repeats, draws the citation there
-— the stamp on the prose's own quotation, the checked words one weight
+— the rule under the prose's own quotation, the checked words one weight
 heavier inside it — and drops the copy. A quotation repeats a citation when
 the two share five words, or when the whole of a quotation of three or more
 words is inside the cited passage (`repeats()` in `citations/overlap.ts`):
@@ -135,8 +148,11 @@ one — so the margin note, set in `--font-app`, got a browser-sheared
 `GTAlpina-CondRegular` while the other four sites got the drawn
 `GTAlpina-LtIt`. Standard has a true italic at 300, 400 and 700. Medium 500
 has none, and a run-in head is set at 500, so a title inside one inherited a
-synthesised medium that read as bold. `work-title` pins 400: a title is a
-slant, never a weight.
+synthesised medium that read as bold. `work-title` pins the weight — to
+`--weight-text`, the same token the prose is set in. Pinning it at 400 while
+the body stayed Light fixed the run-in head and made every title in the app
+read as emphasised instead, since 400 is the step a checked quotation is set
+in. A title is a slant, never a weight.
 
 **One copy file.** `copy.ts`. The honesty of this interface lives in its wording
 — _found on the page_, never a bare _verified_, never a tick — and wording
@@ -372,12 +388,17 @@ is actually polling for a title. A conversation that is still untitled after
 that is `untitled` — promising a name that is not coming is how `naming…` came
 to sit in the rail for ever.
 
-**One model is held back.** `COMING_SOON` in `models/ModelProvider.tsx`, shown
-struck through and _coming soon_ rather than hidden, which is a different claim
-from _no key set_ and a different one again from _temporarily disabled_: Gemini
-3.8 Flash has never run here. `Add a book` is held back the same way: the tab is
-struck through and disabled, and `add/AddPanel.tsx` waits for an ingestion to
-exist behind it.
+**Two models are held back.** `COMING_SOON` in `models/ModelProvider.tsx`,
+shown struck through and unpickable rather than hidden, so a reader can see
+what Scribe could run. Gemini 3.8 Flash has never run here; Haiku has, and is
+held back on cost — five times Luna's input and four times its output, for a
+lower score, and every step of the agent loop pays it again. The strike and the
+disabled row say _held back_ on their own: a _coming soon_ beside them was the
+same fact twice, and it is the one claim of the three that needs no words.
+_no key set_ still does, because it is a different claim — that the deployment
+is missing a key rather than that we chose this. `Add a book` is held back the
+same way and always has been: the tab is struck through and disabled with no
+label, and `add/AddPanel.tsx` waits for an ingestion to exist behind it.
 
 **The default model is slow on purpose.** GPT-5.6 Luna costs a fifth of Haiku's
 input and a quarter of its output and scores higher, and pays for it in time:

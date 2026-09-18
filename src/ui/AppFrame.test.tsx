@@ -107,17 +107,20 @@ describe('the model switcher', () => {
 		],
 	};
 
-	// A model held back is a decision, and reads as one: `no key set` would
-	// have said the deployment was misconfigured.
-	it('says a held-back model is coming, not keyless', () => {
+	// A model held back is a decision, and it is said by striking the name
+	// through and not letting it be picked. `no key set` would have claimed
+	// the deployment was misconfigured, and a `coming soon` beside the strike
+	// was the same fact said twice.
+	it('strikes a held-back model through rather than labelling it', () => {
 		stubFetch();
 		renderApp(<AppFrame />, { state: withThreads(), roster });
 		fireEvent.click(screen.getByRole('button', { name: /Claude Haiku/ }));
 
 		const held = screen.getByRole('menuitem', { name: /Gemini 3.8 Flash/ });
-		expect(held.textContent).toContain('coming soon');
 		expect(held.textContent).not.toContain('no key set');
+		expect(held.textContent).not.toContain('coming soon');
 		expect(held.hasAttribute('disabled')).toBe(true);
+		expect(held.querySelector('.line-through')).toBeTruthy();
 	});
 });
 

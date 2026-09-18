@@ -26,11 +26,7 @@ export const COPY = {
 	unnamed: 'untitled',
 	modelsEmpty: 'no models available',
 	noKey: 'no key set',
-	/** Held back because it is not ready here yet, not because it broke. */
-	comingSoon: 'coming soon',
 	inUse: 'in use',
-	modelNote:
-		'Whichever providers have a key on the worker. Earlier answers keep the model that wrote them.',
 
 	/* ---- home ----
 	   Questions worth asking of this library in particular, and answerable

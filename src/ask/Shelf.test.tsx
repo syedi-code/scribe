@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import {
@@ -182,5 +183,37 @@ describe('a book with more references than a row can count', () => {
 		expect(
 			screen.getByRole('button', { name: '1 quote: not on this page' })
 		).toBeTruthy();
+	});
+});
+
+
+/**
+ * A grid track is min-content wide unless it is told it may be narrower, and
+ * a book with a long name is wider than a phone. The track grew to the name,
+ * the shelf grew with it, and the line ran off the right of the screen
+ * carrying the pips — the part that holds the verdict — past the edge with
+ * it. The  on the name could never fire, because nothing above it
+ * was ever narrower than the name.
+ *
+ * jsdom lays nothing out, so this is asserted where it is written.
+ */
+describe('the shelf under the fold', () => {
+	const SOURCE = readFileSync('src/ask/MarginNotes.tsx', 'utf8');
+
+	it('gives its column leave to be narrower than the longest title', () => {
+		const fold = SOURCE.slice(
+			SOURCE.indexOf('@max-fold:grid'),
+			SOURCE.indexOf('@max-fold:grid') + 120
+		);
+
+		expect(fold).toContain('grid-cols-[minmax(0,1fr)]');
+	});
+
+	it('still gives the name up before the pips do', () => {
+		const shelf = readFileSync('src/ask/Shelf.tsx', 'utf8');
+
+		expect(shelf).toContain('truncate');
+		expect(shelf).toContain('min-w-0');
+		expect(shelf).toContain('shrink-0');
 	});
 });
