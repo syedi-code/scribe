@@ -141,6 +141,115 @@ describe('the rail, naming', () => {
 	});
 });
 
+describe('the sessions rail', () => {
+	const listed = (over = {}) =>
+		chat({
+			threads: [thread('c1', 'The will to truth as faith')],
+			activeId: null,
+			atHome: false,
+			...over,
+		});
+
+	it('says what it is, and how many there are', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: listed() });
+		const rail = screen.getByRole('navigation');
+		expect(rail.textContent).toContain('Sessions');
+		expect(
+			screen.getByLabelText('1 session', { selector: 'span' })
+		).toBeTruthy();
+	});
+
+	it('draws a mark beside New question', () => {
+		stubFetch();
+		const { container } = renderApp(<AppFrame />, { state: listed() });
+		const button = screen.getByRole('button', { name: /New question/ });
+		expect(button.querySelector('svg')).toBeTruthy();
+		expect(container.querySelector('nav svg')).toBeTruthy();
+	});
+
+	// Wide, the rail never closes, so nothing else would take a reader off the
+	// shelves: the thread used to load into a panel nobody was looking at.
+	it('takes a reader to the conversation, from whatever tab they were on', () => {
+		stubFetch({ works: [] });
+		const openThread = vi.fn();
+		renderApp(<AppFrame />, { state: listed({ openThread }) });
+
+		fireEvent.click(screen.getByRole('tab', { name: 'Books' }));
+		expect(screen.getByRole('searchbox')).toBeTruthy();
+
+		fireEvent.click(
+			screen.getByRole('button', { name: 'The will to truth as faith' })
+		);
+		expect(openThread).toHaveBeenCalledWith('c1');
+		expect(
+			screen
+				.getByRole('tab', { name: 'Ask' })
+				.getAttribute('aria-selected')
+		).toBe('true');
+		expect(screen.queryByRole('searchbox')).toBeNull();
+	});
+
+	it('takes a reader to a new question the same way', () => {
+		stubFetch({ works: [] });
+		const newQuestion = vi.fn();
+		renderApp(<AppFrame />, { state: listed({ newQuestion }) });
+
+		fireEvent.click(screen.getByRole('tab', { name: 'Books' }));
+		fireEvent.click(screen.getByRole('button', { name: /New question/ }));
+		expect(newQuestion).toHaveBeenCalled();
+		expect(
+			screen
+				.getByRole('tab', { name: 'Ask' })
+				.getAttribute('aria-selected')
+		).toBe('true');
+	});
+});
+
+describe('the header, folding', () => {
+	// The mark and the model line fold away on the home screen. `0fr`/`1fr` on
+	// a grid row is what lets the header's own height ease rather than jump.
+	it('folds the mark away at home, and takes it out of reach', () => {
+		stubFetch();
+		const { container } = renderApp(<AppFrame />, { state: chat() });
+		const fold = container.querySelector('header > div')!;
+		expect(fold.className).toContain('grid-rows-[0fr]');
+		expect(fold.hasAttribute('inert')).toBe(true);
+	});
+
+	it('unfolds it once there is a conversation', () => {
+		stubFetch();
+		const { container } = renderApp(<AppFrame />, {
+			state: withThreads(),
+		});
+		const fold = container.querySelector('header > div')!;
+		expect(fold.className).toContain('grid-rows-[1fr]');
+		expect(fold.hasAttribute('inert')).toBe(false);
+		expect(fold.className).toContain('transition-[grid-template-rows');
+	});
+
+	// The clip is what makes a fold a fold, and it must never outstay it: it
+	// would cut the model menu off where it hangs out of the header.
+	it('clips while the mark is folded away', () => {
+		stubFetch();
+		const { container } = renderApp(<AppFrame />, { state: chat() });
+		const fold = container.querySelector('header > div')!;
+		expect(fold.firstElementChild!.className).toContain('overflow-hidden');
+	});
+
+	it('does not clip once the mark is showing', () => {
+		stubFetch();
+		const { container } = renderApp(<AppFrame />, {
+			state: withThreads(),
+		});
+		const fold = container.querySelector('header > div')!;
+		fireEvent.transitionEnd(fold);
+		expect(fold.firstElementChild!.className).not.toContain(
+			'overflow-hidden'
+		);
+	});
+});
+
 describe('the drawer behind a citation', () => {
 	afterEach(() => act(() => closePage()));
 

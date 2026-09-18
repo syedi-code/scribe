@@ -267,6 +267,13 @@
 	animation: var(--animate-draw);
 }
 
+/* A work's name, wherever it is printed: in the prose, in the margin, on the
+   shelves, in the drawer. Naming it means the next decision about how a title
+   is set is made once rather than in five components. */
+@utility work-title {
+	font-style: italic;
+}
+
 /* Quoted words keep their background through a line break. */
 @utility quote-mark {
 	-webkit-box-decoration-break: clone;

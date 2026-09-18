@@ -106,6 +106,37 @@ describe('the page view', () => {
 		focus.mockRestore();
 	});
 
+	// The drawer is the whole screen on a phone, and the text layer breaks a
+	// line wherever the typesetter did: printed as-is it was a column of
+	// ragged half-lines.
+	it('reflows the page rather than printing every line break', async () => {
+		// Its own document, because `loadPages` caches for the life of the tab
+		// and every other test in this file has already asked for doc-1.
+		const ref = { document_id: 'doc-reflow', page_no: 99 };
+		const reflowed = {
+			...citation,
+			ref,
+			page: { ...citation.page!, ...ref },
+		};
+		stubFetch({
+			pages: [
+				{
+					ref,
+					work_id: 'w1',
+					printed_page: '9',
+					text: 'Supposing that Truth\nis a woman.\n\nWhat then?',
+				},
+			],
+		});
+		renderApp(<PageView />);
+		act(() => openPage(reflowed));
+
+		expect(
+			await screen.findByText('Supposing that Truth is a woman.')
+		).toBeTruthy();
+		expect(screen.getByText('What then?')).toBeTruthy();
+	});
+
 	it('says how the quote came back, in words', () => {
 		stubFetch();
 		renderApp(<PageView />);

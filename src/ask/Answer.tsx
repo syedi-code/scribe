@@ -72,8 +72,8 @@ export function Answer({
 								}
 								if (node.kind === 'title') {
 									return (
-										<cite key={at} className="not-italic">
-											<em>{node.text}</em>
+										<cite key={at} className="work-title">
+											{node.text}
 										</cite>
 									);
 								}

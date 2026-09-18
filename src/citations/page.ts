@@ -53,3 +53,36 @@ export function pageFromDocument(
 
 export const pageOf = (citation: AnswerCitation): CitedPage | null =>
 	citation.page ?? null;
+
+/**
+ * A page's extracted text, as paragraphs.
+ *
+ * A PDF's text layer breaks a line wherever the typesetter did, so printing it
+ * with those breaks intact gives a column of ragged half-lines at whatever
+ * width the drawer happens to be — unreadable on a phone, where the drawer is
+ * the whole screen.
+ *
+ * Rejoining them changes no words. A blank line is a paragraph, a single break
+ * is a space, and a line broken on a hyphen is closed up *without* one, so the
+ * hyphen the typesetter put there is still the only thing between the halves
+ * and a quote that matched across it still reads as it did on the page.
+ */
+export function reflow(text: string): string[] {
+	return text
+		.split(/\n[ \t]*\n+/)
+		.map((block) =>
+			block
+				.split('\n')
+				.map((line) => line.trim())
+				.filter(Boolean)
+				.reduce(
+					(joined, line) =>
+						joined.endsWith('-')
+							? joined + line
+							: `${joined} ${line}`,
+					''
+				)
+				.trim()
+		)
+		.filter(Boolean);
+}

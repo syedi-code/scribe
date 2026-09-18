@@ -21,6 +21,13 @@ export function AppFrame() {
 	const [tab, setTab] = useState<Tab>('ask');
 	const [railOpen, setRailOpen] = useState(false);
 	const closeRail = useCallback(() => setRailOpen(false), []);
+	// Opening a conversation is a move to the reading surface, wherever it was
+	// started from — wide, the rail stays put and nothing else would take you
+	// off the shelves.
+	const readConversation = useCallback(() => {
+		setTab('ask');
+		setRailOpen(false);
+	}, []);
 
 	useShortcuts(setTab);
 
@@ -43,6 +50,7 @@ export function AppFrame() {
 				tab={tab}
 				railOpen={railOpen}
 				onCloseRail={closeRail}
+				onNavigate={readConversation}
 				railable={threads.length > 0}
 			/>
 		</div>

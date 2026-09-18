@@ -16,6 +16,9 @@ export const COPY = {
 	/** The tab is shown struck through rather than removed: it is coming back. */
 	addLater: 'not yet — Scribe reads the library, it does not fill it',
 	sessions: 'Sessions',
+	/** The bare number is what is shown; this is what it is read out as. */
+	sessionCount: (count: number) =>
+		`${count} ${count === 1 ? 'session' : 'sessions'}`,
 	running: 'running',
 	newQuestion: 'New question',
 	/** Only while the server is actually being asked what it called this one. */
@@ -276,6 +279,8 @@ export const COPY = {
 	   the answers are drawn from. */
 	books: {
 		search: 'Search the shelves',
+		/** What this tab is not: a way to get the books. */
+		blurb: 'This is a list of the books Scribe can read from. It does not provide the PDFs. For access to the files, use the alexandria API.',
 		clear: 'Clear',
 		nothing: (term: string) => `Nothing on the shelves matches “${term}”.`,
 		unreachable: 'The shelves could not be fetched just now.',
