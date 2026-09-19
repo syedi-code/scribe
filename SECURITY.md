@@ -6,7 +6,7 @@ Open a
 [private security advisory](https://github.com/syedi-code/scribe/security/advisories/new).
 Please do not open a public issue for a vulnerability.
 
-There is no bounty and no SLA. This is one person's reading interface.
+There is no bounty and no SLA. Reports are read and answered as time allows.
 
 ## What this repository holds
 
