@@ -2,7 +2,8 @@
 
 **scribe-lm** — ask the library a question, and see whether every quote in the
 answer is on the page it names. Deployed to Cloudflare Pages at
-`scribe.socialeating.studio`.
+**<https://scribe.socialeating.studio>**, behind Cloudflare Access, so an
+unauthenticated visit gets the login rather than the library.
 
 The backend is **alexandria**: Hono on Cloudflare Workers, one D1, one R2. It
 answers from the PDFs in Works, and after the answer is written it looks for
@@ -157,11 +158,11 @@ cannot wipe it.
 
 ## Related repositories
 
-|                                                                                |                                                             |
-| ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| [**alexandria**](https://github.com/syedi-code/alexandria.socialeating.studio) | The backend. Every row this app shows belongs to it         |
-| [**alexandria-mcp**](https://github.com/syedi-code/alexandria-mcp)             | The same library as MCP tools, for a model outside this app |
-| [**stylus**](https://github.com/syedi-code/stylus.socialeating.studio)         | The other frontend: notes, thoughts, quotes, essays         |
+|                                                                    |                                                             |
+| ------------------------------------------------------------------ | ----------------------------------------------------------- |
+| [**alexandria**](https://github.com/syedi-code/alexandria)         | The backend. Every row this app shows belongs to it         |
+| [**alexandria-mcp**](https://github.com/syedi-code/alexandria-mcp) | The same library as MCP tools, for a model outside this app |
+| [**stylus**](https://github.com/syedi-code/stylus)                 | The other frontend: notes, thoughts, quotes, essays         |
 
 ## Reading further
 

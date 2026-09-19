@@ -7,12 +7,11 @@ npm install
 npm run dev     # http://localhost:4572
 ```
 
-scribe reads
-[alexandria](https://github.com/syedi-code/alexandria.socialeating.studio) and
-holds no data of its own, so it needs one running: `npm run dev` in that
-repository puts it on `:8787`, which vite proxies to. There is no mock mode and
-no fixture set — **the app is inert without a backend**, and that is deliberate,
-because a fixture that drifts from the API is worse than no fixture.
+scribe reads [alexandria](https://github.com/syedi-code/alexandria) and holds no
+data of its own, so it needs one running: `npm run dev` in that repository puts
+it on `:8787`, which vite proxies to. There is no mock mode and no fixture set —
+**the app is inert without a backend**, and that is deliberate, because a
+fixture that drifts from the API is worse than no fixture.
 
 Point elsewhere with `VITE_API_TARGET`.
 
