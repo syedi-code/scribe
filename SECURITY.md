@@ -3,19 +3,18 @@
 ## Reporting
 
 Open a
-[private security advisory](https://github.com/syedi-code/scribe.socialeating.studio/security/advisories/new).
+[private security advisory](https://github.com/syedi-code/scribe/security/advisories/new).
 Please do not open a public issue for a vulnerability.
 
-There is no bounty and no SLA. This is one person's reading interface.
+There is no bounty and no SLA. Reports are read and answered as time allows.
 
 ## What this repository holds
 
 Nothing. scribe has no database, no server-side state and no credentials. Every
 row it displays belongs to
-[alexandria](https://github.com/syedi-code/alexandria.socialeating.studio), and
-every request for one goes through the Pages Function in
-`functions/api/[[catchall]].ts`. A clone of this repository is inert until it is
-pointed at an alexandria instance.
+[alexandria](https://github.com/syedi-code/alexandria), and every request for
+one goes through the Pages Function in `functions/api/[[catchall]].ts`. A clone
+of this repository is inert until it is pointed at an alexandria instance.
 
 Two things are worth auditing:
 
