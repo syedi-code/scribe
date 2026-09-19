@@ -42,12 +42,12 @@ changes little; on a bad one the paragraph nearly empties.
 **The passage appears once, because it is only written once.** The model cites
 by wrapping the words it quotes — `<cite P7>the will to truth</cite>` — so the
 quotation, the evidence and the thing the server checks are the same words.
-Asking for the quote inside `[P7 "…"]` instead meant the model wrote the
-passage in its prose and cited it again, and the renderer had to guess which
-prose quotation each citation was repeating. It guessed right slightly more
-often than not. What it could not do was fix the deeper fault: the copy the
-reader saw was not the copy the server checked, so a quotation the model never
-cited at all was shown in quotation marks with no verdict on it.
+Asking for the quote inside `[P7 "…"]` instead meant the model wrote the passage
+in its prose and cited it again, and the renderer had to guess which prose
+quotation each citation was repeating. It guessed right slightly more often than
+not. What it could not do was fix the deeper fault: the copy the reader saw was
+not the copy the server checked, so a quotation the model never cited at all was
+shown in quotation marks with no verdict on it.
 
 **What is not the answer.** An assistant message holds the text of _every_ step,
 and models narrate between tool calls however firmly the instructions ask them
@@ -56,17 +56,16 @@ it is apparatus — one condensed line, live while the model works, collapsed on
 the answer starts, expandable by anyone who wants to audit the search.
 
 The full reasoning, and the prototype these decisions were made in, are in
-`docs/` — `scribe-ui.md`, `scribe-citations-api.md`, and
-`prototype/index.html`.
+`docs/` — `scribe-ui.md`, `scribe-citations-api.md`, and `prototype/index.html`.
 
 ## Stack
 
 React 19 · TypeScript 5.9 (strict) · Tailwind v4, CSS-first · Vite 7 · Vercel AI
 SDK v7 (`useChat` + `DefaultChatTransport`) · Cloudflare Pages with one Pages
 Function. No component library and no state library: the app is a chat and a
-drawer, which `useChat` plus two small contexts covers. The one heavy
-dependency is pdf.js, which draws the scan behind a citation and is not
-imported until a reader asks for one.
+drawer, which `useChat` plus two small contexts covers. The one heavy dependency
+is pdf.js, which draws the scan behind a citation and is not imported until a
+reader asks for one.
 
 ```bash
 npm install
@@ -131,11 +130,11 @@ The day they land, the fallbacks stop being used and nothing else changes.
 **A tick or a cross.** The check means the words are on the page. It does not
 mean they support the claim, and a tick would be read as endorsing the argument.
 
-**A PDF handed to the browser.** The scan is drawn in the app, at the page
-that was cited. A signed link into the browser's own viewer opens a new tab, is
-blocked as a popup on iOS because it follows an `await`, and lands on page 1
-of four hundred when it does open, since Safari ignores `#page=`. The whole
-file is still one tap away from the scan, as a link.
+**A PDF handed to the browser.** The scan is drawn in the app, at the page that
+was cited. A signed link into the browser's own viewer opens a new tab, is
+blocked as a popup on iOS because it follows an `await`, and lands on page 1 of
+four hundred when it does open, since Safari ignores `#page=`. The whole file is
+still one tap away from the scan, as a link.
 
 **Client-side verification, or retrying a failed citation.** The check belongs
 on the server, after the answer. A quote that came back not found stays not
@@ -155,3 +154,26 @@ Pages project `scribe`, production only, at `scribe.socialeating.studio`.
 Merging into `main` deploys it; the run fails unless `/api/session` comes back
 from alexandria. `WORKER_URL` is declared in `wrangler.toml`, where a deploy
 cannot wipe it.
+
+## Related repositories
+
+|                                                                                |                                                             |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| [**alexandria**](https://github.com/syedi-code/alexandria.socialeating.studio) | The backend. Every row this app shows belongs to it         |
+| [**alexandria-mcp**](https://github.com/syedi-code/alexandria-mcp)             | The same library as MCP tools, for a model outside this app |
+| [**stylus**](https://github.com/syedi-code/stylus.socialeating.studio)         | The other frontend: notes, thoughts, quotes, essays         |
+
+## Reading further
+
+|                                      |                                                          |
+| ------------------------------------ | -------------------------------------------------------- |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, the checks, and what matters in this codebase     |
+| [`SECURITY.md`](SECURITY.md)         | What the proxy trusts, and the known limits              |
+| [`FONTS.md`](FONTS.md)               | Why the typefaces are not here, and how to run with them |
+| [`CONTEXT.md`](CONTEXT.md)           | The glossary. Authoritative on what words mean here      |
+| `docs/scribe-ui.md`                  | The reasoning behind the interface                       |
+| `docs/scribe-citations-api.md`       | The four fields this asks of alexandria                  |
+
+## License
+
+ISC.

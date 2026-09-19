@@ -1,13 +1,13 @@
 # Fonts
 
 scribe is set in **GT Alpina**, licensed from
-[Grilli Type](https://www.grillitype.com/). A Grilli Type webfont licence
-permits serving the files from the licensee's own site. It does not permit
-redistributing them, and a public git repository is redistribution — including
-from its history, where a deleted file is still downloadable.
+[Grilli Type](https://www.grillitype.com/) for serving from this project's own
+site. That licence does not extend to anyone else, so the faces are not part of
+what this repository offers.
 
-So the `.woff2` files are not in this repository, and must never be added to it.
-`.gitignore` carries `public/fonts/` for that reason.
+The `.woff2` files are kept out of the working tree — `.gitignore` carries
+`public/fonts/` — and production gets them from R2 at deploy time. Keep it that
+way.
 
 ## Running it with the real faces
 
