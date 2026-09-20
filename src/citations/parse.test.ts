@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { nodesIn, printedIn, sentencesIn } from './walk';
 import {
 	alignCitations,
+	collapseQuotedDuplicates,
 	markersFor,
 	parseCitations,
 	segmentAnswer,
@@ -258,6 +259,174 @@ describe('a quotation written as <cite>', () => {
 		expect(parseCitations(broken)).toEqual([]);
 		expect(printedIn(segmentAnswer(broken, []))).toBe(
 			'He says a Hitler inside him here.'
+		);
+	});
+});
+
+/**
+ * Production, 19 September, conversation 15195b62: every one of the six
+ * citations in the Freud answer arrived with its quotation written out
+ * immediately before it, and the reader was shown each passage twice over.
+ * The renderer was faithful — the model wrote it twice — so four passes over
+ * this file could never have fixed it.
+ */
+describe('a quotation the model wrote twice', () => {
+	const doubled =
+		'<author>Freud</author> says that the method “considers only what occurs to the dreamer” <cite P4>considers only what occurs to the dreamer</cite>.';
+
+	const shown = (text: string) => {
+		const collapsed = collapseQuotedDuplicates(text);
+		return nodesIn(segmentAnswer(collapsed, parseCitations(collapsed)))
+			.map((node) => ('text' in node ? node.text : node.quote))
+			.join('');
+	};
+
+	it('is shown to the reader once', () => {
+		expect(
+			shown(doubled).split('considers only what occurs to the dreamer')
+		).toHaveLength(2);
+	});
+
+	it('keeps the words, and the citation under them', () => {
+		expect(shown(doubled)).toBe(
+			'Freud says that the method considers only what occurs to the dreamer.'
+		);
+		expect(parseCitations(collapseQuotedDuplicates(doubled))).toHaveLength(
+			1
+		);
+	});
+
+	// Every answer saved before <cite> is written in the bracketed forms, and
+	// the model doubled those too — 20 of the 29 found in production.
+	it('is collapsed in the older bracketed form', () => {
+		expect(
+			collapseQuotedDuplicates(
+				'He concludes that “the dream is a wish-fulfilment” [P3 "the dream is a wish-fulfilment"].'
+			)
+		).toBe('He concludes that [P3 "the dream is a wish-fulfilment"].');
+	});
+
+	/**
+	 * The instructions already tell the model not to put quotation marks
+	 * around quoted words. The day it keeps that half of the rule and still
+	 * writes the words twice, a rule that looked for quotation marks would go
+	 * blind — so it is the words that are compared, not the marks.
+	 */
+	it('is collapsed when the copy carried no quotation marks', () => {
+		expect(
+			collapseQuotedDuplicates(
+				'He says that the dream is a wish-fulfilment <cite P3>the dream is a wish-fulfilment</cite>.'
+			)
+		).toBe('He says that <cite P3>the dream is a wish-fulfilment</cite>.');
+	});
+
+	it('is collapsed whatever separates the two copies', () => {
+		for (const gap of [' ', ', ', '  ', ' — ', '; ']) {
+			expect(
+				collapseQuotedDuplicates(
+					`He says “the dream is a wish-fulfilment”${gap}<cite P3>the dream is a wish-fulfilment</cite>.`
+				)
+			).toBe('He says <cite P3>the dream is a wish-fulfilment</cite>.');
+		}
+	});
+
+	// The closing mark goes with the copy, so the opening one has to go too or
+	// the reader is shown a stray asterisk where an italic used to start.
+	it('takes the marks the copy was opened with', () => {
+		expect(
+			collapseQuotedDuplicates(
+				'He says **the dream is a wish-fulfilment** <cite P3>the dream is a wish-fulfilment</cite>.'
+			)
+		).toBe('He says <cite P3>the dream is a wish-fulfilment</cite>.');
+	});
+
+	// A short run repeats innocently, and five words is what the server calls
+	// a quotation at all.
+	it('leaves a repeat too short to be a quotation', () => {
+		const brief =
+			'He says the will to truth <cite P3>the will to truth</cite>.';
+		expect(collapseQuotedDuplicates(brief)).toBe(brief);
+	});
+
+	// `breathe` ends in the letters of `the`, and the run after it is the rest
+	// of the quote. Starting there would leave the reader `brea`.
+	it('never cuts into the middle of a word', () => {
+		const tricky =
+			'He had nothing to breathe dream is a wish-fulfilment <cite P3>the dream is a wish-fulfilment</cite>.';
+		expect(collapseQuotedDuplicates(tricky)).toBe(tricky);
+	});
+
+	// The model has written the same words with a different stop at the end of
+	// each copy, so the punctuation is folded before they are compared.
+	it('is collapsed though the two copies stop differently', () => {
+		expect(
+			collapseQuotedDuplicates(
+				'He asks “who would ever have learnt to write from a Greek?” <cite P9>who would ever have learnt to write from a Greek!</cite>'
+			)
+		).toBe(
+			'He asks <cite P9>who would ever have learnt to write from a Greek!</cite>'
+		);
+	});
+
+	/**
+	 * A quotation the reader meets again elsewhere is the answer re-reading
+	 * it, not a copy of the citation. Pairing the two by their shared words is
+	 * what `anchorsFor()` did, and it paired 42 of 92.
+	 */
+	it('leaves a quotation that is not against the citation', () => {
+		const apart =
+			'He writes “the dream is a wish-fulfilment”, and it returns when he says <cite P3>the dream is a wish-fulfilment</cite>.';
+		expect(collapseQuotedDuplicates(apart)).toBe(apart);
+	});
+
+	it('leaves a quotation that is not the one cited', () => {
+		const other =
+			'He calls it “an entirely different proposition” <cite P3>the dream is a wish-fulfilment</cite>.';
+		expect(collapseQuotedDuplicates(other)).toBe(other);
+	});
+
+	/**
+	 * The one instance in production this rule deliberately leaves: the cite
+	 * takes in the name and the prose keeps it outside the quotation, so the
+	 * two copies are not the same words. Collapsing where one copy merely
+	 * contains the other would catch it and sixteen more like it, and would
+	 * also start deleting prose a reader meant to keep. Held until real
+	 * traffic says what the false-positive rate is.
+	 */
+	it('leaves a copy that is not word for word the one cited', () => {
+		const contained =
+			'The notebook calls <author>Plato</author> “a great Cagliostro” [P12 "(Plato: a great Cagliostro"].';
+		expect(collapseQuotedDuplicates(contained)).toBe(contained);
+	});
+
+	it('takes nothing out of an answer that wrote each quotation once', () => {
+		const once =
+			'Europe is <cite P1>a civilization that uses its principles for trickery</cite>, and <cite P12>no one colonizes innocently</cite>.';
+		expect(collapseQuotedDuplicates(once)).toBe(once);
+	});
+
+	it('never changes which citations an answer holds', () => {
+		const two =
+			'A “first quoted passage here” <cite P1>first quoted passage here</cite> and “second quoted passage here” [P2 "second quoted passage here"].';
+		const collapsed = collapseQuotedDuplicates(two);
+
+		expect(parseCitations(collapsed).map((one) => one.handle)).toEqual(
+			parseCitations(two).map((one) => one.handle)
+		);
+		expect(collapseQuotedDuplicates(collapsed)).toBe(collapsed);
+	});
+
+	/**
+	 * Mid-stream the cite is still arriving, so nothing is collapsed yet and
+	 * `trimHalfWrittenCitation` holds the unfinished tail back. The reader is
+	 * left looking at the prose copy — which is the same words the citation
+	 * will be drawn from, so when it lands nothing moves.
+	 */
+	it('shows the prose copy while the cite is still arriving', () => {
+		const half =
+			'He says “the dream is a wish-fulfilment” <cite P3>the dream is a';
+		expect(trimHalfWrittenCitation(collapseQuotedDuplicates(half))).toBe(
+			'He says “the dream is a wish-fulfilment”'
 		);
 	});
 });

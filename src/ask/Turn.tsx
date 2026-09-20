@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { COPY } from '../copy';
 import {
 	alignCitations,
+	collapseQuotedDuplicates,
 	markersFor,
 	segmentAnswer,
 	trimHalfWrittenCitation,
@@ -66,7 +67,10 @@ export function Turn({
 	const library = useLibraryNames();
 
 	const { markers, blocks, citations } = useMemo(() => {
-		const written = read?.answer ?? '';
+		// A quotation the model wrote twice is shown once. Collapsed before the
+		// trim, so mid-stream the prose copy stands until `</cite>` lands and
+		// is replaced by the identical cited copy — the doubling never paints.
+		const written = collapseQuotedDuplicates(read?.answer ?? '');
 		// Nothing half-written is shown: a citation appears whole or not yet.
 		const answer = streaming ? trimHalfWrittenCitation(written) : written;
 		const markers = markersFor(answer, read?.citations);

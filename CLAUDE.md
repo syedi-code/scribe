@@ -125,8 +125,45 @@ cause — the reader was shown one copy and the server checked the other, so
 verdict at all.
 
 `[P7 "…"]` and `"…" [P7]` are still parsed, on both sides, because every answer
-saved before this is written in them. An old answer that quoted and then cited
-now shows both copies, as the model wrote them.
+saved before this is written in them.
+
+**A quotation the model wrote twice is shown once.** Asking for it once was
+never enough. Across production the model wrote the quotation in its prose and
+then the same words again inside the citation, on 29 of 137 citations — and
+that rate did not move when the citation syntax changed under it, because the
+syntax was never what it was doing wrong. It is not reproducible on demand
+either: the mode fires on about one answer in three, holds for a whole answer
+once it starts, and did not fire once across twelve replays of the exact
+context that produced it. So no revision of the instruction can be shown to
+work, and `collapseQuotedDuplicates()` in `citations/parse.ts` takes it out
+instead. alexandria does the same before it saves an answer, which is what
+keeps it out of the history the next turn reads back; this side is for the
+answers saved before that, and for the one being streamed now.
+
+**What counts as the same quotation twice is the words, not the marks.** If the
+prose immediately before a citation ends with the words that citation quotes,
+that is one quotation written twice, however it was delimited and whatever
+separates the copies. Every instance in production was a quoted run and a
+single space — and pinning the rule to that shape was the first version of this
+fix, which was wrong for one reason: the instructions themselves tell the model
+never to put quotation marks around quoted words, so the day it keeps that half
+of the rule and still writes the words twice, a rule looking for quotation
+marks goes blind and this is a fifth attempt. It is the words that are
+compared.
+
+Only the run against the citation is collapsed. A quotation that appears again
+elsewhere is the answer re-reading it and is left alone: pairing quotations to
+distant citations by their shared words is exactly what `anchorsFor()` did, and
+it paired 42 of 92. Nothing under five words is collapsed, because a short run
+repeats innocently, and nothing starts mid-word, or `breathe` gives up a `the`.
+Where one copy merely *contains* the other — the cite taking in a name the
+prose kept outside the quotation — it is left, deliberately, until traffic says
+what that costs. That is one citation in the 137.
+
+It collapses before `trimHalfWrittenCitation`, and that order is the whole of
+why nothing flickers: mid-stream the unfinished `<cite>` is being held back, so
+the reader is looking at the prose copy, and when `</cite>` lands that copy is
+replaced by an identical cited one. The doubling is never painted.
 
 **One citation regex.** `citations/parse.ts` mirrors alexandria's
 `conversations/citations.ts` and the two have to agree forever — on `<cite>`,
