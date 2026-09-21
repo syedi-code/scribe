@@ -52,19 +52,47 @@ export function Header({
 	const folding = bare || !arrived;
 	const row = useRef<HTMLElement>(null);
 	const mark = useRef<HTMLButtonElement>(null);
+	const tabs = useRef<HTMLDivElement>(null);
 	const conceal = useCallback((hidden: boolean) => {
 		mark.current?.classList.toggle('invisible', hidden);
 	}, []);
 
 	// How tall the row is with the mark folded away, for the rail to rise by:
 	// on the home screen the rail takes the empty corner (`ui/Rail`).
+	//
+	// Measured off the tabs and the account beside them, which do not fold,
+	// and never off the row itself. The account's letter is the taller of the
+	// two, so it is what sets the height when it is shown.
+	//
+	// This runs on the commit that starts the fold, when the row is still at
+	// its open height — so coming back from a conversation the rail rose by
+	// the open height, about twenty pixels too far, and pulled `Sessions` up
+	// behind the header and off the top of the shell, which clips.
 	useLayoutEffect(() => {
 		const header = row.current;
-		if (!bare || !header?.parentElement) return;
-		header.parentElement.style.setProperty(
-			'--header-rest',
-			`${header.offsetHeight}px`
-		);
+		const shell = header?.parentElement;
+		const tablist = tabs.current;
+		if (!bare || !header || !shell || !tablist) return;
+
+		const px = (value: string) => parseFloat(value) || 0;
+		const measure = () => {
+			const box = getComputedStyle(header);
+			const frame =
+				px(box.paddingTop) +
+				px(box.paddingBottom) +
+				px(box.borderBottomWidth);
+			shell.style.setProperty(
+				'--header-rest',
+				`${tablist.offsetHeight + frame}px`
+			);
+		};
+
+		measure();
+		// The tabs change height when the window crosses the compact
+		// breakpoint, and again when the face they are set in lands.
+		const watch = new ResizeObserver(measure);
+		watch.observe(tablist);
+		return () => watch.disconnect();
 	}, [bare]);
 
 	return (
@@ -112,7 +140,10 @@ export function Header({
 
 			{!bare && <Travel mark={mark} header={row} conceal={conceal} />}
 
-			<div className="flex items-center gap-4 @max-compact:gap-3">
+			<div
+				ref={tabs}
+				className="flex items-center gap-4 @max-compact:gap-3"
+			>
 				<TabBar tab={tab} onTab={onTab} railable={railable} />
 				{account && <AccountMenu />}
 			</div>

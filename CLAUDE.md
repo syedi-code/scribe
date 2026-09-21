@@ -527,8 +527,22 @@ own mark hidden until it lands, because the fold clips and fades and cannot
 carry it. Wide, the rail rises into that corner on the home screen and steps
 down out of the way as the mark arrives, so the corner is never an empty hole.
 The header is transparent to the pointer where it holds nothing, since the
-risen rail is under it. A file and a component that differ only in case — this
-was `travel.ts` beside `Travel.tsx` — do not compile on Windows.
+risen rail is under it. How far it rises is `--header-rest`, the header's
+height with the mark folded away, and it is measured off the tabs plus the
+row's padding, never off the row: the effect runs on the commit that starts the
+fold, while the row is still open, so coming home from a conversation the rail
+rose by the open height and took `Sessions` up off the top of the shell. On the
+home screen `New question` is disabled — there is no conversation to leave, and
+a click that did nothing at all was reported as a broken button. A file and a
+component that differ only in case — this was `travel.ts` beside `Travel.tsx` —
+do not compile on Windows.
+
+**A scrollbar is a mark in the margin, not a control.** Set once, in the base
+layer of `styles/theme.css`, for every scrolling region at once: thin, no track,
+no arrows, a thumb in `--color-edge`. The platform's own was the one piece of
+chrome in the app nobody drew. Both the standard properties and the
+`::-webkit-` pseudo-elements are set, because Safari before 18.2 has only the
+latter; a component that styles its own scrollbar is a bug.
 
 **One press, everywhere.** `@utility press` in `styles/theme.css` is what a
 pressable row does under a finger — a session name, a question on the home
