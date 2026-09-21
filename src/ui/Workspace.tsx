@@ -1,3 +1,4 @@
+import { AboutPanel } from '../about/AboutPanel';
 import { AskPanel } from '../ask/AskPanel';
 import { useConversation } from '../chat/context';
 import { BooksPanel } from '../books/BooksPanel';
@@ -46,7 +47,13 @@ export function Workspace({
 			<div
 				className={`contents ${sessions ? '@max-compact:hidden' : ''}`}
 			>
-				{tab === 'books' ? <BooksPanel /> : <AskPanel />}
+				{tab === 'books' ? (
+					<BooksPanel />
+				) : tab === 'about' ? (
+					<AboutPanel />
+				) : (
+					<AskPanel />
+				)}
 			</div>
 
 			<PageView />
