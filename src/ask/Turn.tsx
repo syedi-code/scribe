@@ -4,6 +4,7 @@ import {
 	alignCitations,
 	collapseQuotedDuplicates,
 	markersFor,
+	normaliseCitationShapes,
 	segmentAnswer,
 	trimHalfWrittenCitation,
 } from '../citations/parse';
@@ -67,10 +68,14 @@ export function Turn({
 	const library = useLibraryNames();
 
 	const { markers, blocks, citations } = useMemo(() => {
-		// A quotation the model wrote twice is shown once. Collapsed before the
-		// trim, so mid-stream the prose copy stands until `</cite>` lands and
-		// is replaced by the identical cited copy — the doubling never paints.
-		const written = collapseQuotedDuplicates(read?.answer ?? '');
+		// A citation the model wrote in someone else's notation is read as the
+		// citation it is, and a quotation it wrote twice is shown once.
+		// Collapsed before the trim, so mid-stream the prose copy stands until
+		// `</cite>` lands and is replaced by the identical cited copy — the
+		// doubling never paints.
+		const written = collapseQuotedDuplicates(
+			normaliseCitationShapes(read?.answer ?? '')
+		);
 		// Nothing half-written is shown: a citation appears whole or not yet.
 		const answer = streaming ? trimHalfWrittenCitation(written) : written;
 		const markers = markersFor(answer, read?.citations);
