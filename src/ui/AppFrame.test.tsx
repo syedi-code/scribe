@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
 	chat,
 	models,
@@ -9,6 +9,8 @@ import {
 	verified,
 } from '../test/harness';
 import { closePage, openPage } from '../state/reader';
+import { ChatContext, type ChatState } from '../chat/context';
+import { ModelContext } from '../models/context';
 import { AppFrame } from './AppFrame';
 
 /**
@@ -364,5 +366,99 @@ describe('sessions, narrow', () => {
 		fireEvent.click(screen.getByRole('tab', { name: 'Sessions' }));
 		const ask = screen.getByRole('tab', { name: 'Ask' });
 		expect(ask.className).toContain('text-ink @max-compact:text-ink-faint');
+	});
+});
+
+/**
+ * The rail in the header's empty corner, and the two things reported wrong
+ * with it: `Sessions` cut off at the top of the page after a conversation had
+ * been open, and `New question` answering a click with nothing.
+ */
+const shell = (state: ChatState) => (
+	<ModelContext value={models}>
+		<ChatContext value={state}>
+			<AppFrame />
+		</ChatContext>
+	</ModelContext>
+);
+
+describe('the rail risen into the corner', () => {
+	const OPEN = 65;
+	const TABS = 20;
+
+	/** jsdom has no layout, so the two heights that matter are stood up here. */
+	const withHeights = (run: () => void) => {
+		const real = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			'offsetHeight'
+		);
+		Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+			configurable: true,
+			get(this: HTMLElement) {
+				if (this.tagName === 'HEADER') return OPEN;
+				return this.getAttribute('role') === 'tablist' ? TABS : 0;
+			},
+		});
+		try {
+			run();
+		} finally {
+			if (real) {
+				Object.defineProperty(
+					HTMLElement.prototype,
+					'offsetHeight',
+					real
+				);
+			}
+		}
+	};
+
+	// The height was read off the row itself, on the commit that starts the
+	// fold — when the row is still open. Coming home from a conversation the
+	// rail rose by the open height, about twenty pixels too far, and took
+	// `Sessions` up behind the header and off the top of the shell, which
+	// clips. The tabs do not fold, so they are what is measured.
+	it('rises by the resting header, not the one still folding', () => {
+		stubFetch();
+		withHeights(() => {
+			const { container, rerender } = render(shell(withThreads()));
+			rerender(
+				shell(
+					chat({
+						threads: [thread('c1', 'The will to truth as faith')],
+						atHome: true,
+					})
+				)
+			);
+			const frame = container.firstElementChild as HTMLElement;
+			expect(frame.style.getPropertyValue('--header-rest')).toBe(
+				`${TABS}px`
+			);
+		});
+	});
+});
+
+describe('New question', () => {
+	const button = () => screen.getByRole('button', { name: /New question/ });
+
+	it('leaves a conversation for a blank one', () => {
+		stubFetch();
+		const newQuestion = vi.fn();
+		renderApp(<AppFrame />, { state: withThreads({ newQuestion }) });
+		fireEvent.click(button());
+		expect(newQuestion).toHaveBeenCalled();
+	});
+
+	// On the home screen there is no conversation to leave, so the click did
+	// nothing at all and was reported as a button that does not work. It says
+	// so now, in the disabled it already wears while a turn is in flight.
+	it('says so when there is nothing to leave', () => {
+		stubFetch();
+		renderApp(<AppFrame />, {
+			state: chat({
+				threads: [thread('c1', 'The will to truth as faith')],
+				atHome: true,
+			}),
+		});
+		expect(button().hasAttribute('disabled')).toBe(true);
 	});
 });

@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { COPY } from '../copy';
 import type { Tab } from './tabs';
 
@@ -18,10 +19,13 @@ export function TabBar({
 	tab,
 	onTab,
 	railable,
+	ref,
 }: {
 	tab: Tab;
 	onTab: (tab: Tab) => void;
 	railable: boolean;
+	/** The header measures its resting height off the tabs, which never fold. */
+	ref?: Ref<HTMLDivElement>;
 }) {
 	// Wide, a reader on Sessions is looking at Ask: the tab is not there.
 	const tabClass = (which: Tab) =>
@@ -47,6 +51,7 @@ export function TabBar({
 
 	return (
 		<div
+			ref={ref}
 			role="tablist"
 			className="pointer-events-auto flex items-center gap-4 @max-compact:gap-3"
 		>

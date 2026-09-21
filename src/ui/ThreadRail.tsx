@@ -48,6 +48,7 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 		warmThread,
 		newQuestion,
 		busy,
+		atHome,
 	} = useConversation();
 
 	return (
@@ -68,9 +69,13 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 					</span>
 				</div>
 
+				{/* Dead on the home screen, and saying so: there is no
+				    conversation to leave, and a button that answers a click
+				    with nothing at all was reported as broken. It is the same
+				    disabled it wears while a turn is in flight. */}
 				<button
 					type="button"
-					disabled={busy}
+					disabled={busy || atHome}
 					onClick={() => {
 						newQuestion();
 						onNavigate?.();
