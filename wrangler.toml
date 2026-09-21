@@ -16,8 +16,14 @@ compatibility_date = "2025-08-24"
 # project variables that are not declared here — which is why setting
 # WORKER_URL through the dashboard or API did not survive a deploy. It is not
 # a secret, so it lives in the repo.
+# A `FLAG_…` variable is a feature flag, read by `functions/api/flags.ts` and
+# handed to the browser by `GET /api/flags`. Flip one here, deploy, and the
+# feature is on or off for the next reader — the code that reads it does not
+# change. The names and what each falls back to are in `src/flags/flags.ts`.
 [vars]
 WORKER_URL = "https://alexandria.socialeating.studio"
+FLAG_IS_CLAUDE_HAIKU_ENABLED = "true"
 
 [env.preview.vars]
 WORKER_URL = "https://antisocial-worker-staging.iysyed01.workers.dev"
+FLAG_IS_CLAUDE_HAIKU_ENABLED = "true"

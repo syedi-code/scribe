@@ -11,5 +11,7 @@
 		"strict": true,
 		"skipLibCheck": true
 	},
-	"include": ["functions/**/*.ts"]
+	// The flag registry is shared with the app: the Pages Function reads the
+	// same names and fallbacks the browser does.
+	"include": ["functions/**/*.ts", "src/flags/flags.ts"]
 }

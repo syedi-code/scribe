@@ -156,6 +156,11 @@ Merging into `main` deploys it; the run fails unless `/api/session` comes back
 from alexandria. `WORKER_URL` is declared in `wrangler.toml`, where a deploy
 cannot wipe it.
 
+Feature flags are declared there too, as `FLAG_…` variables: `GET /api/flags`
+hands them to the browser, and a feature is turned on or off in production by
+flipping one and deploying. The names, and what each falls back to when the
+variable is unset, are in `src/flags/flags.ts`.
+
 ## Related repositories
 
 |                                                                    |                                                             |

@@ -30,12 +30,34 @@ src/chat/        useChat wiring, and how to read an assistant message
 src/ask/         home, conversation, answer, margin, composer
 src/page/        the drawer behind a citation
 src/state/       the drawer and the dim, shared app-wide
+src/flags/       the feature flags, and what each falls back to
 src/styles/      every design token as Tailwind @theme variables
 src/copy.ts      every user-facing string
-functions/api/   the Pages Function that proxies /api/* to alexandria
+functions/api/   the proxy to alexandria, and the flags this app answers itself
 ```
 
 ## Things worth knowing
+
+**A new feature arrives behind a flag.** `src/flags/flags.ts` names every one
+and what it falls back to; `functions/api/flags.ts` answers `GET /api/flags`
+out of the deployment's environment, and `FlagProvider` asks once a tab. A flag
+is a `FLAG_…` variable in `wrangler.toml`, which is the source of truth a
+deploy rebuilds the project's variables from — set one in the dashboard and the
+next deploy clears it. So turning a feature on or off in production is flipping
+a string there and deploying, and never a change to the code that reads it.
+
+From here on, a feature that a reader can see is written behind a flag and
+shipped off. That is what lets a half-finished thing sit on main, and a costly
+one be turned on for an afternoon and off again without a revert. A flag falls
+back to *off*, because an unset variable is a deployment that has never heard
+of the feature. `isClaudeHaikuEnabled` is the first, and it decides whether
+Claude Haiku 4.5 can be picked in the switcher — held back it is struck through
+and unpickable, exactly as Gemini is, which is the shape every held-back thing
+here already had.
+
+Dev serves the same route: the plugin in `vite.config.ts` reads `wrangler.toml`
+first, so `npm run dev` gets what production is actually given, then `.dev.vars`
+and the shell over it for a flag being tried out locally.
 
 **The answer is the text after the final `step-start`.** Everything before it is
 apparatus — narration and tool calls. Rendering every text part in sequence
@@ -470,12 +492,14 @@ is actually polling for a title. A conversation that is still untitled after
 that is `untitled` — promising a name that is not coming is how `naming…` came
 to sit in the rail for ever.
 
-**Two models are held back.** `COMING_SOON` in `models/ModelProvider.tsx`,
-shown struck through and unpickable rather than hidden, so a reader can see
-what Scribe could run. Gemini 3.8 Flash has never run here; Haiku has, and is
-held back on cost — five times Luna's input and four times its output, for a
-lower score, and every step of the agent loop pays it again. The strike and the
-disabled row say _held back_ on their own: a _coming soon_ beside them was the
+**A model can be held back.** `heldBack()` in `models/ModelProvider.tsx`, shown
+struck through and unpickable rather than hidden, so a reader can see what
+Scribe could run. Gemini 3.8 Flash has never run here and is held back in the
+code. Haiku has, and is held back on cost — five times Luna's input and four
+times its output, for a lower score, and every step of the agent loop pays it
+again — so it is behind `isClaudeHaikuEnabled` rather than a constant: a
+decision about money changes more often than the code around it. The strike and
+the disabled row say _held back_ on their own: a _coming soon_ beside them was the
 same fact twice, and it is the one claim of the three that needs no words.
 _no key set_ still does, because it is a different claim — that the deployment
 is missing a key rather than that we chose this. `Add a book` is held back the

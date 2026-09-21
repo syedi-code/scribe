@@ -1,5 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
+import { useFlags } from '../flags/context';
+import type { Flags } from '../flags/flags';
 import { useAsync } from '../lib/useAsync';
 import { ModelContext, type ModelChoice, type ModelState } from './context';
 import type { Model, ModelsResponse } from '../api/types';
@@ -20,11 +22,17 @@ import type { Model, ModelsResponse } from '../api/types';
  * quietly dropped: a reader can see what Scribe could run, and that the reason
  * it is not running is a decision rather than a missing key.
  *
- * Gemini has never run here. Haiku has, and is held back on cost: it is five
- * times Luna's input and four times its output, for a lower score, and every
- * step of the agent loop pays that again.
+ * Gemini has never run here. Haiku is behind `isClaudeHaikuEnabled` — it is
+ * five times Luna's input and four times its output, for a lower score, and
+ * every step of the agent loop pays that again, so it is turned on for as long
+ * as someone wants it and off again by flipping a variable.
  */
-const COMING_SOON = new Set(['gemini-3.8-flash', 'claude-haiku-4-5-20251001']);
+const HELD_BACK = new Set(['gemini-3.8-flash']);
+
+const HAIKU = 'claude-haiku-4-5-20251001';
+
+const heldBack = (id: string, flags: Flags) =>
+	HELD_BACK.has(id) || (id === HAIKU && !flags.isClaudeHaikuEnabled);
 
 /**
  * Luna first: a fifth of Haiku's input price and a quarter of its output, and
@@ -58,6 +66,7 @@ const KNOWN: Model[] = [
 export function ModelProvider({ children }: { children: ReactNode }) {
 	const [chosen, setChosen] = useState<string | null>(null);
 	const roster = useAsync(() => api.get<ModelsResponse>('/models'), []);
+	const { flags, loading: flagsLoading } = useFlags();
 
 	const value = useMemo<ModelState>(() => {
 		const available = roster.value?.models ?? [];
@@ -65,8 +74,8 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 		const choices: ModelChoice[] = [
 			...KNOWN.map((model) => ({
 				...(byId.get(model.id) ?? model),
-				available: byId.has(model.id) && !COMING_SOON.has(model.id),
-				comingSoon: COMING_SOON.has(model.id),
+				available: byId.has(model.id) && !heldBack(model.id, flags),
+				comingSoon: heldBack(model.id, flags),
 			})),
 			// A model the server offers that this build has never heard of.
 			...available
@@ -96,9 +105,11 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 			select: setChosen,
 			labelFor: (id) =>
 				id ? (choices.find((m) => m.id === id)?.label ?? id) : null,
-			loading: roster.loading,
+			// A flag still in flight is a roster not yet decided: Haiku would
+			// read as held back for a frame and then stop being.
+			loading: roster.loading || flagsLoading,
 		};
-	}, [roster.value, roster.loading, chosen]);
+	}, [roster.value, roster.loading, flags, flagsLoading, chosen]);
 
 	return <ModelContext value={value}>{children}</ModelContext>;
 }

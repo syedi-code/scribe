@@ -33,7 +33,18 @@ describe('the home screen', () => {
 			const suggestion = COPY.suggestions.find(
 				(candidate) => candidate.question === question
 			)!;
-			expect(screen.getByText(suggestion.work)).toBeTruthy();
+			// The name is inked piece by piece and the title is set as a
+			// title, so the attribution is several spans rather than one
+			// string.
+			const title = screen.getByText(suggestion.title);
+			expect(title.className).toContain('work-title');
+			const attribution = title.parentElement!;
+			expect(attribution.textContent).toBe(
+				`${suggestion.creator} · ${suggestion.title}`
+			);
+			// The surname carries its ink here too, so the reader meets the
+			// author in the colour the answer will write them in.
+			expect(attribution.innerHTML).toContain('author-c');
 		}
 	});
 
