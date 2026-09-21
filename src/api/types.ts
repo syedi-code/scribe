@@ -45,6 +45,18 @@ export interface Allowance {
 	resets_at: string;
 }
 
+/**
+ * What a plan gives, as `GET /plans` says — read from the numbers and the
+ * models alexandria enforces, so the plans cannot promise what it refuses.
+ */
+export interface PlanOffer {
+	id: 'free' | 'paid';
+	turns_per_month: number;
+	models: { id: string; label: string; provider: string }[];
+	/** Null until there is a price to show. */
+	price: { amount_cents: number; currency: string; interval: 'month' } | null;
+}
+
 export interface ModelsResponse {
 	models: Model[];
 	default_model_id: string | null;

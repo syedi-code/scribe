@@ -1,129 +1,153 @@
 import type { ReactNode } from 'react';
 import { COPY } from '../copy';
-import { useAllowance } from '../state/allowance';
+import { useAccount } from '../account/useAccount';
+import { BrandedLabel } from '../models/BrandedLabel';
+import { openDialog } from '../state/dialog';
 import { Modal } from '../ui/Modal';
+import { priceOf, usePlans } from './usePlans';
+import type { PlanOffer } from '../api/types';
 
 /**
- * What a paid plan gives, beside what the reader has now.
+ * Free beside Paid, and the way to Paid.
  *
- * This is the placeholder checkout will replace, and it is the only one:
- * every offer of a paid plan in the app opens this (`seePlans`), so when
- * there is a price and a way to pay, it is built here and nowhere else.
+ * Every offer of a paid plan in the app opens this (`seePlans`), and checkout
+ * is reached from here and nowhere else.
  *
- * Until then it says so. The button that would take a reader's money is
- * drawn and disabled rather than left out, so the page has the shape it will
- * have, and a reader who came to pay is told plainly that they cannot yet —
- * not left pressing something that does nothing.
+ * Laid out to be read in one pass. A card carries only what differs between
+ * the two — the number of questions, set large because it is the difference a
+ * reader actually feels, then the models — and what both plans share is said
+ * once underneath. The plan on offer is drawn forward and holds the only
+ * filled button; the reader's own is named, not shaded, because shading it
+ * made the plan they are on look like the better one.
+ *
+ * What it will not do is lean on anyone. The price and how it is billed sit
+ * beside the button, not behind it; nothing counts down; leaving is as plain
+ * as staying; Free is described as it is, not as a lesser thing. Narrow, Paid
+ * comes first so its button is in reach without scrolling — the order a
+ * reader who opened *See plans* came for.
  */
 export function PlansDialog() {
-	const allowance = useAllowance();
-	const onPaid = allowance?.plan === 'paid';
-	const freeLimit =
-		allowance?.plan === 'free' && allowance.limit !== null
-			? allowance.limit
-			: null;
+	const plans = usePlans();
+	const account = useAccount();
+	const free = plans.value?.find((plan) => plan.id === 'free');
+	const paid = plans.value?.find((plan) => plan.id === 'paid');
 
 	return (
 		<Modal title={COPY.plan.plans.title} wide>
-			<div className="grid grid-cols-2 gap-3 @max-compact:grid-cols-1">
-				<Plan
-					name={COPY.plan.plans.free}
-					current={!onPaid}
-					points={[
-						freeLimit === null
-							? null
-							: COPY.plan.plans.freeLimit(freeLimit),
-						COPY.plan.plans.freeModel,
-						COPY.plan.plans.freeCitations,
-					]}
-				/>
-				<Plan
-					name={COPY.plan.plans.paid}
-					price={COPY.plan.plans.price}
-					current={onPaid}
-					points={[
-						COPY.plan.plans.paidMore,
-						COPY.plan.plans.paidModels,
-						COPY.plan.plans.paidEverything,
-					]}
-				>
-					{!onPaid && (
-						<button
-							type="button"
-							disabled
-							className="font-app text-ui bg-ink text-paper mt-4 w-full cursor-default rounded-full px-4 py-2 leading-none opacity-40"
+			{plans.error ? (
+				<p className="font-app text-small text-ink-soft m-0">
+					{COPY.plan.plans.unreachable}
+				</p>
+			) : !free || !paid ? (
+				<p className="font-app text-small text-ink-faint m-0 min-h-60 animate-breathe">
+					{COPY.plan.plans.loading}
+				</p>
+			) : (
+				<>
+					<div className="grid grid-cols-2 gap-3 @max-compact:grid-cols-1">
+						<Card
+							plan={free}
+							name={COPY.plan.plans.free}
+							price={COPY.plan.plans.freePrice}
+							current={account.plan === 'free' && !account.admin}
+						/>
+						<Card
+							plan={paid}
+							name={COPY.plan.plans.paid}
+							price={priceOf(paid)}
+							current={account.plan === 'paid'}
+							forward
 						>
-							{COPY.plan.plans.choose}
-						</button>
-					)}
-				</Plan>
-			</div>
-			<p className="font-app text-small text-ink-soft mt-4 mb-0">
-				{COPY.plan.plans.note}
-			</p>
+							{account.offerPlans && (
+								<>
+									<button
+										type="button"
+										onClick={() => openDialog('checkout')}
+										className="font-app text-ui bg-ink text-paper w-full rounded-full px-4 py-2.5 leading-none transition-opacity hover:opacity-85 @max-compact:py-3"
+									>
+										{COPY.plan.plans.choose}
+									</button>
+									<p className="font-app text-tiny text-ink-faint m-0 mt-2 text-center">
+										{COPY.plan.plans.terms}
+									</p>
+								</>
+							)}
+						</Card>
+					</div>
+					<p className="font-app text-small text-ink-soft m-0 mt-4">
+						{COPY.plan.plans.shared}
+					</p>
+				</>
+			)}
 		</Modal>
 	);
 }
 
-function Plan({
+function Card({
+	plan,
 	name,
 	price,
 	current,
-	points,
+	forward = false,
 	children,
 }: {
+	plan: PlanOffer;
 	name: string;
-	price?: string;
+	price: string;
 	current: boolean;
-	points: (string | null)[];
+	/** The plan on offer: drawn forward, and first when stacked. */
+	forward?: boolean;
 	children?: ReactNode;
 }) {
 	return (
 		<section
-			// The plan on offer is the one drawn forward. The reader's own is
-			// named, not shaded: shading it made the plan they are on look like
-			// the better one.
-			className={`flex flex-col rounded-xl border px-4 pt-3.5 pb-4 ${
-				current
-					? 'border-paper-deep'
-					: 'border-edge shadow-[0_10px_28px_-22px_rgba(36,31,26,0.9)]'
+			aria-label={name}
+			className={`bg-paper-lift flex flex-col rounded-xl border px-5 pt-4 pb-5 ${
+				forward
+					? 'border-ink/35 shadow-[0_14px_34px_-24px_rgba(36,31,26,0.9)] @max-compact:order-first'
+					: 'border-paper-deep'
 			}`}
 		>
-			<div className="flex items-baseline justify-between gap-2">
-				<h3 className="font-read text-ink m-0 text-[1.15rem] leading-tight font-normal">
+			<div className="flex items-center justify-between gap-2">
+				<h3 className="font-read text-ink m-0 text-[1.2rem] leading-tight font-normal">
 					{name}
 				</h3>
 				{current && (
-					<span className="font-app text-tiny text-ink-soft">
+					<span className="font-app text-tiny text-ink-soft bg-paper-deep rounded-full px-2 py-0.5">
 						{COPY.plan.plans.current}
 					</span>
 				)}
 			</div>
-			{price && (
-				<p className="font-app text-small text-ink-faint mt-0.5 mb-0">
-					{price}
+			<p className="font-app text-small text-ink-soft m-0 mt-0.5">
+				{price}
+			</p>
+
+			<p className="m-0 mt-4 flex items-baseline gap-2">
+				<span className="font-read text-ink text-[2.4rem] leading-none font-light tabular-nums">
+					{plan.turns_per_month}
+				</span>
+				<span className="font-app text-small text-ink-soft">
+					{COPY.plan.plans.questions}
+				</span>
+			</p>
+
+			<div className="border-paper-deep mt-4 border-t pt-3">
+				<p className="font-app text-tiny text-ink-faint m-0 mb-1.5">
+					{COPY.plan.plans.models}
 				</p>
-			)}
-			<ul className="m-0 mt-3 grid list-none gap-1.5 p-0">
-				{points
-					.filter((point): point is string => point !== null)
-					.map((point) => (
+				<ul className="m-0 grid list-none gap-1 p-0">
+					{plan.models.map((model) => (
 						<li
-							key={point}
-							className="font-app text-small text-ink-soft grid grid-cols-[0.9rem_minmax(0,1fr)] items-start gap-x-1.5"
+							key={model.id}
+							className="font-app text-ui text-ink"
 						>
-							{/* The same short rule the home screen's questions
-							    hang from, rather than a tick: a tick in this
-							    app would read as *found*. */}
-							<span
-								aria-hidden
-								className="bg-ink-faint mt-[0.6em] h-px w-2 justify-self-end"
-							/>
-							<span>{point}</span>
+							<BrandedLabel label={model.label} />
 						</li>
 					))}
-			</ul>
-			<div className="mt-auto">{children}</div>
+				</ul>
+			</div>
+
+			{children && <div className="mt-auto pt-5">{children}</div>}
 		</section>
 	);
 }

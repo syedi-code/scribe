@@ -369,31 +369,30 @@ export const COPY = {
 		nudge: {
 			lastFew: (left: number) =>
 				`${left} ${plural(left, 'question', 'questions')} left this month`,
-			spent: 'This month’s questions are used',
-			/** Said at the moment it happens, so nobody finds out by being refused. */
-			lastFewBody:
-				'Once they are gone, Scribe cannot take a new question until the month turns over. Everything you have asked so far stays here to read.',
-			spentBody:
-				'Everything you have asked so far is still here to read, with its citations.',
+			spent: 'No questions left this month',
 			later: 'Not now',
 		},
 
-		/* The plans, as a placeholder for checkout. Honest about being one. */
+		/* Free beside Paid. A card says only what differs; what both share is
+		   said once, under them. */
 		plans: {
 			title: 'Plans',
 			current: 'Your plan',
 			free: 'Free',
 			paid: 'Paid',
-			freeLimit: (limit: number) =>
-				`${limit} ${plural(limit, 'question', 'questions')} a month`,
-			freeModel: 'The model Scribe starts on',
-			freeCitations: 'Every quotation checked against its page',
-			paidMore: 'Many more questions each month',
-			paidModels: 'The better models to ask them of',
-			paidEverything: 'Everything in Free',
-			price: 'Price to be set',
-			choose: 'Not open yet',
-			note: 'Paid plans are not open yet. When they are, this is where they will be.',
+			/** Not the plan's name again: what free actually means here. */
+			freePrice: 'No card needed',
+			/** Until there is a price. Never a made-up figure. */
+			priceLater: 'Price set at launch',
+			perMonth: (amount: string) => `${amount} a month`,
+			questions: 'questions a month',
+			models: 'Models',
+			shared: 'On both plans, every quotation is checked against the page it cites, and questions reset on the 1st of each month.',
+			choose: 'Continue to payment',
+			/** Beside the button, not behind it. */
+			terms: 'Billed monthly · cancel anytime',
+			loading: 'reading the plans…',
+			unreachable: 'The plans could not be fetched just now.',
 		},
 	},
 
@@ -419,8 +418,39 @@ export const COPY = {
 			left === null ? plan : `${plan} · ${left} left this month`,
 	},
 
+	/* ---- checkout ----
+	   Everything about the purchase before the button, so nothing arrives as
+	   a surprise on the page after it. */
+	checkout: {
+		title: 'Paid plan',
+		questions: 'Questions',
+		perMonth: (count: number) => `${count} a month`,
+		models: 'Models',
+		price: 'Price',
+		billing: 'Billing',
+		billingValue: 'Monthly, until you cancel',
+		account: 'Account',
+		cancel: 'You can cancel whenever you like, from your account. Questions you have already asked stay yours to read.',
+		pay: 'Continue to secure payment',
+		opening: 'Opening payment…',
+		stripe: 'Card details are entered on Stripe’s page. Scribe never sees them.',
+		/** Where the payment page would have opened. Nothing half-done. */
+		notOpen:
+			'Payments are not open yet, so nothing was charged. When they open, this button takes you straight to payment.',
+	},
+
+	/* ---- back from paying ---- */
+	upgraded: {
+		title: 'You’re on Paid',
+		body: 'More questions each month, and every model in the switcher.',
+		/** The webhook and the redirect race; say so rather than show Free. */
+		pending: 'It can take a minute for your account to show it.',
+		start: 'Start reading',
+	},
+
 	dialog: {
 		close: 'Close',
+		back: 'Back',
 	},
 
 	/* ---- the shelves ----
