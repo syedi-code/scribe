@@ -64,7 +64,7 @@ const PRINTS_A_BOOK_NAME = [
 	'src/ask/Answer.tsx', // in the prose
 	'src/ask/MarginNotes.tsx', // in the margin
 	'src/ask/Shelf.tsx', // under the fold
-	'src/books/BooksPanel.tsx', // on the shelves
+	'src/books/Row.tsx', // on the shelves
 	'src/page/PageView.tsx', // in the drawer
 	'src/page/ScanView.tsx', // over the scan
 ];

@@ -29,6 +29,8 @@ export interface Flags {
 	 * what they are on, and the way to sign out.
 	 */
 	isAccountShown: boolean;
+	/** Whether the About tab is offered: what Scribe is, and what it keeps. */
+	isAboutShown: boolean;
 }
 
 interface Flag {
@@ -49,6 +51,10 @@ export const FLAGS: Record<keyof Flags, Flag> = {
 	},
 	isAccountShown: {
 		env: 'FLAG_IS_ACCOUNT_SHOWN',
+		fallback: false,
+	},
+	isAboutShown: {
+		env: 'FLAG_IS_ABOUT_SHOWN',
 		fallback: false,
 	},
 };
