@@ -136,8 +136,8 @@
 
 	--font-app: 'GT Alpina Condensed', 'GT Alpina', Georgia, serif;
 	/* Only ever inside an answer, and only for what the model set as code. */
-	--font-code: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas,
-		monospace;
+	--font-code:
+		ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
 
 	--text-prose: 17px;
 	--text-prose--line-height: 1.42;
@@ -291,6 +291,56 @@
 
 	::placeholder {
 		color: var(--color-ink-faint);
+	}
+
+	/* A scrollbar is a mark in the margin, not a control.
+
+	   Six regions here scroll — the rail, the conversation, the shelves, the
+	   drawer, the scan, Add a book — and every one of them was drawing the
+	   platform's own: a grey groove, a track, and on Windows a pair of arrows.
+	   It is the one piece of chrome in this app nobody drew, and on the rail,
+	   which is 15rem wide, it took a bite out of a column of names.
+
+	   So: no track, no arrows, and a thumb the weight of a rule, in
+	   `--color-edge` — the ink the app already rules a box in, a step darker
+	   than `--color-paper-deep` so it can be found, and a long way from the
+	   three status inks so it is never read as a verdict. What is left says
+	   where you are in a long list and nothing else, which is all a scrollbar
+	   was ever for. This is how the reference apps set theirs — thin, tracks
+	   invisible, the thumb a neutral a shade off the ground it lies on.
+
+	   Both spellings are set, and they do not fight: Chrome and Firefox take
+	   the standard properties and ignore the `::-webkit-` rules once
+	   `scrollbar-width` is there; Safari before 18.2 has only the pseudo
+	   elements. The two differ by about a pixel of width, which is a pixel
+	   nobody can see, and the alternative is a groove on one browser. iOS
+	   overlays its own and is left alone. */
+	html {
+		scrollbar-width: thin;
+		scrollbar-color: var(--color-edge) transparent;
+	}
+
+	*::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+
+	*::-webkit-scrollbar-track,
+	*::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+
+	/* Drawn inside its own box, so the thumb is a 4px rule with paper either
+	   side of it rather than a bar wedged against the edge. */
+	*::-webkit-scrollbar-thumb {
+		background-color: var(--color-edge);
+		background-clip: content-box;
+		border: 3px solid transparent;
+		border-radius: 999px;
+	}
+
+	*::-webkit-scrollbar-thumb:hover {
+		background-color: var(--color-ink-faint);
 	}
 }
 
