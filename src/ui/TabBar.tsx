@@ -13,9 +13,13 @@ import type { Tab } from './tabs';
  *
  * `Add a book` is struck through and disabled rather than removed: it is
  * coming back, and a reader who remembers it should see that it is held rather
- * than wonder where it went. Narrow, it gives its room up to `About`: a phone's
- * header holds four tabs and the account, and a tab nobody can press is the
- * one to go.
+ * than wonder where it went. Narrow, it is not shown at all: a phone's header
+ * holds four tabs and the account, and a tab nobody can press is the one to
+ * go.
+ *
+ * Narrow, the tabs are spread across the row rather than pushed to its end,
+ * and the row scrolls sideways before it ever clips — a fifth tab must never
+ * push the account off the screen.
  */
 export function TabBar({
 	tab,
@@ -53,7 +57,7 @@ export function TabBar({
 	return (
 		<div
 			role="tablist"
-			className="pointer-events-auto flex items-center gap-4 @max-compact:gap-3"
+			className="pointer-events-auto flex items-center gap-4 @max-compact:min-w-0 @max-compact:flex-1 @max-compact:justify-between @max-compact:gap-3 @max-compact:overflow-x-auto"
 		>
 			{railable &&
 				named('sessions', COPY.sessions, 'hidden @max-compact:block')}
@@ -65,9 +69,7 @@ export function TabBar({
 				disabled
 				aria-selected={false}
 				title={COPY.addLater}
-				className={`font-read text-ui text-ink-faint leading-tight whitespace-nowrap line-through opacity-60 disabled:cursor-default ${
-					about ? '@max-compact:hidden' : ''
-				}`}
+				className="font-read text-ui text-ink-faint leading-tight whitespace-nowrap line-through opacity-60 disabled:cursor-default @max-compact:hidden"
 			>
 				{COPY.tabs.add}
 			</button>

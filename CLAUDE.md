@@ -447,9 +447,15 @@ behind `isAboutShown`, its words in `COPY.about`. It says nothing about a
 reader's data that is not already true of it; add a promise there only once the
 code keeps it (30-day deletion, for one). The key to the three rules under a
 quotation is drawn from `CITATION_STATUS`, so it cannot come to describe a
-mark the answers no longer make. Narrow, the tab takes the room of the
-struck-through `Add a book`, which is hidden under the compact breakpoint
-while About is shown: a phone header holds four tabs and the account.
+mark the answers no longer make.
+
+**Narrow, the header is two rows.** The mark and the running model above, and
+the tabs spread across the whole width beside the account below; on the home
+screen the mark's row folds away and the tabs are the header. One row ran past
+a 360px phone once Sessions and About were both there, and tabs jammed against
+the right edge of a screen with nothing on its left read as leftovers. The
+struck-through `Add a book` is not shown narrow — a tab nobody can press is the
+one a phone does without — and the row scrolls sideways before it ever clips.
 
 **An empty answer is a failed answer.** A turn that searched and read and then
 wrote nothing says so and offers to ask again. It is not a hypothetical: the
