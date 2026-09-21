@@ -66,6 +66,7 @@ export function Apparatus({
 	// open. Once the answer is there they fold away, unless the reader has
 	// asked to keep them.
 	const open = live || opened;
+	const running = work.some((step) => step.state === 'running');
 
 	return (
 		<div className="font-app text-small mb-3">
@@ -95,6 +96,16 @@ export function Apparatus({
 						<Step key={step.id} step={step} />
 					))}
 				</ul>
+			)}
+
+			{/* Between steps nothing else moves: the model is reading what came
+			    back. Keyed on the steps so its clock restarts with each one. */}
+			{live && !running && (
+				<Waiting
+					key={work.length}
+					label={COPY.thinkingOn}
+					className="mt-2 mb-0"
+				/>
 			)}
 		</div>
 	);
