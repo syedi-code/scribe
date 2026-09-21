@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act, render, screen, cleanup } from '@testing-library/react';
 import { Waiting } from './Waiting';
+import { Apparatus } from './Apparatus';
 
 afterEach(() => {
 	cleanup();
@@ -48,5 +49,37 @@ describe('the wait before an answer', () => {
 			document.dispatchEvent(new Event('visibilitychange'));
 		});
 		expect(screen.getByText('1:30')).toBeTruthy();
+	});
+});
+
+// Between steps the list of finished steps was all a phone showed, and a
+// turn that was thinking read as one that had stalled.
+describe('the apparatus between steps', () => {
+	afterEach(cleanup);
+	const done = {
+		id: 's1',
+		action: 'searched',
+		subject: 'the will to truth',
+		result: '3 pages',
+		state: 'done' as const,
+	};
+
+	it('says the model is still thinking once every step is done', () => {
+		render(<Apparatus work={[done]} summary="" live />);
+		expect(screen.getByText('thinking')).toBeTruthy();
+	});
+
+	it('says nothing extra while a step is running, or once it is over', () => {
+		render(
+			<Apparatus
+				work={[{ ...done, state: 'running', result: null }]}
+				summary=""
+				live
+			/>
+		);
+		expect(screen.queryByText('thinking')).toBeNull();
+		cleanup();
+		render(<Apparatus work={[done]} summary="searched once" live={false} />);
+		expect(screen.queryByText('thinking')).toBeNull();
 	});
 });

@@ -224,6 +224,8 @@ export const COPY = {
 	   on screen once they have happened. What the model said to itself between
 	   them is not shown at all. */
 	thinking: 'looking for something to read',
+	/** Between steps, while the model reads what came back. */
+	thinkingOn: 'thinking',
 	/** How long it has been looking. Shown only once the wait is long. */
 	waiting: (seconds: number) =>
 		`${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
