@@ -22,7 +22,7 @@ export function RunningLine() {
 
 	return (
 		<div
-			className={`relative z-(--z-lifted) mt-4 grid justify-items-center gap-0.5 ${settle.className}`}
+			className={`relative z-(--z-lifted) mt-6 grid justify-items-center gap-0.5 ${settle.className}`}
 			style={settle.style}
 		>
 			<RunningModel hero />

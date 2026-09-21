@@ -13,11 +13,11 @@ describe('the shapes a model writes in', () => {
 		]);
 	});
 
-	// `**1. Al-Ghazali's ...**` on a line of its own is a heading, not prose
-	// that happens to be bold.
-	it('reads a line that is nothing but bold as a heading', () => {
-		expect(kinds('**1. Deliverance from Error**\n\nA spiritual work.')).toEqual(
-			['heading', 'prose']
+	// Bold is removed, never set, so a line that is nothing but bold is a
+	// paragraph of its own — not a heading, and not run into the next line.
+	it('reads a line that is nothing but bold as a paragraph of its own', () => {
+		expect(kinds('**1. Deliverance from Error**\nA spiritual work.')).toEqual(
+			['prose', 'prose']
 		);
 	});
 

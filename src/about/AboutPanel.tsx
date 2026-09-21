@@ -4,18 +4,18 @@ import { CITATION_STATUS } from '../citations/status';
 import { COPY } from '../copy';
 import { useAsync } from '../lib/useAsync';
 
-const { sections } = COPY.about;
+const ABOUT = COPY.about;
 
 /** The three rules a quotation can carry, each beside what it means. */
 const KEY = ['verified', 'not_found', 'no_text_layer'] as const;
 
 /**
- * What Scribe is, for someone deciding whether to trust it.
+ * What Scribe is, for someone who has never used it.
  *
- * Set as a page of the book rather than as a product page: no hero, no
- * buttons, nothing to sign up for. The key to the three rules is drawn with
- * the rules themselves, from the status map, so it cannot come to describe a
- * mark the answers no longer make.
+ * In the order a visitor needs it: what this is, how to use it, how to read
+ * what comes back, what it holds, where it falls short, what happens to what
+ * they type, and what it costs. The key to the underlines is drawn from the
+ * status map, so it cannot come to describe a mark the answers no longer make.
  *
  * The count in the first line is the catalogue's, fetched once a tab and
  * shared with the shelves; if it cannot be had, the line says it without one.
@@ -29,67 +29,83 @@ export function AboutPanel() {
 
 	return (
 		<section className="grid min-h-0 grid-rows-[minmax(0,1fr)]">
-			<div className="overflow-y-auto px-5 py-7 @max-compact:px-3.5 @max-compact:py-5">
+			<div className="overflow-y-auto px-5 py-8 @max-compact:px-3.5 @max-compact:py-6">
 				<article className="max-w-thread font-read text-prose text-ink mx-auto w-full font-light">
-					<h1 className="font-read text-ink m-0 text-2xl leading-tight font-light">
-						{COPY.about.title}
+					<h1 className="font-read text-ink m-0 text-3xl leading-tight font-normal">
+						{ABOUT.title}
 					</h1>
-					<p className="mt-4 mb-0">{COPY.about.lead(works, names)}</p>
+					<p className="text-lede mt-4 mb-0">
+						{ABOUT.lead(works, names)}
+					</p>
+					<p className="text-ink-soft mt-3 mb-0">{ABOUT.purpose}</p>
 
-					<Part {...sections.made} />
-					<Part {...sections.checked}>
-						<dl className="font-app text-ui m-0 my-4 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-5 gap-y-2">
+					<Part head={ABOUT.use.head}>
+						<ol className="m-0 grid list-none gap-2.5 p-0">
+							{ABOUT.use.steps.map((step, at) => (
+								<li
+									key={step}
+									className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-baseline"
+								>
+									<span className="text-ink-faint tabular-nums">
+										{at + 1}.
+									</span>
+									<span>{step}</span>
+								</li>
+							))}
+						</ol>
+					</Part>
+
+					<Part head={ABOUT.checks.head}>
+						<p className="my-3">{ABOUT.checks.body}</p>
+						<dl className="border-paper-deep m-0 my-4 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-5 gap-y-2 border-l py-1 pl-4">
 							{KEY.map((verdict) => (
 								<div key={verdict} className="contents">
-									<dt className="font-read text-ask text-ink font-normal">
+									<dt className="text-ink font-normal whitespace-nowrap">
 										<span
 											className={
 												CITATION_STATUS[verdict]
 													.underline
 											}
 										>
-											{COPY.about.sample}
+											{ABOUT.sample}
 										</span>
 									</dt>
 									<dd className="text-ink-soft m-0">
-										{COPY.about.key[verdict]}
+										{ABOUT.key[verdict]}
 									</dd>
 								</div>
 							))}
 						</dl>
-						{sections.checked.after.map((paragraph) => (
-							<p key={paragraph} className="my-3">
-								{paragraph}
-							</p>
-						))}
+						<p className="my-3">{ABOUT.checks.after}</p>
 					</Part>
-					<Part {...sections.library} />
-					<Part {...sections.privacy} />
-					<Part {...sections.plans} />
+
+					<Paragraphs {...ABOUT.library} />
+					<Paragraphs {...ABOUT.limits} />
+					<Paragraphs {...ABOUT.privacy} />
+					<Paragraphs {...ABOUT.cost} />
 				</article>
 			</div>
 		</section>
 	);
 }
 
-function Part({
-	head,
-	body,
-	children,
-}: {
-	head: string;
-	body: readonly string[];
-	children?: ReactNode;
-}) {
+function Part({ head, children }: { head: string; children: ReactNode }) {
 	return (
 		<>
 			<h2 className="section-head">{head}</h2>
+			{children}
+		</>
+	);
+}
+
+function Paragraphs({ head, body }: { head: string; body: readonly string[] }) {
+	return (
+		<Part head={head}>
 			{body.map((paragraph) => (
 				<p key={paragraph} className="my-3">
 					{paragraph}
 				</p>
 			))}
-			{children}
-		</>
+		</Part>
 	);
 }

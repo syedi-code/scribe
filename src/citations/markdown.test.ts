@@ -42,14 +42,29 @@ describe('markdown the model wrote anyway', () => {
 		expect(out).toContain('(11th century)');
 	});
 
-	it('still emphasises an ordinary bold run', () => {
+	// The model bolds at random, so bold is taken out and never set.
+	it('prints a bold run as plain prose', () => {
 		const nodes = nodesOf('That is **exactly** the point.');
+		expect(printed('That is **exactly** the point.')).toBe(
+			'That is exactly the point.'
+		);
+		expect(nodes.some((node) => node.kind === 'emphasis')).toBe(false);
+	});
+
+	it('leaves no asterisks from a bold still being written', () => {
+		expect(printed('The point is **political freedom')).toBe(
+			'The point is political freedom'
+		);
+	});
+
+	it('keeps an italic title inside a bold run', () => {
+		const nodes = nodesOf('**Voltaire, *Candide***');
+		expect(printed('**Voltaire, *Candide***')).not.toContain('*');
 		expect(
 			nodes.some(
 				(node) =>
-					node.kind === 'emphasis' &&
-					node.strong &&
-					node.text === 'exactly'
+					(node.kind === 'emphasis' || node.kind === 'title') &&
+					node.text === 'Candide'
 			)
 		).toBe(true);
 	});

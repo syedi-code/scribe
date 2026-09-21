@@ -217,7 +217,7 @@ verdigris from rubric still reads it correctly; the square also said the
 verdict in words to a screen reader, and that is kept as an `sr-only` span.
 The pips on the shelf are still squares — that is what `stamp` is for.
 
-**Markdown is rendered, not stripped.** Asking the model for plain prose was a
+**Markdown is rendered, not stripped** (except bold, below). Asking the model for plain prose was a
 fight we lost every turn — production carried ten literal `**` and a `##` in one
 answer — and stripping the marks left a wall, because an answer about five books
 genuinely is a list. `citations/blocks.ts` parses a small, deliberate subset:
@@ -491,7 +491,8 @@ Foucault's ten sat among fifty single volumes, each costing a heading for one
 line. `books/shelve.ts` orders names by how many works the library holds of
 them, ties by surname, and gathers the one-work names on a single shelf at the
 end with each name beside its title. A line of surnames under the search jumps
-to each fuller shelf, and each heading stays pinned while its shelf scrolls
+to each fuller shelf — wide only, since on a phone it wrapped to five rows and
+the search does the same job — and each heading stays pinned while its shelf scrolls
 under it. Where a name is filed is decided by what the library holds, never by
 what the search left — `foucault order` is one work, still on Foucault's shelf.
 
@@ -502,9 +503,10 @@ code keeps it (30-day deletion, for one). The key to the three rules under a
 quotation is drawn from `CITATION_STATUS`, so it cannot come to describe a
 mark the answers no longer make.
 
-**Narrow, the header is two rows.** The mark and the running model above, and
-the tabs spread across the whole width beside the account below; on the home
-screen the mark's row folds away and the tabs are the header. One row ran past
+**Narrow, the header is two rows.** The mark and the running model on the left
+of the first with the account stamp opposite, and the tabs spread across the
+whole of the second; on the home screen the mark folds away and the stamp keeps
+its corner, so it never moves between screens and never sits in a row of words. One row ran past
 a 360px phone once Sessions and About were both there, and tabs jammed against
 the right edge of a screen with nothing on its left read as leftovers. The
 struck-through `Add a book` is not shown narrow — a tab nobody can press is the
@@ -600,11 +602,30 @@ and one not is the fact, and a total would hide the one that failed. A pip is
 **The home screen says what Scribe is, under the mark and not in it.**
 `ask/Subtitle.tsx` settles in first after the mark finishes typing, ahead of
 the running line, and it is not part of `Wordmark`, so it stays behind when
-the mark travels to the header. Spaced capitals in the condensed face, because
-an italic here means a book; two stacked phrases broken at the comma on every
-screen, so the lockup is about as wide as the mark rather than twice it. 14px
-wide and 13px narrow, where the mark is set larger (2.9rem) to take the room a
-phone's home screen had left empty.
+the mark travels to the header. A line of the prose — the reading face, light,
+lower case like the mark, `--text-lede` wide and `--text-prose` narrow — set
+close under the mark as one lockup, with the running line kept further off:
+one says what Scribe is, the other what it is doing now. Not an italic, which
+means a book, and not spaced capitals, which read as a label stuck on. One line
+wide; narrow it breaks at its comma and nowhere else. Narrow the mark is set
+larger (2.9rem) to take the room a phone's home screen had left empty.
+
+**One family, one width.** Everything is GT Alpina Standard; `--font-app` is
+the same family as `--font-read`, and the apparatus is told apart by size and
+ink, not by width. Condensed is gone — it read as cramped beside the prose —
+and nothing in the app is set in capitals or tracked.
+
+**A section head is the words, a size up and a weight up.** `section-head` is
+`--text-head` at 500 in the reading face, in ink, sentence case, used by the
+answer's `##` and by About. It was tracked capitals in faint ink, which read as
+a label rather than a head.
+
+**Bold is removed, never set.** The model wraps phrases in `**` in about one
+answer in four — a name, a page number, half a sentence, whatever it thought
+mattered while writing — so setting it made answers shout at random. `bolden()`
+in `citations/parse.ts` takes the marks out and leaves the words as prose,
+including a mark still unclosed mid-stream, and a line that is nothing but bold
+is a paragraph of its own rather than a heading (`citations/blocks.ts`).
 
 **The wordmark travels.** Leaving the home screen, the big mark is flown into
 the header's corner rather than vanishing and reappearing there. The home mark

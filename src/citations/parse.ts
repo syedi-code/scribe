@@ -280,7 +280,7 @@ export type AnswerNode =
 	| { kind: 'text'; text: string }
 	| { kind: 'title'; text: string }
 	| { kind: 'author'; text: string; ink: number }
-	| { kind: 'emphasis'; text: string; strong: boolean }
+	| { kind: 'emphasis'; text: string }
 	| { kind: 'code'; text: string }
 	| {
 			kind: 'citation';
@@ -335,9 +335,15 @@ const ABBREVIATION =
  * `**1. Al-Ghazali's *Deliverance from Error* (11th century)**`. A single pass
  * that refused an asterisk inside a bold never matched that at all -- it
  * latched onto the second `*` instead and left `**` in the prose as literal
- * text. Bold is found first, then emphasis inside whatever it holds.
+ * text. So bold is taken out first, then emphasis is looked for.
+ *
+ * Bold is removed, never set. The model bolds whatever it happened to think
+ * mattered while writing — a name, a page number, half a sentence — in about
+ * one answer in four, and setting it made an answer shout at random. The
+ * marks go, the words stay as prose, and so does a mark still unclosed
+ * mid-stream.
  */
-const BOLD = /\*\*([\s\S]+?)\*\*/g;
+const BOLD = /\*\*/g;
 const ITALIC = /(?<![\p{L}\p{N}])[*_]([^*_\n]+)[*_]/gu;
 /** Inline code, found first: an asterisk inside a span of code is code. */
 const TICKED = /`([^`\n]+)`/g;
@@ -365,7 +371,7 @@ function setTitles(
 		// it earns `work-title` only if it names a work the answer cited,
 		// and otherwise stays the emphasis the model asked for. Without this
 		// a title the model marked up was never recognised as one at all.
-		if (node.kind === 'emphasis' && !node.strong) {
+		if (node.kind === 'emphasis') {
 			return names(node.text, titles)
 				? [{ kind: 'title', text: node.text }]
 				: [node];
@@ -431,21 +437,19 @@ function setAuthors(
 	});
 }
 
-const plain = (text: string, strong: boolean): AnswerNode =>
-	strong ? { kind: 'emphasis', text, strong: true } : { kind: 'text', text };
-
-/** Emphasis inside a run that is already bold, or inside one that is not. */
-function italicise(text: string, strong: boolean): AnswerNode[] {
+function italicise(text: string): AnswerNode[] {
 	const nodes: AnswerNode[] = [];
 	let cursor = 0;
 	for (const match of text.matchAll(ITALIC)) {
 		if (match.index > cursor) {
-			nodes.push(plain(text.slice(cursor, match.index), strong));
+			nodes.push({ kind: 'text', text: text.slice(cursor, match.index) });
 		}
-		nodes.push({ kind: 'emphasis', text: match[1], strong: false });
+		nodes.push({ kind: 'emphasis', text: match[1] });
 		cursor = match.index + match[0].length;
 	}
-	if (cursor < text.length) nodes.push(plain(text.slice(cursor), strong));
+	if (cursor < text.length) {
+		nodes.push({ kind: 'text', text: text.slice(cursor) });
+	}
 	return nodes;
 }
 
@@ -463,21 +467,7 @@ function emphasise(text: string): AnswerNode[] {
 	return nodes;
 }
 
-function bolden(text: string): AnswerNode[] {
-	const nodes: AnswerNode[] = [];
-	let cursor = 0;
-	for (const match of text.matchAll(BOLD)) {
-		if (match.index > cursor) {
-			nodes.push(...italicise(text.slice(cursor, match.index), false));
-		}
-		nodes.push(...italicise(match[1], true));
-		cursor = match.index + match[0].length;
-	}
-	if (cursor < text.length) {
-		nodes.push(...italicise(text.slice(cursor), false));
-	}
-	return nodes;
-}
+const bolden = (text: string) => italicise(text.replace(BOLD, ''));
 
 /** Splits prose into sentences, keeping the whitespace that followed each one. */
 function sentencePieces(text: string): string[] {

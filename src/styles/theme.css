@@ -1,8 +1,9 @@
 @import 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
-   GT Alpina. One family, two widths: Standard for everything a person reads,
-   Condensed for the apparatus around it.
+   GT Alpina Standard, and only Standard. The apparatus was set in Condensed
+   for a while, to keep it narrow; it read as cramped and small beside the
+   prose, and one width of one family is how a book is set.
    --------------------------------------------------------------------------- */
 
 @font-face {
@@ -52,13 +53,6 @@
 	src: url('/fonts/GT-Alpina-Standard-Bold-Italic.woff2') format('woff2');
 	font-weight: 700;
 	font-style: italic;
-	font-display: swap;
-}
-@font-face {
-	font-family: 'GT Alpina Condensed';
-	src: url('/fonts/GT-Alpina-Condensed-Regular.woff2') format('woff2');
-	font-weight: 400;
-	font-style: normal;
 	font-display: swap;
 }
 
@@ -134,11 +128,19 @@
 	   checked quotation is set in it); a title is not emphasis. */
 	--weight-text: 300;
 
-	--font-app: 'GT Alpina Condensed', 'GT Alpina', Georgia, serif;
+	/* The apparatus: the same family as the prose, told apart by size and ink
+	   rather than by width. */
+	--font-app: 'GT Alpina', 'Iowan Old Style', Georgia, serif;
 	/* Only ever inside an answer, and only for what the model set as code. */
 	--font-code:
 		ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
 
+	/* A section head: a step up from the prose, and a weight up. */
+	--text-head: 20px;
+	--text-head--line-height: 1.25;
+	/* The home screen's line under the wordmark. */
+	--text-lede: 19px;
+	--text-lede--line-height: 1.35;
 	--text-prose: 17px;
 	--text-prose--line-height: 1.42;
 	--text-ask: 16px;
@@ -479,17 +481,16 @@
    every mark that is not a word sits in the margin rather than in the text.
    ------------------------------------------------------------------------- */
 
-/* A section head: architecture, not voice. Quiet enough that the eye passes
-   over it on the way down and finds it again on the way back up. */
+/* A section head: the words as written, a size up and a weight up, in the
+   reading face. It was tracked capitals in faint ink, which read as a label
+   stuck on the page rather than a head set in it. No capitals, no tracking. */
 @utility section-head {
-	font-family: var(--font-app);
-	font-size: var(--text-tiny);
-	font-weight: 400;
-	line-height: 1.2;
-	letter-spacing: 0.14em;
-	text-transform: uppercase;
-	color: var(--color-ink-faint);
-	margin: 1.9em 0 0.75em;
+	font-family: var(--font-read);
+	font-size: var(--text-head);
+	line-height: var(--text-head--line-height);
+	font-weight: 500;
+	color: var(--color-ink);
+	margin: 1.6em 0 0.45em;
 }
 
 /* A run-in head, which is what `**1. Al-Ghazali's ...**` actually is: the
