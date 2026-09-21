@@ -47,6 +47,51 @@ export function parseCitations(text: string): CitationMarker[] {
 }
 
 /**
+ * A citation in a notation this app never asked for.
+ *
+ * On 20 September the model stopped writing `<cite>` on a heavy turn and wrote
+ * OpenAI's own file-search annotation instead — `【P5†Inorganic matter is the
+ * maternal bosom】`. The handle is right and the quoted words are right; only
+ * the punctuation is foreign. Nothing parsed it, so nothing was verified and
+ * the reader was shown the brackets.
+ *
+ * alexandria translates it before it verifies and before it saves. This is the
+ * same table on this side, for the answers saved before that and for the one
+ * being streamed now.
+ *
+ * It is deliberately not a widening of `CITATION`. There is one citation
+ * grammar and the two repos have to agree on it forever; this is a table of
+ * foreign spellings in front of it, which the next shape can be added to
+ * without touching the grammar.
+ */
+/**
+ * 【P5†quoted words】 — OpenAI file search. The handle is the whole of what
+ * precedes the dagger; anything else is not a handle we were given.
+ *
+ * The marker is written flush against the word it hangs off, the way a
+ * footnote number is. A quotation is not a footnote number, so the space its
+ * notation did not need is part of the translation — without it the reader
+ * gets `inorganic matter“Inorganic matter is the maternal bosom”`.
+ */
+const FOREIGN_SHAPES: readonly [RegExp, (...groups: string[]) => string][] = [
+	[
+		/(\S)?[ \t]*【\s*(P\d+)\s*†([^】]*)】/gu,
+		(before, handle, quote) =>
+			`${before ? `${before} ` : ''}<cite ${handle}>${quote}</cite>`,
+	],
+];
+
+export function normaliseCitationShapes(text: string): string {
+	let out = text;
+	for (const [shape, canonical] of FOREIGN_SHAPES) {
+		out = out.replace(shape, (_whole, ...groups) =>
+			canonical(...(groups.slice(0, -2) as string[]))
+		);
+	}
+	return out;
+}
+
+/**
  * A quotation the model wrote out twice.
  *
  * It is asked to write the quoted words once, inside the cite. It often writes
@@ -150,6 +195,8 @@ export function collapseQuotedDuplicates(text: string): string {
  * held back too, and so is the older bracketed form.
  */
 const HALF_WRITTEN_CITE = /\s*<cite\b(?:(?!<\/cite>)[\s\S])*$/;
+/** A foreign marker still being written, held back for the same reason. */
+const HALF_WRITTEN_FOREIGN = /\s*【[^】]*$/u;
 const HALF_TYPED_TAG = /\s*<(?:c(?:i(?:t(?:e(?:\s[^<>]*)?)?)?)?)?$/;
 const HALF_WRITTEN_BRACKET =
 	/\s*\[(?:P(?:\d+(?:\s*[:,]?\s*(?:["“][^"”]*)?)?)?)?$/;
@@ -157,6 +204,7 @@ const HALF_WRITTEN_BRACKET =
 export const trimHalfWrittenCitation = (text: string) =>
 	text
 		.replace(HALF_WRITTEN_CITE, '')
+		.replace(HALF_WRITTEN_FOREIGN, '')
 		.replace(HALF_TYPED_TAG, '')
 		.replace(HALF_WRITTEN_BRACKET, '');
 

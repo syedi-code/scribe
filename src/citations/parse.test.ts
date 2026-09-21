@@ -4,6 +4,7 @@ import {
 	alignCitations,
 	collapseQuotedDuplicates,
 	markersFor,
+	normaliseCitationShapes,
 	parseCitations,
 	segmentAnswer,
 	trimHalfWrittenCitation,
@@ -427,6 +428,89 @@ describe('a quotation the model wrote twice', () => {
 			'He says “the dream is a wish-fulfilment” <cite P3>the dream is a';
 		expect(trimHalfWrittenCitation(collapseQuotedDuplicates(half))).toBe(
 			'He says “the dream is a wish-fulfilment”'
+		);
+	});
+});
+
+/**
+ * Production, 20 September, conversation d6d16cf5: a heavy turn came back with
+ * no citations at all, because every one was written in OpenAI's file-search
+ * notation rather than in ours. Nothing parsed, nothing was verified, and the
+ * reader was shown the brackets. The handles and the quoted words were right
+ * the whole time.
+ */
+describe('a citation in a foreign notation', () => {
+	const foreign =
+		'She cites him on inorganic matter【P5†Inorganic matter is the maternal bosom】.';
+
+	const shown = (text: string) => {
+		const canonical = collapseQuotedDuplicates(
+			normaliseCitationShapes(text)
+		);
+		return nodesIn(segmentAnswer(canonical, parseCitations(canonical)))
+			.map((node) => ('text' in node ? node.text : node.quote))
+			.join('');
+	};
+
+	it('is read as the citation it is', () => {
+		expect(parseCitations(foreign)).toEqual([]);
+		expect(
+			parseCitations(normaliseCitationShapes(foreign)).map(
+				(one) => one.handle
+			)
+		).toEqual(['P5']);
+	});
+
+	// The marker sat straight against the prose, so the quotation does too —
+	// the reader meets the words, and the rule under them, and no brackets.
+	// The marker hung off the word the way a footnote number does. A quotation
+	// does not, so the translation gives it the space its notation never
+	// needed: `matter“Inorganic` is not a thing this app prints.
+	it('never shows the reader the brackets', () => {
+		expect(shown(foreign)).toBe(
+			'She cites him on inorganic matter Inorganic matter is the maternal bosom.'
+		);
+	});
+
+	// Production wrote nine correct cites and two foreign ones in one answer.
+	it('is translated beside citations that were already right', () => {
+		const mixed =
+			'One <cite P3>the dream is a wish-fulfilment</cite> and two【P7†The warrior loves danger and sport】.';
+		expect(
+			parseCitations(normaliseCitationShapes(mixed)).map(
+				(one) => one.handle
+			)
+		).toEqual(['P3', 'P7']);
+	});
+
+	// Only a handle this app was given. Anything else is not ours to rewrite.
+	it('leaves a marker that names no handle of ours', () => {
+		const alien = 'A reference【4:2†source.pdf】 here.';
+		expect(normaliseCitationShapes(alien)).toBe(alien);
+	});
+
+	it('leaves an answer that was written correctly', () => {
+		const fine =
+			'Europe is <cite P1>a civilization that uses its principles for trickery</cite>.';
+		expect(normaliseCitationShapes(fine)).toBe(fine);
+	});
+
+	// The two passes meet: a quotation written out and then cited in the
+	// foreign shape is still one quotation written twice.
+	it('is collapsed when the words were written out in the prose too', () => {
+		const both =
+			'He says “the dream is a wish-fulfilment” 【P3†the dream is a wish-fulfilment】.';
+		expect(collapseQuotedDuplicates(normaliseCitationShapes(both))).toBe(
+			'He says <cite P3>the dream is a wish-fulfilment</cite>.'
+		);
+	});
+
+	// Mid-stream the marker is half written, and a bracket is markup exactly
+	// as an unfinished `<cite>` is.
+	it('is held back until the marker is closed', () => {
+		const half = 'She cites him on【P5†Inorganic matter is the';
+		expect(trimHalfWrittenCitation(normaliseCitationShapes(half))).toBe(
+			'She cites him on'
 		);
 	});
 });

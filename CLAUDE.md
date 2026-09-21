@@ -127,6 +127,30 @@ verdict at all.
 `[P7 "…"]` and `"…" [P7]` are still parsed, on both sides, because every answer
 saved before this is written in them.
 
+**A model can leave the citation grammar altogether.** On 20 September a heavy
+turn came back with no citations at all: the model had written every one in
+OpenAI's own file-search notation — `【P5†Inorganic matter is the maternal
+bosom】` — rather than in ours. Nothing parsed, so nothing was verified and the
+reader was shown the brackets. The handles and the quoted words were right the
+whole time; only the punctuation was foreign. It is load-dependent: on a light
+turn the model writes `<cite>` every time; on the turn that read eight ranges
+and the index it wrote the foreign shape in two runs out of two, once mixed in
+with nine correct cites in the same answer.
+
+`normaliseCitationShapes()` translates it into ours before anything reads it.
+alexandria does the same before it verifies and before it saves; this side is
+for the answers saved before that and for the one being streamed now. The
+marker hangs off its word the way a footnote number does, so the space a
+quotation needs and a footnote number does not is part of the translation —
+without it the reader gets `inorganic matter“Inorganic matter is the
+maternal bosom”`. A half-written `【` is held back exactly as a half-written
+`<cite>` is.
+
+It is deliberately **not** a widening of `CITATION`. There is one citation
+grammar and the two repos have to agree on it forever; `FOREIGN_SHAPES` is a
+table of foreign spellings in front of it, which the next shape can be added
+to without touching the grammar.
+
 **A quotation the model wrote twice is shown once.** Asking for it once was
 never enough. Across production the model wrote the quotation in its prose and
 then the same words again inside the citation, on 29 of 137 citations — and
