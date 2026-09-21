@@ -205,6 +205,9 @@ export const COPY = {
 		after: works === 1 ? ' work' : ' works',
 	}),
 	home: 'Back to the home screen',
+	/** Under the wordmark on the home screen, and nowhere else. Two phrases,
+	    because the line may only break between them. */
+	subtitle: ['intelligence with citations,', 'tuned for accuracy'],
 
 	/* ---- composer ---- */
 	askPlaceholder: 'Ask about the library',

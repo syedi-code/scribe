@@ -538,6 +538,15 @@ past five one pip and a count per verdict, never a single total: seven found
 and one not is the fact, and a total would hide the one that failed. A pip is
 34px tall and only as wide as its rhythm needs.
 
+**The home screen says what Scribe is, under the mark and not in it.**
+`ask/Subtitle.tsx` settles in first after the mark finishes typing, ahead of
+the running line, and it is not part of `Wordmark`, so it stays behind when
+the mark travels to the header. Spaced capitals in the condensed face, because
+an italic here means a book; two stacked phrases broken at the comma on every
+screen, so the lockup is about as wide as the mark rather than twice it. 14px
+wide and 13px narrow, where the mark is set larger (2.9rem) to take the room a
+phone's home screen had left empty.
+
 **The wordmark travels.** Leaving the home screen, the big mark is flown into
 the header's corner rather than vanishing and reappearing there. The home mark
 records its box as it unmounts (`ui/departure.ts`); `ui/Travel` flies one copy
