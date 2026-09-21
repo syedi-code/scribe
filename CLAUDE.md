@@ -59,6 +59,41 @@ Dev serves the same route: the plugin in `vite.config.ts` reads `wrangler.toml`
 first, so `npm run dev` gets what production is actually given, then `.dev.vars`
 and the shell over it for a flag being tried out locally.
 
+**A limit is told before it is hit, and never before that.** alexandria meters
+turns and refuses one with a 402; this app's job is that no reader meets that
+402 without warning. `state/allowance.ts` holds what is left — a store rather
+than a provider because it has two writers and no owner: `GET /models` carries
+it when the roster lands, and every finished answer carries a fresher copy on
+its `finish`, with the turn just taken already counted.
+
+It says nothing until two questions are left. A tally in the corner from the
+first question makes a reading tool feel metered from the first minute, and a
+library should not; but a reader whose first news of a limit is the turn that
+was refused reads the nudge as a toll gate rather than as information. Two is
+where those two costs cross. Spent, the composer closes and the notice becomes
+the reason it closed, so nobody is left wondering why typing stopped working.
+
+`limit: null` is the admin and means *no ceiling* — never zero, which is how
+"4 of null" ships. Nothing is said until the allowance is known at all, because
+the only thing worse than no counter is a counter that flashes a wrong number.
+
+A later figure wins, except that within one month nothing may lower `used`
+below what a finished answer reported — the roster is fetched once a tab and
+goes stale behind it. That exception is scoped to the month by `resets_at`,
+because unscoped it eats the rollover: on the first the server rightly says
+nought used, which is lower, and the reader would be told they had none left
+until they reloaded.
+
+No colour. An allowance is not a verdict, and the three status inks here mean
+*found*, *not found* and *unknown* about a quotation; a limit borrowing rubric
+would be the first place a colour in this app meant two things.
+
+Behind `isPlanLimitShown`, which gates the *explanation* and not the limit.
+Held back, a refused turn still says why — it just says it for the first time
+at the moment of refusal. `See plans` is a placeholder and says so when
+pressed: a button that silently does nothing teaches a reader the app is
+broken rather than unfinished.
+
 **The answer is the text after the final `step-start`.** Everything before it is
 apparatus — narration and tool calls. Rendering every text part in sequence
 shows the reader the model thinking out loud and calls it the answer. See

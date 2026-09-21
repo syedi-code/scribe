@@ -322,6 +322,35 @@ export const COPY = {
 	answerFailed: 'Scribe could not finish this answer.',
 	retry: 'Ask again',
 
+	/* ---- what is left of the month ----
+	   A question asked and answered is a *question*, not a credit, a token or
+	   a request: it is the unit a reader actually experiences, and the three
+	   words the industry prefers all describe the bill rather than the thing
+	   bought. Nothing here says *upgrade* either — a reader is not a version.
+
+	   The counter only ever appears once it is nearly spent. A tally kept in
+	   the corner from the first question makes a reading tool feel metered
+	   from the first minute, which is the opposite of what a library is for. */
+	plan: {
+		/** Only ever shown at two or fewer left. */
+		remaining: (left: number) =>
+			`${left} ${plural(left, 'question', 'questions')} left this month`,
+		spent: 'You have used this month’s questions.',
+		/** The month, in the reader’s own locale: the reset is a date, not a countdown. */
+		resets: (at: string) =>
+			`Resets ${new Date(at).toLocaleDateString(undefined, {
+				day: 'numeric',
+				month: 'long',
+			})}.`,
+		/** What a paid plan is, said as what it gives rather than what it costs. */
+		offer: 'A paid plan gives you more questions each month, and the better models to ask them of.',
+		see: 'See plans',
+		/** On the button that does nothing yet, so a reader is not left waiting on it. */
+		soon: 'Plans are not open yet.',
+		/** The refused turn, when the composer was not disabled in time. */
+		refused: 'That question was not asked — this month’s are used up.',
+	},
+
 	/* ---- the shelves ----
 	   What the library holds, by whoever wrote it. No covers, no counts of
 	   anything but works: a bibliography is a list, and this one is the list

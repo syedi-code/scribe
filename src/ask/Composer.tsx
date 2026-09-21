@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { COPY } from '../copy';
 import { useConversation } from '../chat/context';
+import { useFlag } from '../flags/context';
+import { PlanNotice } from '../plan/PlanNotice';
+import { standingOf, useAllowance } from '../state/allowance';
 import { registerComposer } from '../state/composer';
 import { setDraft, useDraft } from '../state/draft';
 
@@ -16,6 +19,14 @@ export function Composer() {
 	const { ask, busy, stop, failure } = useConversation();
 	const draft = useDraft();
 	const field = useRef<HTMLTextAreaElement>(null);
+
+	// A month that is spent closes the composer rather than letting a question
+	// be written and then refused. The flag gates the explanation, not the
+	// limit — alexandria enforces that either way — so the field is only shut
+	// when the reader can be told why it is shut.
+	const explained = useFlag('isPlanLimitShown');
+	const allowance = useAllowance();
+	const spent = explained && standingOf(allowance) === 'spent';
 
 	useEffect(() => {
 		registerComposer(field.current);
@@ -33,7 +44,7 @@ export function Composer() {
 
 	const submit = () => {
 		const text = draft.trim();
-		if (!text || busy) return;
+		if (!text || busy || spent) return;
 		setDraft('');
 		ask(text);
 	};
@@ -52,7 +63,8 @@ export function Composer() {
 							submit();
 						}
 					}}
-					placeholder={COPY.askPlaceholder}
+					disabled={spent}
+					placeholder={spent ? COPY.plan.spent : COPY.askPlaceholder}
 					aria-label={COPY.askPlaceholder}
 					className="font-read text-ask text-ink max-h-32 flex-1 resize-none border-0 bg-transparent py-1 font-light outline-none"
 				/>
@@ -68,7 +80,7 @@ export function Composer() {
 					<button
 						type="button"
 						onClick={submit}
-						disabled={!draft.trim()}
+						disabled={spent || !draft.trim()}
 						className="font-app text-small text-ink-soft rounded-full px-2.5 py-1.5 leading-none transition-colors enabled:hover:bg-paper-deep enabled:hover:text-ink disabled:cursor-default disabled:opacity-35"
 					>
 						{COPY.ask}
@@ -80,6 +92,7 @@ export function Composer() {
 					{failure}
 				</p>
 			)}
+			<PlanNotice />
 		</>
 	);
 }

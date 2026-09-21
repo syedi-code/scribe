@@ -23,7 +23,9 @@ compatibility_date = "2025-08-24"
 [vars]
 WORKER_URL = "https://alexandria.socialeating.studio"
 FLAG_IS_CLAUDE_HAIKU_ENABLED = "true"
+FLAG_IS_PLAN_LIMIT_SHOWN = "false"
 
 [env.preview.vars]
 WORKER_URL = "https://antisocial-worker-staging.iysyed01.workers.dev"
 FLAG_IS_CLAUDE_HAIKU_ENABLED = "true"
+FLAG_IS_PLAN_LIMIT_SHOWN = "false"

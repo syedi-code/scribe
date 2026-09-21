@@ -24,9 +24,30 @@ export interface Model {
 	acceptsFiles: boolean;
 }
 
+/**
+ * What this reader may still ask for this month.
+ *
+ * `limit` is null for an unlimited reader — the admin — and rendering that as
+ * a number is how "4 of null" gets shipped. Everything that reads this treats
+ * null as *no ceiling*, never as *zero*.
+ *
+ * It arrives twice: on `GET /models`, which is asked once a tab, and again on
+ * the `finish` of every answer, where `used` already counts the turn that has
+ * just finished. The later one wins.
+ */
+export interface Allowance {
+	plan: 'free' | 'paid';
+	used: number;
+	limit: number | null;
+	/** Midnight UTC on the first of next month. */
+	resets_at: string;
+}
+
 export interface ModelsResponse {
 	models: Model[];
 	default_model_id: string | null;
+	/** Absent on a worker that predates the turn limit. */
+	allowance?: Allowance;
 }
 
 /** A work on the shelves, as `GET /catalogue` lists it. */

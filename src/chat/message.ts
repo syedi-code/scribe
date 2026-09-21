@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai';
 import { COPY } from '../copy';
-import type { AnswerCitation } from '../api/types';
+import type { Allowance, AnswerCitation } from '../api/types';
 
 /**
  * Reading an assistant message.
@@ -21,7 +21,7 @@ import type { AnswerCitation } from '../api/types';
  */
 
 export type ScribeMessage = UIMessage<
-	{ model_id?: string },
+	{ model_id?: string; allowance?: Allowance },
 	{ citations: AnswerCitation[] }
 >;
 
