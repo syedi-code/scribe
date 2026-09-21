@@ -9,7 +9,9 @@ import { SINGLES_ID, shelfId, type Shelf } from './shelve';
 
 /**
  * The fuller shelves as one line of surnames, each a jump to its shelf, and
- * the single volumes as the last stop. A reader looking for Foucault should
+ * the single volumes as the last stop. Wide only: on a phone the line wrapped
+ * to five rows and took a third of the screen from the shelves it indexed,
+ * where the search does the same job in one. A reader looking for Foucault should
  * not have to scroll past seventy names to find the shelf that comes first.
  */
 export function ShelfIndex({
@@ -28,7 +30,7 @@ export function ShelfIndex({
 	return (
 		<nav
 			aria-label={COPY.books.index}
-			className="max-w-doc mx-auto mt-2 flex w-full flex-wrap gap-x-3 gap-y-1"
+			className="max-w-doc mx-auto mt-2 flex w-full flex-wrap gap-x-3 gap-y-1 @max-compact:hidden"
 		>
 			{shelves.map((shelf) => (
 				<button

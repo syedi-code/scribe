@@ -57,7 +57,7 @@ export function TabBar({
 	return (
 		<div
 			role="tablist"
-			className="pointer-events-auto flex items-center gap-4 @max-compact:min-w-0 @max-compact:flex-1 @max-compact:justify-between @max-compact:gap-3 @max-compact:overflow-x-auto"
+			className="pointer-events-auto flex items-center gap-4 @max-compact:col-span-2 @max-compact:row-start-2 @max-compact:min-w-0 @max-compact:justify-between @max-compact:gap-3 @max-compact:overflow-x-auto"
 		>
 			{railable &&
 				named('sessions', COPY.sessions, 'hidden @max-compact:block')}

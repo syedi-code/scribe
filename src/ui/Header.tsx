@@ -25,12 +25,13 @@ import type { Tab } from './tabs';
  * header — so it is on while the mark is away, and while it is on its way
  * back, and off once it has arrived.
  *
- * Narrow, the header is two rows: the mark above, and the tabs spread across
- * the whole width beside the account. Four tabs, the account and the mark on
- * one row ran past a 360px phone, and tabs pushed against the right edge read
- * as an afterthought on a screen that has nothing on the left. The mark's row
- * folds away on the home screen exactly as it does wide, so there the tabs are
- * the whole header.
+ * Narrow, the header is two rows: the mark on the left of the first and the
+ * account opposite it, and the tabs spread across the whole of the second.
+ * Four tabs, the account and the mark on one row ran past a 360px phone, and a
+ * round stamp in a row of words read as one more tab. On the home screen the
+ * mark folds away as it does wide and the account keeps its corner, so it
+ * never moves between screens. The tab container is `contents` narrow, so the
+ * tabs and the account are placed by the header's own grid.
  *
  * Leaving the home screen, the big mark does not vanish and reappear here: it
  * travels into the corner over the same 300ms (`Travel`).
@@ -107,7 +108,7 @@ export function Header({
 			ref={row}
 			// Transparent to the pointer where it holds nothing, because on
 			// the home screen the rail has risen under its empty corner.
-			className={`pointer-events-none relative z-(--z-header) flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:flex-col @max-compact:items-stretch @max-compact:gap-0 @max-compact:px-3.5 @max-compact:py-2.5 ${
+			className={`pointer-events-none relative z-(--z-header) flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 @max-compact:grid @max-compact:grid-cols-[minmax(0,1fr)_auto] @max-compact:items-center @max-compact:gap-x-3 @max-compact:gap-y-2 @max-compact:px-3.5 @max-compact:py-2.5 ${
 				bare ? 'border-transparent' : 'border-paper-deep'
 			}`}
 		>
@@ -119,14 +120,14 @@ export function Header({
 				// Opening, the fade waits half the journey, so the model line
 				// comes up under a mark that has all but landed rather than
 				// through one still crossing it.
-				className={`grid transition-[grid-template-rows,opacity] duration-300 ease-paper ${
+				className={`grid transition-[grid-template-rows,opacity] duration-300 ease-paper @max-compact:col-start-1 @max-compact:row-start-1 ${
 					bare
 						? 'grid-rows-[0fr] opacity-0'
 						: 'pointer-events-auto grid-rows-[1fr] [transition-delay:0ms,150ms]'
 				}`}
 			>
 				<div className={folding ? 'overflow-hidden' : ''}>
-					<div className="grid gap-0.5 @max-compact:pb-2">
+					<div className="grid gap-0.5">
 						<button
 							type="button"
 							onClick={() => {
@@ -149,10 +150,14 @@ export function Header({
 
 			<div
 				ref={tabs}
-				className="flex items-center gap-4 @max-compact:w-full"
+				className="flex items-center gap-4 @max-compact:contents"
 			>
 				<TabBar tab={tab} onTab={onTab} railable={railable} />
-				{account && <AccountMenu />}
+				{account && (
+					<div className="pointer-events-auto @max-compact:col-start-2 @max-compact:row-start-1">
+						<AccountMenu />
+					</div>
+				)}
 			</div>
 		</header>
 	);

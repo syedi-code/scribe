@@ -48,7 +48,11 @@ function linesOf(text: string): Line[] {
 const BLANK = /^\s*$/;
 const FENCE = /^ {0,3}(`{3,}|~{3,})\s*(\S*)/;
 const ATX = /^ {0,3}(#{1,6})\s+/;
-/** A line that is nothing but one bold run is a heading written in bold. */
+/**
+ * A line that is nothing but one bold run is a paragraph of its own, not a
+ * heading: bold is removed, never set (`parse.ts`), and what the model bolds on
+ * a line by itself is as often a book or a page number as a head.
+ */
 const BOLD_LINE = /^\s*\*\*([\s\S]+?)\*\*[\s:.]*$/;
 const RULE = /^ {0,3}([-*_])(?:\s*\1){2,}\s*$/;
 const QUOTE = /^ {0,3}> ?/;
@@ -112,13 +116,10 @@ export function blocksOf(text: string): RawBlock[] {
 			continue;
 		}
 
-		const bold = BOLD_LINE.exec(line.text);
-		if (bold) {
-			const from = line.from + line.text.indexOf('**') + 2;
+		if (BOLD_LINE.test(line.text)) {
 			blocks.push({
-				kind: 'heading',
-				level: 3,
-				spans: [{ from, to: from + bold[1].length }],
+				kind: 'prose',
+				spans: [{ from: line.from, to: line.to }],
 			});
 			at++;
 			continue;

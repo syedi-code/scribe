@@ -490,54 +490,59 @@ export const COPY = {
 	about: {
 		title: 'About Scribe',
 		lead: (works: number | null, names: number | null) =>
-			works && names
-				? `Scribe answers questions from a library of ${works} works by ${names} authors, and from nothing else. When it quotes a book it names the page, and then the quote is checked against that page.`
-				: 'Scribe answers questions from a library of philosophy and theory, and from nothing else. When it quotes a book it names the page, and then the quote is checked against that page.',
-		sections: {
-			made: {
-				head: 'How an answer is made',
-				body: [
-					'Scribe does not answer from memory. It searches the library, reads the pages it finds, and writes from what it read, naming the page behind every quotation. The searching and reading are shown under your question as they happen, so you can see what it looked at.',
-				],
-			},
-			checked: {
-				head: 'Every quote is checked',
-				body: [
-					'Once the answer is written, each quotation in it is looked for, word for word, on the page it names. The check is made by Scribe’s server, not by the model that wrote the answer, and its result is drawn under the quoted words:',
-				],
-				after: [
-					'Press a quotation to open the page it came from, and from there the scan of the printed page. Only what’s cited, under every answer, fades each sentence no quotation supports: on a good answer it changes little, and on a weak one it shows how little was holding it up.',
-					'A quote found on the page proves the words are there. It does not prove the answer read them rightly. That part is still yours.',
-				],
-			},
-			library: {
-				head: 'The library',
-				body: [
-					'The library was put together by hand, a book at a time. Books lists everything Scribe can read from; it does not hand out the books themselves.',
-					'Scribe cannot read what is not on the shelves. Asked about a book that is not there, it is told to say so rather than answer from what a model half-remembers.',
-				],
-			},
-			privacy: {
-				head: 'What happens to what you ask',
-				body: [
-					'Your question, and the pages read to answer it, are sent to the company whose model is answering: OpenAI, Anthropic or Google, whichever you have chosen. Your conversations are kept so that you can come back to them.',
-					'So do not put anything private in here.',
-				],
-			},
-			plans: {
-				head: 'Plans',
-				body: [
-					'Scribe is free for a number of questions each month. A paid plan, with more questions and the better models, is not open yet.',
-				],
-			},
+			`Scribe answers questions about philosophy and theory using a library of ${
+				works && names ? `${works} books by ${names} authors` : 'books'
+			}. Every quotation in an answer points to the page it came from, and Scribe checks that the quoted words are really on that page.`,
+		purpose:
+			'It is for reading closely: finding where a thinker says something, seeing it in context, and knowing the quote is real.',
+		use: {
+			head: 'How to use it',
+			steps: [
+				'Ask a question in plain language: about one book, one author, or where several of them disagree.',
+				'Scribe searches the library and reads the pages it finds. You can watch it work under your question. This can take a minute or two.',
+				'It writes an answer that quotes the books directly, with each quote underlined to show how its check came out.',
+				'Tap a quote to read the passage around it, or the scan of the printed page.',
+			],
+		},
+		checks: {
+			head: 'Reading the underlines',
+			body: 'When the answer is finished, Scribe looks for every quote, word for word, on the page it cites. The model that wrote the answer has no part in this check.',
+			after: 'A quote marked found is in the book exactly as written. That does not mean the answer reads it well, so open the passage when it matters. “Only what’s cited”, under each answer, fades every sentence no quote supports.',
+		},
+		library: {
+			head: 'What is in the library',
+			body: [
+				'Philosophy, political theory and the history of ideas, from Plato to the present. The Books tab lists every work.',
+				'Scribe only reads these books. Ask about one that is not there and it is designed to tell you so rather than answer from memory. It does not give out copies of the books.',
+			],
+		},
+		limits: {
+			head: 'What to watch for',
+			body: [
+				'Scribe runs on an AI model, and it can be wrong about context, emphasis or what an author meant. The check tells you whether the words are real, not whether the argument is right.',
+				'Some older books were scanned with imperfect text, so now and then a genuine quote fails its check.',
+			],
+		},
+		privacy: {
+			head: 'Your questions and privacy',
+			body: [
+				'Your questions, and the pages Scribe reads to answer them, are sent to OpenAI or Anthropic, depending on the model you choose. Your conversations are saved to your account so you can come back to them.',
+				'Do not include anything private or sensitive.',
+			],
+		},
+		cost: {
+			head: 'Cost',
+			body: [
+				'Scribe is free for a limited number of questions each month, and your account shows how many are left. A paid plan with more questions and more models is on the way.',
+			],
 		},
 		/** A quotation in each state, as it is drawn in an answer. */
 		key: {
 			verified: 'found on the page',
-			not_found: 'not on the page it names, or not all of it',
-			no_text_layer: 'the page has no text to check against',
+			not_found: 'not found, or only partly',
+			no_text_layer: 'could not be checked',
 		},
-		sample: 'the words as quoted',
+		sample: 'the quoted words',
 	},
 
 	/* ---- add a book ---- */

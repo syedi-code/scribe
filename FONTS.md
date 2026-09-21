@@ -22,7 +22,6 @@ GT-Alpina-Standard-Regular-Italic.woff2
 GT-Alpina-Standard-Medium.woff2
 GT-Alpina-Standard-Bold.woff2
 GT-Alpina-Standard-Bold-Italic.woff2
-GT-Alpina-Condensed-Regular.woff2
 ```
 
 `vite build` copies `public/` into `dist/` unchanged, so nothing else is needed.
@@ -61,13 +60,9 @@ these keys — the fonts reach readers from scribe's own Pages deployment.
 ## Running it without them
 
 The stack in `--font-read` falls through to Iowan Old Style, then Georgia, then
-a generic serif, and `--font-app` falls through to GT Alpina Standard and then
-Georgia. The interface works. It is a different object, and two things that
+a generic serif, and `--font-app` is the same stack. The interface works. It is a different object, and two things that
 matter here degrade:
 
-- **Condensed has no fallback of its own.** `--font-app` lands on Georgia, which
-  is wider, so the margin notes and the shelf run longer than they were drawn
-  to.
 - **`work-title` sets `font-synthesis: none`** on purpose, so a fallback family
   with no true italic will show a book's name in roman rather than a sheared
   upright. A title is a slant here, so a family without a real italic loses the

@@ -54,11 +54,7 @@ function Node({ node, marks }: { node: AnswerNode; marks: Marks }) {
 		return <code className="code-inline">{node.text}</code>;
 	}
 	if (node.kind === 'emphasis') {
-		return (
-			<em className={node.strong ? 'font-medium not-italic' : 'italic'}>
-				{node.text}
-			</em>
-		);
+		return <em className="italic">{node.text}</em>;
 	}
 	return (
 		<Citation
