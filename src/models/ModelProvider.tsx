@@ -1,8 +1,9 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import { useFlags } from '../flags/context';
 import type { Flags } from '../flags/flags';
 import { useAsync } from '../lib/useAsync';
+import { reportAllowance } from '../state/allowance';
 import { ModelContext, type ModelChoice, type ModelState } from './context';
 import type { Model, ModelsResponse } from '../api/types';
 
@@ -67,6 +68,13 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 	const [chosen, setChosen] = useState<string | null>(null);
 	const roster = useAsync(() => api.get<ModelsResponse>('/models'), []);
 	const { flags, loading: flagsLoading } = useFlags();
+
+	// The roster is the one request this app makes that already knows what the
+	// reader has left, so the allowance rides in on it rather than costing a
+	// second round trip.
+	useEffect(() => {
+		reportAllowance(roster.value?.allowance);
+	}, [roster.value]);
 
 	const value = useMemo<ModelState>(() => {
 		const available = roster.value?.models ?? [];

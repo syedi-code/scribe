@@ -8,8 +8,10 @@ import {
 } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { api, describeApiError } from '../api/client';
+import { COPY } from '../copy';
+import { api, ApiError, describeApiError } from '../api/client';
 import { useModels } from '../models/context';
+import { reportAllowance } from '../state/allowance';
 import { closePage } from '../state/reader';
 import { ChatContext, type ChatState } from './context';
 import { forgetThread, loadThread, readThread, warmThread } from './threads';
@@ -79,6 +81,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 		stop,
 	} = useChat<ScribeMessage>({ transport });
 
+	/**
+	 * Every finished answer carries a fresher allowance than the roster did,
+	 * with the turn that has just finished already counted. Read off the
+	 * messages rather than from an onFinish, so a conversation reopened from
+	 * the cache updates the counter too.
+	 */
+	const lastAllowance = messages.at(-1)?.metadata?.allowance;
+	useEffect(() => {
+		reportAllowance(lastAllowance);
+	}, [lastAllowance]);
+
 	useEffect(() => {
 		api.get<{ conversations: Conversation[] }>('/conversations')
 			.then((body) => setThreads(body.conversations))
@@ -136,10 +149,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 				await sendMessage({ text });
 			};
 			// A conversation that could not be created is a question that never
-			// reached the model, and the reader is owed the reason.
-			void send().catch((error: unknown) =>
-				setFailure(describeApiError(error))
-			);
+			// reached the model, and the reader is owed the reason. A 402 is
+			// that, with a reason of its own: the composer disables itself when
+			// the month is spent, so reaching one means a second tab spent it.
+			void send().catch((error: unknown) => {
+				if (error instanceof ApiError && error.status === 402) {
+					setFailure(COPY.plan.refused);
+					return;
+				}
+				setFailure(describeApiError(error));
+			});
 		},
 		[pollTitle, sendMessage]
 	);

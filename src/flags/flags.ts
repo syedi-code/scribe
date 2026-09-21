@@ -17,6 +17,13 @@
 export interface Flags {
 	/** Whether Claude Haiku 4.5 can be chosen in the model switcher. */
 	isClaudeHaikuEnabled: boolean;
+	/**
+	 * Whether a reader is shown what is left of their month, and what a paid
+	 * plan would give them. The limit is enforced by alexandria whether this
+	 * is on or off; held back, a refused turn still says why, it just says it
+	 * for the first time at the moment of refusal.
+	 */
+	isPlanLimitShown: boolean;
 }
 
 interface Flag {
@@ -29,6 +36,10 @@ interface Flag {
 export const FLAGS: Record<keyof Flags, Flag> = {
 	isClaudeHaikuEnabled: {
 		env: 'FLAG_IS_CLAUDE_HAIKU_ENABLED',
+		fallback: false,
+	},
+	isPlanLimitShown: {
+		env: 'FLAG_IS_PLAN_LIMIT_SHOWN',
 		fallback: false,
 	},
 };

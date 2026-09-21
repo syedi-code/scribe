@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_FLAGS } from '../flags/flags';
 import { FlagContext } from '../flags/context';
 import { stubFetch } from '../test/harness';
 import { ModelProvider } from './ModelProvider';
@@ -32,7 +33,10 @@ async function switcher(isClaudeHaikuEnabled: boolean) {
 	stubFetch(ROSTER);
 	render(
 		<FlagContext
-			value={{ flags: { isClaudeHaikuEnabled }, loading: false }}
+			value={{
+				flags: { ...DEFAULT_FLAGS, isClaudeHaikuEnabled },
+				loading: false,
+			}}
 		>
 			<ModelProvider>
 				<RunningModel />
