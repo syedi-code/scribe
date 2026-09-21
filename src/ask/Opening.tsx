@@ -16,7 +16,7 @@ export function Opening() {
 	return (
 		<div
 			ref={mark}
-			className="text-[clamp(2.4rem,6.5vw,3.3rem)] @max-compact:text-[2.4rem]"
+			className="text-[clamp(2.4rem,6.5vw,3.3rem)] @max-compact:text-[2.9rem]"
 		>
 			<Wordmark typing={!reduced} onTyped={announce} />
 		</div>

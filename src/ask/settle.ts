@@ -24,9 +24,10 @@ export function useArrival(): ArrivalState {
 
 /** Where each piece of the column falls in the sequence. */
 export const SETTLE = {
-	line: 0,
-	composer: 1,
-	suggestions: 2,
+	subtitle: 0,
+	line: 1,
+	composer: 2,
+	suggestions: 3,
 } as const;
 
 /** The class and delay one child of the column fades in with. */
