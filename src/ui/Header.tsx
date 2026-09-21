@@ -1,6 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { COPY } from '../copy';
+import { AccountMenu } from '../account/AccountMenu';
 import { useConversation } from '../chat/context';
+import { useFlag } from '../flags/context';
 import { RunningModel } from '../models/RunningModel';
 import { TabBar } from './TabBar';
 import { Travel } from './Travel';
@@ -36,6 +38,7 @@ export function Header({
 	railable: boolean;
 }) {
 	const { atHome, newQuestion } = useConversation();
+	const account = useFlag('isAccountShown');
 	const bare = atHome && tab === 'ask';
 
 	// The mark has arrived only once the row has finished growing. Every
@@ -109,7 +112,10 @@ export function Header({
 
 			{!bare && <Travel mark={mark} header={row} conceal={conceal} />}
 
-			<TabBar tab={tab} onTab={onTab} railable={railable} />
+			<div className="flex items-center gap-4 @max-compact:gap-3">
+				<TabBar tab={tab} onTab={onTab} railable={railable} />
+				{account && <AccountMenu />}
+			</div>
 		</header>
 	);
 }

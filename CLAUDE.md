@@ -90,9 +90,56 @@ would be the first place a colour in this app meant two things.
 
 Behind `isPlanLimitShown`, which gates the *explanation* and not the limit.
 Held back, a refused turn still says why — it just says it for the first time
-at the moment of refusal. `See plans` is a placeholder and says so when
-pressed: a button that silently does nothing teaches a reader the app is
-broken rather than unfinished.
+at the moment of refusal.
+
+Inside a conversation it is also said once as a dialog — at two left and at
+none, once a month each, only after an answer has finished and never over
+another dialog (`plan/useLimitNudge.ts`). A line under the composer is easy to
+read past while an answer is being read. The home screen gets no dialog: the
+composer is the whole screen there, so it closes, names the day questions come
+back, and the three suggested questions go, because each one asks on a press.
+
+A 402 on the chat stream is caught in the transport's `fetch`
+(`chat/refusal.ts`). Left to `DefaultChatTransport` the reader was shown the
+response body — raw JSON under their question. The body carries the allowance,
+so the refusal itself tells the counter the month is spent.
+
+The reset is formatted in UTC. alexandria names midnight UTC on the first,
+which is the thirtieth anywhere west of Greenwich, and a reader in New York was
+told their questions came back a day early.
+
+**Every offer of a paid plan goes to one place.** `seePlans()` in
+`state/dialog.ts` opens `plan/PlansDialog.tsx` — from the composer's notice, the
+limit dialog, the account menu, the account sheet. It is the placeholder
+checkout will replace, and there is only one of it, so checkout is built once
+and every button already points at it. Until then its pay button is drawn and
+disabled and it says plans are not open: a button that silently does nothing
+teaches a reader the app is broken rather than unfinished. Nobody is offered
+what they already have — a paid reader and the admin see no offer anywhere.
+
+**One modal at a time, and the store decides which.** `state/dialog.ts` names
+the open one; `ui/Dialogs.tsx` mounts it inside the shell, so it answers the
+same container queries, and `ui/Modal.tsx` draws it with a native `<dialog>`
+and `showModal()` — focus trap, Escape and the top layer are the browser's, so
+no `--z-*` layer is spent on it. Narrow, it is a sheet from the bottom edge.
+Escape is taken through `cancel` and never left to the element: a closing
+`<dialog>` fires `close` after the store has moved on, and the limit dialog
+handing over to the plans shut the plans on its way out. jsdom has none of the
+`<dialog>` methods; `test/setup.ts` stands in only as far as `open`.
+
+**The account is the reader's corner of the header.** A monogram at the far
+end, behind `isAccountShown`, opening a menu that says who you are and what you
+are on before it offers anything — which is most often all a reader came to
+check — then the account sheet, the plans, and sign out. The sheet is where the
+month is shown in full, count and measure, though nothing else says so before
+two are left: a reader who opens their account has asked. The admin is named
+as the admin, never as *Free*: exempt by role, not by paying.
+
+Signing out is two doors, in order. `DELETE /api/session` first, because
+alexandria's `POST /session` answers with any session the cookie still names,
+so leaving it would sign the next person on this browser in as the last one;
+it is httpOnly, so only the server can clear it. Then Access's own
+`/cdn-cgi/access/logout`.
 
 **The answer is the text after the final `step-start`.** Everything before it is
 apparatus — narration and tool calls. Rendering every text part in sequence

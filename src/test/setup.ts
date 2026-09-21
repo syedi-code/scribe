@@ -32,4 +32,15 @@ const svg = SVGElement.prototype as unknown as {
 };
 svg.getTotalLength ??= () => 0;
 
+// jsdom has the <dialog> element but none of its methods. Opening one is
+// setting `open`, which is all a test can see of it anyway; the focus trap
+// and the top layer are the browser's, and nothing here pretends to them.
+const dialog = HTMLDialogElement.prototype;
+dialog.showModal ??= function (this: HTMLDialogElement) {
+	this.setAttribute('open', '');
+};
+dialog.close ??= function (this: HTMLDialogElement) {
+	this.removeAttribute('open');
+};
+
 afterEach(cleanup);

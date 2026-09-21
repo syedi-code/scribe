@@ -76,3 +76,23 @@ export async function openSession(): Promise<Identity['user']> {
 	const { user } = await api.get<Identity>('/me');
 	return user;
 }
+
+/**
+ * Access's own sign-out, on this origin. It clears `CF_Authorization` and
+ * sends the browser back through the login.
+ */
+const ACCESS_LOGOUT = '/cdn-cgi/access/logout';
+
+/**
+ * Signing out is two doors, and the order matters. alexandria's session goes
+ * first: `POST /session` answers with whatever session the cookie still names,
+ * so leaving it behind would sign the next person on this browser in as the
+ * last one. It is an httpOnly cookie, so only the server can clear it.
+ *
+ * A failure there does not keep anyone signed in against their will — Access
+ * still signs them out, and the session expires on its own.
+ */
+export async function signOut(): Promise<void> {
+	await api.del('/session').catch(() => undefined);
+	window.location.assign(ACCESS_LOGOUT);
+}
