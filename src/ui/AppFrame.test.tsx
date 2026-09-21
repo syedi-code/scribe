@@ -465,4 +465,26 @@ describe('New question', () => {
 		});
 		expect(button().hasAttribute('disabled')).toBe(true);
 	});
+
+	// Narrow, Sessions is a page of its own and the home screen is elsewhere,
+	// so the button was grey on a phone for good. There it takes you home.
+	it('takes the reader to Ask from the Sessions tab, even from home', () => {
+		stubFetch();
+		const newQuestion = vi.fn();
+		renderApp(<AppFrame />, {
+			state: chat({
+				threads: [thread('c1', 'The will to truth as faith')],
+				atHome: true,
+				newQuestion,
+			}),
+		});
+		fireEvent.click(screen.getByRole('tab', { name: 'Sessions' }));
+		expect(button().hasAttribute('disabled')).toBe(false);
+
+		fireEvent.click(button());
+		expect(
+			screen.getByRole('tab', { name: 'Ask' }).getAttribute('aria-selected')
+		).toBe('true');
+		expect(newQuestion).not.toHaveBeenCalled();
+	});
 });

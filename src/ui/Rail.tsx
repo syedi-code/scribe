@@ -34,7 +34,7 @@ export function Rail({
 				risen ? '-mt-(--header-rest)' : ''
 			} ${showing ? '' : '@max-compact:hidden'}`}
 		>
-			<ThreadRail onNavigate={onNavigate} />
+			<ThreadRail onNavigate={onNavigate} away={showing} />
 		</div>
 	);
 }
