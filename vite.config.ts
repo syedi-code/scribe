@@ -1,9 +1,10 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync, readFileSync } from 'node:fs';
 import { cp } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { readFlags } from './src/flags/flags';
 
 /**
  * What pdf.js needs beside its own code to draw a scanned page.
@@ -55,8 +56,53 @@ function pdfAssets(): Plugin {
 	};
 }
 
+/**
+ * `GET /api/flags` in development, standing in for `functions/api/flags.ts`
+ * the way vite's proxy stands in for the Pages Function beside it.
+ *
+ * The environment is read the way a deploy builds it: `wrangler.toml` is what
+ * production is actually given, so dev starts there, and `.dev.vars` or the
+ * shell override it for a flag being tried out locally. Registered before the
+ * proxy, or `/api/flags` would be forwarded to alexandria, which has never
+ * heard of it.
+ */
+function devFlags(): Plugin {
+	const assignments = (text: string) =>
+		Object.fromEntries(
+			[...text.matchAll(/^\s*(\w+)\s*=\s*"?([^"\n#]*)"?/gm)].map(
+				([, name, value]) => [name, value.trim()]
+			)
+		);
+
+	const section = (name: string) => {
+		if (!existsSync('wrangler.toml')) return {};
+		const after = readFileSync('wrangler.toml', 'utf8').split(
+			`[${name}]`
+		)[1];
+		return after ? assignments(after.split(/\r?\n\[/)[0]) : {};
+	};
+
+	return {
+		name: 'scribe:dev-flags',
+		configureServer(server) {
+			server.middlewares.use('/api/flags', (_request, response) => {
+				const flags = readFlags({
+					...section('vars'),
+					...(existsSync('.dev.vars')
+						? assignments(readFileSync('.dev.vars', 'utf8'))
+						: {}),
+					...process.env,
+				});
+				response.setHeader('Content-Type', 'application/json');
+				response.setHeader('Cache-Control', 'no-store');
+				response.end(JSON.stringify(flags));
+			});
+		},
+	};
+}
+
 export default defineConfig({
-	plugins: [react(), tailwindcss(), pdfAssets()],
+	plugins: [react(), tailwindcss(), pdfAssets(), devFlags()],
 	server: {
 		// Mirrors what the Pages Function does in production, so local dev
 		// exercises the same same-origin path.

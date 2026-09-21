@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { COPY } from '../copy';
 import { useConversation } from '../chat/context';
+import { AuthorName } from '../ui/AuthorName';
 import { SETTLE, useSettle } from './settle';
 
 /**
@@ -46,8 +47,14 @@ function Row({
 				<span className="font-read text-ui text-ink-soft group-hover/ask:text-ink font-light leading-snug transition-colors duration-300 ease-paper">
 					{suggestion.question}
 				</span>
+				{/* The same two marks the rest of the app writes a work
+				    with: the surname in its author's ink, the title set as a
+				    title. A reader meets Nietzsche here in the ink he will be
+				    written in when the answer comes back. */}
 				<span className="font-app text-tiny text-ink-faint">
-					{suggestion.work}
+					<AuthorName creator={suggestion.creator} />
+					{' · '}
+					<span className="work-title">{suggestion.title}</span>
 				</span>
 			</span>
 		</button>
