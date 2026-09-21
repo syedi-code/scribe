@@ -39,6 +39,10 @@ export const COPY = {
 	unnamed: 'untitled',
 	modelsEmpty: 'no models available',
 	noKey: 'no key set',
+	/** A model the reader's plan leaves out. Named by plan, never "upgrade". */
+	onPaid: 'on Paid',
+	/** A model only the admin is sent. */
+	adminOnly: 'yours alone',
 	inUse: 'in use',
 
 	/* ---- home ----

@@ -12,28 +12,33 @@ import type { Model, ModelsResponse } from '../api/types';
  * rendered twice — under the wordmark at home, and in the header once a
  * conversation starts — and two switchers would be two selections.
  *
- * `GET /models` returns only the models whose provider key is set on the
- * worker. Everything the roster knows about is listed; the ones without a key
- * are shown disabled rather than hidden, so a reader can see what Scribe could
- * run if it were configured for it.
+ * `GET /models` returns the models this reader may choose, and under `locked`
+ * those a plan above theirs would open. Everything the roster knows about is
+ * listed; a locked one says which plan has it, and one with no key at all is
+ * shown disabled rather than hidden, so a reader can see what Scribe could run
+ * if it were configured for it. The two used to read alike — a free reader was
+ * told Claude had *no key set* when the key was fine and the plan was the
+ * reason.
+ *
+ * The admin's own models are not known here. They arrive only in the admin's
+ * roster, through the path for a model this build has never heard of, so no
+ * one else is shown one they could never have.
  */
 
 /**
- * Held back from the switcher for now, and shown as held back rather than
- * quietly dropped: a reader can see what Scribe could run, and that the reason
- * it is not running is a decision rather than a missing key.
+ * Held back from the switcher, and shown as held back rather than quietly
+ * dropped: a reader can see what Scribe could run, and that the reason it is
+ * not running is a decision rather than a missing key.
  *
- * Gemini has never run here. Haiku is behind `isClaudeHaikuEnabled` — it is
- * five times Luna's input and four times its output, for a lower score, and
- * every step of the agent loop pays that again, so it is turned on for as long
- * as someone wants it and off again by flipping a variable.
+ * Haiku is behind `isClaudeHaikuEnabled` — it is five times Luna's input and
+ * four times its output, for a lower score, and every step of the agent loop
+ * pays that again, so it is turned on for as long as someone wants it and off
+ * again by flipping a variable.
  */
-const HELD_BACK = new Set(['gemini-3.8-flash']);
-
 const HAIKU = 'claude-haiku-4-5-20251001';
 
 const heldBack = (id: string, flags: Flags) =>
-	HELD_BACK.has(id) || (id === HAIKU && !flags.isClaudeHaikuEnabled);
+	id === HAIKU && !flags.isClaudeHaikuEnabled;
 
 /**
  * Luna first: a fifth of Haiku's input price and a quarter of its output, and
@@ -51,15 +56,15 @@ const KNOWN: Model[] = [
 		acceptsFiles: true,
 	},
 	{
-		id: 'claude-haiku-4-5-20251001',
-		label: 'Claude Haiku 4.5',
+		id: 'claude-sonnet-5',
+		label: 'Claude Sonnet 5',
 		provider: 'anthropic',
 		acceptsFiles: true,
 	},
 	{
-		id: 'gemini-3.8-flash',
-		label: 'Gemini 3.8 Flash',
-		provider: 'google',
+		id: 'claude-haiku-4-5-20251001',
+		label: 'Claude Haiku 4.5',
+		provider: 'anthropic',
 		acceptsFiles: true,
 	},
 ];
@@ -79,11 +84,15 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 	const value = useMemo<ModelState>(() => {
 		const available = roster.value?.models ?? [];
 		const byId = new Map(available.map((model) => [model.id, model]));
+		const locked = new Set(
+			(roster.value?.locked ?? []).map((model) => model.id)
+		);
 		const choices: ModelChoice[] = [
 			...KNOWN.map((model) => ({
 				...(byId.get(model.id) ?? model),
 				available: byId.has(model.id) && !heldBack(model.id, flags),
 				comingSoon: heldBack(model.id, flags),
+				locked: locked.has(model.id) && !heldBack(model.id, flags),
 			})),
 			// A model the server offers that this build has never heard of.
 			...available
@@ -94,6 +103,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 					...model,
 					available: true,
 					comingSoon: false,
+					locked: false,
 				})),
 		];
 

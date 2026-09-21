@@ -49,9 +49,9 @@ const PLANS: PlanOffer[] = [
 		models: [
 			{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'openai' },
 			{
-				id: 'gemini-3.8-flash',
-				label: 'Gemini 3.8 Flash',
-				provider: 'google',
+				id: 'claude-sonnet-5',
+				label: 'Claude Sonnet 5',
+				provider: 'anthropic',
 			},
 		],
 		price: null,
@@ -219,7 +219,7 @@ describe('the plans', () => {
 			name: COPY.plan.plans.paid,
 		});
 		expect(paid.textContent).toContain('500');
-		expect(paid.textContent).toContain('Gemini 3.8 Flash');
+		expect(paid.textContent).toContain('Claude Sonnet 5');
 		const free = screen.getByRole('region', { name: COPY.plan.plans.free });
 		expect(free.textContent).toContain(COPY.plan.plans.current);
 	});

@@ -16,6 +16,7 @@ export const models: ModelState = {
 			acceptsFiles: true,
 			available: true,
 			comingSoon: false,
+			locked: false,
 		},
 		{
 			id: 'gpt-5.6-luna',
@@ -24,6 +25,7 @@ export const models: ModelState = {
 			acceptsFiles: true,
 			available: false,
 			comingSoon: false,
+			locked: false,
 		},
 	],
 	selected: {
@@ -33,6 +35,7 @@ export const models: ModelState = {
 		acceptsFiles: true,
 		available: true,
 		comingSoon: false,
+		locked: false,
 	},
 	select: () => {},
 	labelFor: () => 'Claude Haiku 4.5',

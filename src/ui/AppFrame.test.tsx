@@ -99,12 +99,13 @@ describe('the model switcher', () => {
 		choices: [
 			...models.choices,
 			{
-				id: 'gemini-3.8-flash',
-				label: 'Gemini 3.8 Flash',
-				provider: 'google' as const,
+				id: 'claude-sonnet-5',
+				label: 'Claude Sonnet 5',
+				provider: 'anthropic' as const,
 				acceptsFiles: true,
 				available: false,
 				comingSoon: true,
+				locked: false,
 			},
 		],
 	};
@@ -118,7 +119,7 @@ describe('the model switcher', () => {
 		renderApp(<AppFrame />, { state: withThreads(), roster });
 		fireEvent.click(screen.getByRole('button', { name: /Claude Haiku/ }));
 
-		const held = screen.getByRole('menuitem', { name: /Gemini 3.8 Flash/ });
+		const held = screen.getByRole('menuitem', { name: /Claude Sonnet 5/ });
 		expect(held.textContent).not.toContain('no key set');
 		expect(held.textContent).not.toContain('coming soon');
 		expect(held.hasAttribute('disabled')).toBe(true);
