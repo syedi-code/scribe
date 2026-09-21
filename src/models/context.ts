@@ -6,6 +6,8 @@ export interface ModelChoice extends Model {
 	available: boolean;
 	/** Held back deliberately, which is a different thing from having no key. */
 	comingSoon: boolean;
+	/** Set up, but on a plan above the reader's: pressing it shows the plans. */
+	locked: boolean;
 }
 
 export interface ModelState {

@@ -24,6 +24,8 @@ export interface Model {
 	label: string;
 	provider: 'anthropic' | 'openai' | 'google';
 	acceptsFiles: boolean;
+	/** Only the admin may choose it, and only the admin is ever sent it. */
+	adminOnly?: boolean;
 }
 
 /**
@@ -59,6 +61,11 @@ export interface PlanOffer {
 
 export interface ModelsResponse {
 	models: Model[];
+	/**
+	 * Set up on the worker but not on this reader's plan. Absent on a worker
+	 * that predates it, where such a model was simply left out of `models`.
+	 */
+	locked?: Model[];
 	default_model_id: string | null;
 	/** Absent on a worker that predates the turn limit. */
 	allowance?: Allowance;

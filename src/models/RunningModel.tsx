@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { COPY } from '../copy';
 import { useDismiss } from '../lib/useDismiss';
+import { seePlans } from '../state/dialog';
 import { BrandedLabel } from './BrandedLabel';
 import { useModels } from './context';
 
@@ -68,10 +69,14 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 								key={model.id}
 								role="menuitem"
 								type="button"
-								disabled={!model.available}
+								disabled={!model.available && !model.locked}
+								// A locked model is the one door to the plans that a
+								// reader finds on their own, at the moment they want
+								// what it opens.
 								onClick={() => {
-									select(model.id);
 									close();
+									if (model.locked) seePlans();
+									else select(model.id);
 								}}
 								className="font-app text-ui flex w-full items-baseline justify-between gap-3 px-3 py-1.5 text-left enabled:hover:bg-paper-deep disabled:cursor-default disabled:text-ink-faint"
 							>
@@ -90,11 +95,15 @@ export function RunningModel({ hero = false }: { hero?: boolean }) {
 										    twice, and the only one of the three that needed words. */}
 									{model.comingSoon
 										? ''
-										: !model.available
-											? COPY.noKey
-											: inUse
-												? COPY.inUse
-												: ''}
+										: model.locked
+											? COPY.onPaid
+											: !model.available
+												? COPY.noKey
+												: inUse
+													? COPY.inUse
+													: model.adminOnly
+														? COPY.adminOnly
+														: ''}
 								</span>
 							</button>
 						);

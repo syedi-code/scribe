@@ -52,8 +52,7 @@ one be turned on for an afternoon and off again without a revert. A flag falls
 back to *off*, because an unset variable is a deployment that has never heard
 of the feature. `isClaudeHaikuEnabled` is the first, and it decides whether
 Claude Haiku 4.5 can be picked in the switcher — held back it is struck through
-and unpickable, exactly as Gemini is, which is the shape every held-back thing
-here already had.
+and unpickable, which is the shape every held-back thing here already had.
 
 Dev serves the same route: the plugin in `vite.config.ts` reads `wrangler.toml`
 first, so `npm run dev` gets what production is actually given, then `.dev.vars`
@@ -678,8 +677,7 @@ to sit in the rail for ever.
 
 **A model can be held back.** `heldBack()` in `models/ModelProvider.tsx`, shown
 struck through and unpickable rather than hidden, so a reader can see what
-Scribe could run. Gemini 3.8 Flash has never run here and is held back in the
-code. Haiku has, and is held back on cost — five times Luna's input and four
+Scribe could run. Haiku is held back on cost — five times Luna's input and four
 times its output, for a lower score, and every step of the agent loop pays it
 again — so it is behind `isClaudeHaikuEnabled` rather than a constant: a
 decision about money changes more often than the code around it. The strike and
@@ -689,6 +687,15 @@ _no key set_ still does, because it is a different claim — that the deployment
 is missing a key rather than that we chose this. `Add a book` is held back the
 same way and always has been: the tab is struck through and disabled with no
 label, and `add/AddPanel.tsx` waits for an ingestion to exist behind it.
+
+**A model can be on a plan above the reader's, which is not a missing key.**
+`GET /models` lists those under `locked`, and the switcher says _on Paid_ beside
+them and opens the plans when one is pressed. Before it did, every paid model
+told a free reader _no key set_, which read as a broken deployment. The admin's
+own models — GPT-5.6 Sol, at twenty times Luna's price — are in no plan, are
+not in `KNOWN`, and arrive only in the admin's roster, marked _yours alone_; no
+one else is ever named a model they could never have. Gemini is off the roster
+on both sides.
 
 **The default model is slow on purpose.** GPT-5.6 Luna costs a fifth of Haiku's
 input and a quarter of its output and scores higher, and pays for it in time:
