@@ -17,8 +17,10 @@ import type { Tab } from './tabs';
  * holds four tabs and the account, and a tab nobody can press is the one to
  * go.
  *
- * Narrow, the tabs are spread across the row rather than pushed to its end,
- * and the row scrolls sideways before it ever clips — a fifth tab must never
+ * Narrow, the tabs are centred on their own row — spread edge to edge they
+ * read as four separate things rather than one control — and the row scrolls
+ * sideways before it ever clips (`justify-center-safe`, so an overflowing row
+ * starts at its first tab rather than cutting it off) — a fifth tab must never
  * push the account off the screen.
  */
 export function TabBar({
@@ -57,7 +59,7 @@ export function TabBar({
 	return (
 		<div
 			role="tablist"
-			className="pointer-events-auto flex items-center gap-4 @max-compact:col-span-2 @max-compact:row-start-2 @max-compact:min-w-0 @max-compact:justify-between @max-compact:gap-3 @max-compact:overflow-x-auto"
+			className="pointer-events-auto flex items-center gap-4 @max-compact:col-span-2 @max-compact:row-start-2 @max-compact:min-w-0 @max-compact:justify-center-safe @max-compact:gap-6 @max-compact:overflow-x-auto"
 		>
 			{railable &&
 				named('sessions', COPY.sessions, 'hidden @max-compact:block')}

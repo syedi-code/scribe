@@ -504,13 +504,15 @@ quotation is drawn from `CITATION_STATUS`, so it cannot come to describe a
 mark the answers no longer make.
 
 **Narrow, the header is two rows.** The mark and the running model on the left
-of the first with the account stamp opposite, and the tabs spread across the
-whole of the second; on the home screen the mark folds away and the stamp keeps
+of the first with the account stamp opposite, and the tabs centred on the
+second; on the home screen the mark folds away and the stamp keeps
 its corner, so it never moves between screens and never sits in a row of words. One row ran past
 a 360px phone once Sessions and About were both there, and tabs jammed against
 the right edge of a screen with nothing on its left read as leftovers. The
 struck-through `Add a book` is not shown narrow — a tab nobody can press is the
-one a phone does without — and the row scrolls sideways before it ever clips.
+one a phone does without — and the row scrolls sideways before it ever clips. On the Sessions tab `New question` is always live and takes the reader to Ask:
+the home screen is not beside the list there, so the grey it wears wide, where
+there is nothing to leave, was a button that never worked.
 
 **An empty answer is a failed answer.** A turn that searched and read and then
 wrote nothing says so and offers to ask again. It is not a hypothetical: the

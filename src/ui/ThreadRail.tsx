@@ -39,7 +39,14 @@ function Plus() {
 	);
 }
 
-export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
+export function ThreadRail({
+	onNavigate,
+	away = false,
+}: {
+	onNavigate?: () => void;
+	/** Narrow, on the Sessions tab: the home screen is not what is showing. */
+	away?: boolean;
+}) {
 	const {
 		threads,
 		naming,
@@ -69,15 +76,17 @@ export function ThreadRail({ onNavigate }: { onNavigate?: () => void }) {
 					</span>
 				</div>
 
-				{/* Dead on the home screen, and saying so: there is no
+				{/* Dead beside the home screen, and saying so: there is no
 				    conversation to leave, and a button that answers a click
 				    with nothing at all was reported as broken. It is the same
-				    disabled it wears while a turn is in flight. */}
+				    disabled it wears while a turn is in flight. On the Sessions
+				    tab the home screen is somewhere else, so there it is always
+				    live and takes the reader to it. */}
 				<button
 					type="button"
-					disabled={busy || atHome}
+					disabled={busy || (atHome && !away)}
 					onClick={() => {
-						newQuestion();
+						if (!atHome) newQuestion();
 						onNavigate?.();
 					}}
 					className="group/new press font-app text-ui text-ink-soft hover:text-ink mt-1.5 flex w-full items-center gap-1.5 rounded-[4px] py-0.5 text-left disabled:opacity-40"
