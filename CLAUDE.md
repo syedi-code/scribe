@@ -483,8 +483,27 @@ and it happens after the answer. Nothing renders as checked before
 
 **scribe holds no data.** Every row lives in alexandria. If you find yourself
 adding a database here, stop. The shelves in `books/` are `GET /catalogue`
-grouped in the browser — alexandria already returns it ordered by creator then
-title, and the search is done here so it never costs a second fetch.
+grouped in the browser, and the search is done here so it never costs a second
+fetch.
+
+**The fullest shelf comes first.** The library is a hundred-odd works by
+seventy-odd names, and most of those names have one work each; filed A to Z,
+Foucault's ten sat among fifty single volumes, each costing a heading for one
+line. `books/shelve.ts` orders names by how many works the library holds of
+them, ties by surname, and gathers the one-work names on a single shelf at the
+end with each name beside its title. A line of surnames under the search jumps
+to each fuller shelf, and each heading stays pinned while its shelf scrolls
+under it. Where a name is filed is decided by what the library holds, never by
+what the search left — `foucault order` is one work, still on Foucault's shelf.
+
+**About is a page of the book, not a product page.** `about/AboutPanel.tsx`,
+behind `isAboutShown`, its words in `COPY.about`. It says nothing about a
+reader's data that is not already true of it; add a promise there only once the
+code keeps it (30-day deletion, for one). The key to the three rules under a
+quotation is drawn from `CITATION_STATUS`, so it cannot come to describe a
+mark the answers no longer make. Narrow, the tab takes the room of the
+struck-through `Add a book`, which is hidden under the compact breakpoint
+while About is shown: a phone header holds four tabs and the account.
 
 **An empty answer is a failed answer.** A turn that searched and read and then
 wrote nothing says so and offers to ask again. It is not a hypothetical: the

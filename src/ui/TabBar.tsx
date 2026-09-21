@@ -1,4 +1,5 @@
 import { COPY } from '../copy';
+import { useFlag } from '../flags/context';
 import type { Tab } from './tabs';
 
 /**
@@ -12,7 +13,9 @@ import type { Tab } from './tabs';
  *
  * `Add a book` is struck through and disabled rather than removed: it is
  * coming back, and a reader who remembers it should see that it is held rather
- * than wonder where it went.
+ * than wonder where it went. Narrow, it gives its room up to `About`: a phone's
+ * header holds four tabs and the account, and a tab nobody can press is the
+ * one to go.
  */
 export function TabBar({
 	tab,
@@ -23,6 +26,8 @@ export function TabBar({
 	onTab: (tab: Tab) => void;
 	railable: boolean;
 }) {
+	const about = useFlag('isAboutShown');
+
 	// Wide, a reader on Sessions is looking at Ask: the tab is not there.
 	const tabClass = (which: Tab) =>
 		`font-read text-ui leading-tight whitespace-nowrap transition-colors ${
@@ -60,10 +65,13 @@ export function TabBar({
 				disabled
 				aria-selected={false}
 				title={COPY.addLater}
-				className="font-read text-ui text-ink-faint leading-tight whitespace-nowrap line-through opacity-60 disabled:cursor-default"
+				className={`font-read text-ui text-ink-faint leading-tight whitespace-nowrap line-through opacity-60 disabled:cursor-default ${
+					about ? '@max-compact:hidden' : ''
+				}`}
 			>
 				{COPY.tabs.add}
 			</button>
+			{about && named('about', COPY.tabs.about)}
 		</div>
 	);
 }

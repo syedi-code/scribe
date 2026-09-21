@@ -34,8 +34,10 @@ const work = (
 const CATALOGUE = {
 	works: [
 		work('Frantz Fanon', 'Black Skin, White Masks'),
+		work('Hannah Arendt', 'The Human Condition'),
 		work('Frantz Fanon', 'The Wretched of the Earth'),
 		work('Michel Foucault', 'Discipline and Punish'),
+		work('Michel Foucault', 'The Birth of the Clinic'),
 		work('Michel Foucault', 'The Order of Things', {
 			documents: [
 				{
@@ -52,10 +54,11 @@ const CATALOGUE = {
 
 const search = () => screen.getByRole('searchbox');
 
-// A creator's name is now one span per ink, so no single text node holds it:
-// the shelf is found by the heading's own text instead.
+// A creator's name is one span per ink, so no single text node holds it: the
+// shelf is found by the heading's first span, which is the name alone.
 const heading = (name: string) => (_: string, element: Element | null) =>
-	element?.tagName === 'H2' && element.textContent === name;
+	element?.tagName === 'H2' &&
+	element.firstElementChild?.textContent === name;
 const shelf = (name: string) => screen.findByText(heading(name));
 const noShelf = (name: string) => screen.queryByText(heading(name));
 
@@ -68,7 +71,7 @@ describe('the shelves', () => {
 		expect(screen.getAllByText(heading('Frantz Fanon'))).toHaveLength(1);
 		expect(screen.getByText('Discipline and Punish')).toBeTruthy();
 		expect(screen.getByText('The Wretched of the Earth')).toBeTruthy();
-		expect(screen.getByText('4 works · 2 names')).toBeTruthy();
+		expect(screen.getByText('6 works · 3 names')).toBeTruthy();
 	});
 
 	it('says which works cannot be searched, rather than listing them alike', async () => {
@@ -77,7 +80,7 @@ describe('the shelves', () => {
 		await shelf('Michel Foucault');
 
 		expect(screen.getByText('scan only')).toBeTruthy();
-		expect(screen.getAllByText('353 pages')).toHaveLength(3);
+		expect(screen.getAllByText('353 pages')).toHaveLength(5);
 	});
 
 	// The list is not an offer of the files behind it, and says so.
@@ -108,6 +111,40 @@ describe('the shelves', () => {
 		expect(screen.queryByText('Discipline and Punish')).toBeNull();
 		expect(noShelf('Frantz Fanon')).toBeNull();
 		expect(screen.getByText('1 work · 1 name')).toBeTruthy();
+	});
+
+	it('files the fullest shelf first, and single volumes together at the end', async () => {
+		stubFetch(CATALOGUE);
+		renderApp(<BooksPanel />);
+		await shelf('Michel Foucault');
+
+		const headings = screen
+			.getAllByRole('heading', { level: 2 })
+			.map((h) => h.firstElementChild?.textContent);
+		expect(headings).toEqual([
+			'Michel Foucault',
+			'Frantz Fanon',
+			'One work each',
+		]);
+		expect(screen.getByText('3 works')).toBeTruthy();
+		// Arendt is on the shared shelf, named beside her work.
+		expect(noShelf('Hannah Arendt')).toBeNull();
+		expect(screen.getByText('The Human Condition')).toBeTruthy();
+	});
+
+	it('offers a jump to each fuller shelf, and hides it while searching', async () => {
+		stubFetch(CATALOGUE);
+		renderApp(<BooksPanel />);
+		await shelf('Michel Foucault');
+
+		const index = screen.getByRole('navigation', {
+			name: 'Jump to a shelf',
+		});
+		expect(index.textContent).toContain('Foucault');
+		expect(index.textContent).toContain('Fanon');
+
+		fireEvent.change(search(), { target: { value: 'order' } });
+		expect(screen.queryByRole('navigation')).toBeNull();
 	});
 
 	it('says so when nothing matches, in the reader’s words', async () => {

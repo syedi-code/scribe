@@ -25,7 +25,7 @@ const plural = (count: number, one: string, many: string) =>
 
 export const COPY = {
 	/* ---- chrome ---- */
-	tabs: { ask: 'Ask', books: 'Books', add: 'Add a book' },
+	tabs: { ask: 'Ask', books: 'Books', add: 'Add a book', about: 'About' },
 	/** The tab is shown struck through rather than removed: it is coming back. */
 	addLater: 'not yet — Scribe reads the library, it does not fill it',
 	sessions: 'Sessions',
@@ -466,6 +466,71 @@ export const COPY = {
 			`${works} ${plural(works, 'work', 'works')} · ${creators} ${plural(creators, 'name', 'names')}`,
 		pages: (count: number) => `${count} ${plural(count, 'page', 'pages')}`,
 		unsearchable: 'scan only',
+		/** The line of surnames under the search, each a jump to its shelf. */
+		index: 'Jump to a shelf',
+		/** How much of one name the library holds, beside the name. */
+		holds: (count: number) => `${count} ${plural(count, 'work', 'works')}`,
+		names: (count: number) => `${count} ${plural(count, 'name', 'names')}`,
+		/** The shelf of names the library holds one work by. */
+		singles: 'One work each',
+		singlesJump: 'one work each',
+	},
+
+	/* ---- about ----
+	   What Scribe is, said once, plainly, for someone deciding whether to
+	   trust it. Every claim here is one the code keeps: nothing promised about
+	   the reader's data that is not already true of it. */
+	about: {
+		title: 'About Scribe',
+		lead: (works: number | null, names: number | null) =>
+			works && names
+				? `Scribe answers questions from a library of ${works} works by ${names} authors, and from nothing else. When it quotes a book it names the page, and then the quote is checked against that page.`
+				: 'Scribe answers questions from a library of philosophy and theory, and from nothing else. When it quotes a book it names the page, and then the quote is checked against that page.',
+		sections: {
+			made: {
+				head: 'How an answer is made',
+				body: [
+					'Scribe does not answer from memory. It searches the library, reads the pages it finds, and writes from what it read, naming the page behind every quotation. The searching and reading are shown under your question as they happen, so you can see what it looked at.',
+				],
+			},
+			checked: {
+				head: 'Every quote is checked',
+				body: [
+					'Once the answer is written, each quotation in it is looked for, word for word, on the page it names. The check is made by Scribe’s server, not by the model that wrote the answer, and its result is drawn under the quoted words:',
+				],
+				after: [
+					'Press a quotation to open the page it came from, and from there the scan of the printed page. Only what’s cited, under every answer, fades each sentence no quotation supports: on a good answer it changes little, and on a weak one it shows how little was holding it up.',
+					'A quote found on the page proves the words are there. It does not prove the answer read them rightly. That part is still yours.',
+				],
+			},
+			library: {
+				head: 'The library',
+				body: [
+					'The library was put together by hand, a book at a time. Books lists everything Scribe can read from; it does not hand out the books themselves.',
+					'Scribe cannot read what is not on the shelves. Asked about a book that is not there, it is told to say so rather than answer from what a model half-remembers.',
+				],
+			},
+			privacy: {
+				head: 'What happens to what you ask',
+				body: [
+					'Your question, and the pages read to answer it, are sent to the company whose model is answering: OpenAI, Anthropic or Google, whichever you have chosen. Your conversations are kept so that you can come back to them.',
+					'So do not put anything private in here.',
+				],
+			},
+			plans: {
+				head: 'Plans',
+				body: [
+					'Scribe is free for a number of questions each month. A paid plan, with more questions and the better models, is not open yet.',
+				],
+			},
+		},
+		/** A quotation in each state, as it is drawn in an answer. */
+		key: {
+			verified: 'found on the page',
+			not_found: 'not on the page it names, or not all of it',
+			no_text_layer: 'the page has no text to check against',
+		},
+		sample: 'the words as quoted',
 	},
 
 	/* ---- add a book ---- */
