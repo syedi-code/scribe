@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { COPY } from '../copy';
+import { FlagContext } from '../flags/context';
+import { DEFAULT_FLAGS } from '../flags/flags';
+import { reportAllowance, resetAllowance } from '../state/allowance';
 import { chat, renderApp, stubFetch } from '../test/harness';
 import { Apparatus } from './Apparatus';
 import { Home } from './Home';
@@ -21,6 +24,30 @@ const MINUTE = 60_000;
 afterEach(() => vi.useRealTimers());
 
 describe('the home screen', () => {
+	// Each question asks on a press, so under a composer that has just said
+	// it cannot take one they would be three refusals.
+	it('offers no questions once the month is spent', () => {
+		stubFetch(LIBRARY);
+		reportAllowance({
+			plan: 'free',
+			used: 5,
+			limit: 5,
+			resets_at: '2026-10-01T00:00:00.000Z',
+		});
+		renderApp(
+			<FlagContext
+				value={{
+					flags: { ...DEFAULT_FLAGS, isPlanLimitShown: true },
+					loading: false,
+				}}
+			>
+				<Home composerSlot={() => {}} />
+			</FlagContext>
+		);
+		expect(showing()).toEqual([]);
+		resetAllowance();
+	});
+
 	it('offers three questions at a time, and names the work behind each', () => {
 		stubFetch(LIBRARY);
 		renderApp(<Home composerSlot={() => {}} />);

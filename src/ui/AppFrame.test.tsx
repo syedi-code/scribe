@@ -396,7 +396,10 @@ describe('the rail risen into the corner', () => {
 			configurable: true,
 			get(this: HTMLElement) {
 				if (this.tagName === 'HEADER') return OPEN;
-				return this.getAttribute('role') === 'tablist' ? TABS : 0;
+				// What does not fold: the tabs, and the account beside them.
+				return this.querySelector(':scope > [role="tablist"]')
+					? TABS
+					: 0;
 			},
 		});
 		try {

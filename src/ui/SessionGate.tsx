@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { describeApiError, openSession } from '../api/client';
 import { useAsync } from '../lib/useAsync';
+import { reportIdentity } from '../state/identity';
 import { Wordmark } from './Wordmark';
 
 /**
@@ -13,7 +14,10 @@ import { Wordmark } from './Wordmark';
  * the reason is the only thing on screen, in the reader's terms.
  */
 export function SessionGate({ children }: { children: ReactNode }) {
-	const session = useAsync(() => openSession(), []);
+	const session = useAsync(
+		() => openSession().then((user) => (reportIdentity(user), user)),
+		[]
+	);
 
 	if (session.loading) return <div className="bg-paper h-full" />;
 

@@ -14,6 +14,7 @@ import { useModels } from '../models/context';
 import { reportAllowance } from '../state/allowance';
 import { closePage } from '../state/reader';
 import { ChatContext, type ChatState } from './context';
+import { refuseSpentMonth } from './refusal';
 import { forgetThread, loadThread, readThread, warmThread } from './threads';
 import type { Conversation } from '../api/types';
 import type { ScribeMessage } from './message';
@@ -66,6 +67,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 						model_id: target.current.modelId,
 					},
 				}),
+				fetch: refuseSpentMonth,
 			}),
 		[]
 	);

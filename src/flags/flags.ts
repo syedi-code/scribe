@@ -24,6 +24,11 @@ export interface Flags {
 	 * for the first time at the moment of refusal.
 	 */
 	isPlanLimitShown: boolean;
+	/**
+	 * Whether the reader's own corner is in the header: who is signed in,
+	 * what they are on, and the way to sign out.
+	 */
+	isAccountShown: boolean;
 }
 
 interface Flag {
@@ -40,6 +45,10 @@ export const FLAGS: Record<keyof Flags, Flag> = {
 	},
 	isPlanLimitShown: {
 		env: 'FLAG_IS_PLAN_LIMIT_SHOWN',
+		fallback: false,
+	},
+	isAccountShown: {
+		env: 'FLAG_IS_ACCOUNT_SHOWN',
 		fallback: false,
 	},
 };

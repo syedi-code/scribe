@@ -14,6 +14,8 @@ export interface Identity {
 		email: string;
 		name: string | null;
 		role: 'admin' | 'member';
+		/** Absent on a worker that predates plans. */
+		plan?: 'free' | 'paid';
 	};
 }
 

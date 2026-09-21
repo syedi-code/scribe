@@ -1,6 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { COPY } from '../copy';
+import { AccountMenu } from '../account/AccountMenu';
 import { useConversation } from '../chat/context';
+import { useFlag } from '../flags/context';
 import { RunningModel } from '../models/RunningModel';
 import { TabBar } from './TabBar';
 import { Travel } from './Travel';
@@ -36,6 +38,7 @@ export function Header({
 	railable: boolean;
 }) {
 	const { atHome, newQuestion } = useConversation();
+	const account = useFlag('isAccountShown');
 	const bare = atHome && tab === 'ask';
 
 	// The mark has arrived only once the row has finished growing. Every
@@ -57,7 +60,10 @@ export function Header({
 	// How tall the row is with the mark folded away, for the rail to rise by:
 	// on the home screen the rail takes the empty corner (`ui/Rail`).
 	//
-	// Measured off the tabs, which do not fold, and never off the row itself.
+	// Measured off the tabs and the account beside them, which do not fold,
+	// and never off the row itself. The account's letter is the taller of the
+	// two, so it is what sets the height when it is shown.
+	//
 	// This runs on the commit that starts the fold, when the row is still at
 	// its open height — so coming back from a conversation the rail rose by
 	// the open height, about twenty pixels too far, and pulled `Sessions` up
@@ -134,7 +140,13 @@ export function Header({
 
 			{!bare && <Travel mark={mark} header={row} conceal={conceal} />}
 
-			<TabBar ref={tabs} tab={tab} onTab={onTab} railable={railable} />
+			<div
+				ref={tabs}
+				className="flex items-center gap-4 @max-compact:gap-3"
+			>
+				<TabBar tab={tab} onTab={onTab} railable={railable} />
+				{account && <AccountMenu />}
+			</div>
 		</header>
 	);
 }

@@ -7,6 +7,19 @@
  * made once and stays made.
  */
 
+/**
+ * The day a month resets, in the reader's locale but in UTC. The server names
+ * midnight UTC on the first, which is still the last day of the old month
+ * anywhere west of Greenwich — so without the zone a reader in New York was
+ * told their questions came back on 30 September.
+ */
+const resetDay = (at: string) =>
+	new Date(at).toLocaleDateString(undefined, {
+		day: 'numeric',
+		month: 'long',
+		timeZone: 'UTC',
+	});
+
 const plural = (count: number, one: string, many: string) =>
 	count === 1 ? one : many;
 
@@ -337,18 +350,74 @@ export const COPY = {
 			`${left} ${plural(left, 'question', 'questions')} left this month`,
 		spent: 'You have used this month’s questions.',
 		/** The month, in the reader’s own locale: the reset is a date, not a countdown. */
-		resets: (at: string) =>
-			`Resets ${new Date(at).toLocaleDateString(undefined, {
-				day: 'numeric',
-				month: 'long',
-			})}.`,
+		resets: (at: string) => `Resets ${resetDay(at)}.`,
 		/** What a paid plan is, said as what it gives rather than what it costs. */
 		offer: 'A paid plan gives you more questions each month, and the better models to ask them of.',
 		see: 'See plans',
-		/** On the button that does nothing yet, so a reader is not left waiting on it. */
-		soon: 'Plans are not open yet.',
 		/** The refused turn, when the composer was not disabled in time. */
 		refused: 'That question was not asked — this month’s are used up.',
+		/** Under a spent month, on the home screen: what is still open. */
+		stillOpen:
+			'Your sessions and the shelves are still here to read in the meantime.',
+		/** The date alone, for a sentence that already says what comes back. */
+		back: (at: string) => `New questions arrive ${resetDay(at)}.`,
+
+		/* The dialog a conversation raises, once, as the month runs down. */
+		nudge: {
+			lastFew: (left: number) =>
+				`${left} ${plural(left, 'question', 'questions')} left this month`,
+			spent: 'This month’s questions are used',
+			/** Said at the moment it happens, so nobody finds out by being refused. */
+			lastFewBody:
+				'Once they are gone, Scribe cannot take a new question until the month turns over. Everything you have asked so far stays here to read.',
+			spentBody:
+				'Everything you have asked so far is still here to read, with its citations.',
+			later: 'Not now',
+		},
+
+		/* The plans, as a placeholder for checkout. Honest about being one. */
+		plans: {
+			title: 'Plans',
+			current: 'Your plan',
+			free: 'Free',
+			paid: 'Paid',
+			freeLimit: (limit: number) =>
+				`${limit} ${plural(limit, 'question', 'questions')} a month`,
+			freeModel: 'The model Scribe starts on',
+			freeCitations: 'Every quotation checked against its page',
+			paidMore: 'Many more questions each month',
+			paidModels: 'The better models to ask them of',
+			paidEverything: 'Everything in Free',
+			price: 'Price to be set',
+			choose: 'Not open yet',
+			note: 'Paid plans are not open yet. When they are, this is where they will be.',
+		},
+	},
+
+	/* ---- the account ----
+	   Who is signed in, what they are on, and the way out. Set as a settings
+	   sheet: a label on the left, the fact on the right, a hairline between. */
+	account: {
+		open: 'Your account',
+		title: 'Account',
+		menu: 'Account',
+		email: 'Email',
+		plan: 'Plan',
+		month: 'This month',
+		signOut: 'Sign out',
+		signOutNote: 'Signs you out of Scribe on this browser.',
+		signingOut: 'Signing out…',
+		admin: 'Admin',
+		unlimited: 'No limit',
+		used: (used: number, limit: number) =>
+			`${used} of ${limit} ${plural(limit, 'question', 'questions')}`,
+		/** On the menu's second line, where there is room for one short fact. */
+		summary: (plan: string, left: number | null) =>
+			left === null ? plan : `${plan} · ${left} left this month`,
+	},
+
+	dialog: {
+		close: 'Close',
 	},
 
 	/* ---- the shelves ----

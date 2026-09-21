@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useConversation } from '../chat/context';
+import { Dialogs } from './Dialogs';
 import { Header } from './Header';
 import { useShortcuts } from './useShortcuts';
 import { Workspace } from './Workspace';
@@ -39,6 +40,7 @@ export function AppFrame() {
 				onNavigate={readConversation}
 				railable={threads.length > 0}
 			/>
+			<Dialogs />
 		</div>
 	);
 }
