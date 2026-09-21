@@ -1,17 +1,24 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COPY } from '../copy';
 import { AccountMenu } from '../account/AccountMenu';
+import { forgetPlans } from '../api/billing';
 import { ChatContext, type ChatState } from '../chat/context';
 import { FlagContext } from '../flags/context';
 import { DEFAULT_FLAGS, type Flags } from '../flags/flags';
 import { resetLimitNudge } from '../plan/useLimitNudge';
 import { reportAllowance, resetAllowance } from '../state/allowance';
-import { closeDialog, openDialog } from '../state/dialog';
+import { openDialog, readDialog, resetDialog } from '../state/dialog';
 import { reportIdentity, resetIdentity } from '../state/identity';
 import { chat } from '../test/harness';
 import { Dialogs } from './Dialogs';
-import type { Allowance } from '../api/types';
+import type { Allowance, PlanOffer } from '../api/types';
 
 const month = (used: number, limit: number | null = 5): Allowance => ({
 	plan: 'free',
@@ -26,6 +33,49 @@ const MEMBER = {
 	name: null,
 	role: 'member' as const,
 };
+
+const PLANS: PlanOffer[] = [
+	{
+		id: 'free',
+		turns_per_month: 5,
+		models: [
+			{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'openai' },
+		],
+		price: null,
+	},
+	{
+		id: 'paid',
+		turns_per_month: 500,
+		models: [
+			{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'openai' },
+			{
+				id: 'gemini-3.8-flash',
+				label: 'Gemini 3.8 Flash',
+				provider: 'google',
+			},
+		],
+		price: null,
+	},
+];
+
+/** alexandria, as far as these dialogs ask it anything. */
+function server(checkout: { status: number; body: unknown }) {
+	const calls: string[] = [];
+	vi.stubGlobal(
+		'fetch',
+		vi.fn(async (url: string, init?: RequestInit) => {
+			calls.push(`${init?.method ?? 'GET'} ${url}`);
+			if (url === '/api/plans')
+				return new Response(JSON.stringify({ plans: PLANS }));
+			if (url === '/api/billing/checkout')
+				return new Response(JSON.stringify(checkout.body), {
+					status: checkout.status,
+				});
+			return new Response(null, { status: 204 });
+		})
+	);
+	return calls;
+}
 
 function app(state: Partial<ChatState> = {}, flags: Partial<Flags> = {}) {
 	const tree = (over: Partial<ChatState>) => (
@@ -53,22 +103,27 @@ function app(state: Partial<ChatState> = {}, flags: Partial<Flags> = {}) {
 }
 
 const dialog = () => screen.queryByRole('dialog');
+const press = (name: string) =>
+	fireEvent.click(screen.getByRole('button', { name }));
 
 beforeEach(() => {
 	resetAllowance();
 	resetIdentity();
 	resetLimitNudge();
-	closeDialog();
+	resetDialog();
+	forgetPlans();
 	reportIdentity(MEMBER);
+	server({ status: 501, body: { code: 'CHECKOUT_NOT_OPEN' } });
 });
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('the limit, raised inside a conversation', () => {
-	it('is raised once two questions are left', () => {
+	it('is raised once two questions are left, as a count and a date', () => {
 		reportAllowance(month(3));
 		app();
-		expect(dialog()?.textContent).toMatch(/2 questions left this month/);
+		expect(dialog()?.textContent).toContain('2 questions left this month');
+		expect(dialog()?.textContent).toContain('Resets');
 	});
 
 	it('is not raised while there is room', () => {
@@ -97,13 +152,11 @@ describe('the limit, raised inside a conversation', () => {
 		expect(dialog()).toBeNull();
 	});
 
-	it('is raised once a month for each moment, not after every answer', () => {
+	it('is raised once a month for each moment, not after every answer', async () => {
 		reportAllowance(month(3));
 		app();
-		fireEvent.click(
-			screen.getByRole('button', { name: COPY.plan.nudge.later })
-		);
-		expect(dialog()).toBeNull();
+		press(COPY.plan.nudge.later);
+		await waitFor(() => expect(dialog()).toBeNull());
 
 		act(() => reportAllowance(month(4)));
 		expect(dialog()).toBeNull();
@@ -115,39 +168,133 @@ describe('the limit, raised inside a conversation', () => {
 	it('hands over to the plans without the plans being shut behind it', async () => {
 		reportAllowance(month(5));
 		app();
-		fireEvent.click(screen.getByRole('button', { name: COPY.plan.see }));
-		await act(async () => {});
-		expect(dialog()?.textContent).toContain(COPY.plan.plans.note);
+		press(COPY.plan.see);
+		expect(
+			await screen.findByRole('button', { name: COPY.plan.plans.choose })
+		).toBeTruthy();
+		expect(readDialog()).toBe('plans');
+	});
+});
+
+describe('a modal and the back button', () => {
+	it('has an address, so the plans can be linked to', () => {
+		app({ atHome: true });
+		act(() => openDialog('plans'));
+		expect(window.location.hash).toBe('#plans');
 	});
 
-	it('closes on Escape', () => {
-		reportAllowance(month(5));
-		app();
+	it('is put away by going back, as a sheet is on a phone', async () => {
+		app({ atHome: true });
+		act(() => openDialog('plans'));
+		act(() => window.history.back());
+		await waitFor(() => expect(readDialog()).toBeNull());
+		expect(window.location.hash).toBe('');
+	});
+
+	it('closes all the way, not back to the one underneath', async () => {
+		reportAllowance(month(2));
+		app({ atHome: true });
+		act(() => openDialog('plans'));
+		act(() => openDialog('checkout'));
 		fireEvent(dialog()!, new Event('cancel', { cancelable: true }));
-		expect(dialog()).toBeNull();
+		await waitFor(() => expect(readDialog()).toBeNull());
+		expect(window.location.hash).toBe('');
+	});
+
+	it('steps back from checkout to the plans', async () => {
+		app({ atHome: true });
+		act(() => openDialog('plans'));
+		act(() => openDialog('checkout'));
+		press(COPY.dialog.back);
+		await waitFor(() => expect(readDialog()).toBe('plans'));
 	});
 });
 
 describe('the plans', () => {
-	it('marks the plan the reader is on, and cannot take money yet', () => {
+	it('sets the number that differs large, and names the models', async () => {
 		reportAllowance(month(2));
 		app({ atHome: true });
 		act(() => openDialog('plans'));
-		const sheet = dialog()!;
-		expect(sheet.textContent).toContain('5 questions a month');
-		expect(sheet.textContent).toContain(COPY.plan.plans.current);
-		const choose = screen.getByRole('button', {
-			name: COPY.plan.plans.choose,
-		}) as HTMLButtonElement;
-		expect(choose.disabled).toBe(true);
+		const paid = await screen.findByRole('region', {
+			name: COPY.plan.plans.paid,
+		});
+		expect(paid.textContent).toContain('500');
+		expect(paid.textContent).toContain('Gemini 3.8 Flash');
+		const free = screen.getByRole('region', { name: COPY.plan.plans.free });
+		expect(free.textContent).toContain(COPY.plan.plans.current);
+	});
+
+	it('never shows a price it has not been given', async () => {
+		app({ atHome: true });
+		act(() => openDialog('plans'));
+		const paid = await screen.findByRole('region', {
+			name: COPY.plan.plans.paid,
+		});
+		expect(paid.textContent).toContain(COPY.plan.plans.priceLater);
+		expect(paid.textContent).not.toMatch(/\$/);
+	});
+
+	it('shows its terms beside the button, not behind it', async () => {
+		app({ atHome: true });
+		act(() => openDialog('plans'));
+		await screen.findByRole('button', { name: COPY.plan.plans.choose });
+		expect(dialog()?.textContent).toContain(COPY.plan.plans.terms);
+	});
+});
+
+describe('checkout', () => {
+	it('says plainly that nothing was charged while payments are closed', async () => {
+		const calls = server({
+			status: 501,
+			body: { code: 'CHECKOUT_NOT_OPEN' },
+		});
+		app({ atHome: true });
+		act(() => openDialog('checkout'));
+		await screen.findByText(COPY.checkout.perMonth(500));
+		press(COPY.checkout.pay);
+		expect(await screen.findByRole('status')).toBeTruthy();
+		expect(screen.getByRole('status').textContent).toBe(
+			COPY.checkout.notOpen
+		);
+		expect(calls).toContain('POST /api/billing/checkout');
+	});
+
+	it('goes to the payment page alexandria names', async () => {
+		server({
+			status: 200,
+			body: { url: 'https://checkout.stripe.test/x' },
+		});
+		const assign = vi.fn();
+		vi.stubGlobal('location', { ...window.location, assign });
+		app({ atHome: true });
+		act(() => openDialog('checkout'));
+		await screen.findByText(COPY.checkout.perMonth(500));
+		press(COPY.checkout.pay);
+		await waitFor(() =>
+			expect(assign).toHaveBeenCalledWith(
+				'https://checkout.stripe.test/x'
+			)
+		);
+	});
+
+	it('welcomes a reader back from paying, once', () => {
+		window.history.replaceState(null, '', '/?checkout=done');
+		app({ atHome: true });
+		expect(readDialog()).toBe('upgraded');
+		expect(window.location.search).toBe('');
 	});
 });
 
 describe('the account', () => {
-	const openMenu = () =>
-		fireEvent.click(
-			screen.getByRole('button', { name: COPY.account.open })
-		);
+	const openMenu = () => press(COPY.account.open);
+
+	it('says the plan on the button, before anyone presses it', () => {
+		reportAllowance(month(2));
+		app({ atHome: true });
+		expect(
+			screen.getByRole('button', { name: COPY.account.open }).textContent
+		).toContain(COPY.plan.plans.free);
+	});
 
 	it('says who is signed in and what they have left, from the menu', () => {
 		reportAllowance(month(2));
@@ -188,14 +335,7 @@ describe('the account', () => {
 	});
 
 	it('ends the session in alexandria before it leaves through Access', async () => {
-		const calls: string[] = [];
-		vi.stubGlobal(
-			'fetch',
-			vi.fn(async (url: string, init?: RequestInit) => {
-				calls.push(`${init?.method} ${url}`);
-				return new Response(null, { status: 204 });
-			})
-		);
+		const calls = server({ status: 501, body: {} });
 		const assign = vi.fn();
 		vi.stubGlobal('location', { ...window.location, assign });
 

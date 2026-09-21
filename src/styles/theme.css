@@ -180,6 +180,8 @@
 	--z-menu: 50; /* what hangs out of the header: the model switcher */
 
 	--animate-rise: rise 0.35s var(--ease-paper) both;
+	/* A modal, narrow: up from the bottom edge, the way a sheet arrives. */
+	--animate-sheet: sheet 0.38s var(--ease-paper) both;
 	--animate-settle: settle 0.5s var(--ease-paper) both;
 	--animate-word: word 0.28s linear both;
 	--animate-blink: blink 1.05s steps(1) infinite;
@@ -196,6 +198,14 @@
 	}
 	to {
 		opacity: 1;
+		transform: none;
+	}
+}
+@keyframes sheet {
+	from {
+		transform: translateY(100%);
+	}
+	to {
 		transform: none;
 	}
 }

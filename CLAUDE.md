@@ -110,30 +110,84 @@ told their questions came back a day early.
 
 **Every offer of a paid plan goes to one place.** `seePlans()` in
 `state/dialog.ts` opens `plan/PlansDialog.tsx` — from the composer's notice, the
-limit dialog, the account menu, the account sheet. It is the placeholder
-checkout will replace, and there is only one of it, so checkout is built once
-and every button already points at it. Until then its pay button is drawn and
-disabled and it says plans are not open: a button that silently does nothing
-teaches a reader the app is broken rather than unfinished. Nobody is offered
-what they already have — a paid reader and the admin see no offer anywhere.
+limit dialog, the account menu, the account sheet — and checkout is reached from
+there and nowhere else. Nobody is offered what they already have: a paid reader
+and the admin see no offer anywhere.
 
-**One modal at a time, and the store decides which.** `state/dialog.ts` names
-the open one; `ui/Dialogs.tsx` mounts it inside the shell, so it answers the
-same container queries, and `ui/Modal.tsx` draws it with a native `<dialog>`
-and `showModal()` — focus trap, Escape and the top layer are the browser's, so
-no `--z-*` layer is spent on it. Narrow, it is a sheet from the bottom edge.
-Escape is taken through `cancel` and never left to the element: a closing
-`<dialog>` fires `close` after the store has moved on, and the limit dialog
-handing over to the plans shut the plans on its way out. jsdom has none of the
-`<dialog>` methods; `test/setup.ts` stands in only as far as `open`.
+What the plans say comes from `GET /plans`, which alexandria answers from the
+same `TURNS_PER_MONTH` and model table it enforces, so the page that sells a
+plan cannot promise a number or a model the server would refuse. A free
+reader's roster only lists free models, which is why it is a route of its own.
+A price is shown only once alexandria sends one; until then the card says so,
+and never a made-up figure.
 
-**The account is the reader's corner of the header.** A monogram at the far
-end, behind `isAccountShown`, opening a menu that says who you are and what you
-are on before it offers anything — which is most often all a reader came to
+A card carries only what differs — the questions a month, set large because it
+is the difference a reader feels, then the models — and what both plans share
+is said once under them. The plan on offer is drawn forward and holds the only
+filled button; the reader's own is named, not shaded, because shading it made
+the plan they are on look like the better one. Narrow, Paid comes first, so its
+button is in reach without scrolling. None of it leans on anyone: the price and
+the billing terms sit beside the button rather than behind it, nothing counts
+down, *Not now* is as plain as the offer, and Free is described as it is.
+
+**Checkout is finished on this side.** `plan/CheckoutDialog.tsx` is the
+review — what, how much, how billed, which account, where the card goes — and
+its button calls `POST /billing/checkout` (`api/billing.ts`). alexandria answers
+with a Stripe Checkout URL and the browser goes there; card details are typed
+into Stripe's page, never this one. Until Stripe is set up alexandria answers
+501 `CHECKOUT_NOT_OPEN`, and the reader is told in the footer, where the payment
+page would have opened, that nothing was charged. Stripe sends a reader back to
+`?checkout=done` (the welcome, `plan/UpgradedDialog.tsx`) or
+`?checkout=cancelled` (the review again); the query is taken off so a reload
+does not welcome anyone twice. The plan itself changes on Stripe's webhook, not
+on the redirect, and the two race — so the welcome says what was bought rather
+than reading it back, and says the delay out loud while the allowance still
+names the old plan.
+
+**There is no Plans tab.** Tabs are the places a reader reads, and a tab of
+billing beside the library is the storefront a reading tool should not be; the
+compact tab bar has no room for one either. What a tab would have bought — an
+address — every modal has instead.
+
+**One modal at a time, the store decides which, and each is a history
+entry.** `state/dialog.ts` names the open one and pushes it as `#plans`,
+`#account`, `#checkout`. On a phone the back gesture is how anything is put
+away, and a sheet that ignored it navigated the reader out of the app. The
+plans also need somewhere a link can point: a post, an email, Stripe's return.
+Each entry carries its depth, so ✕ steps back over all of them at once rather
+than reopening the one underneath, and ‹ in checkout steps back one. A modal
+opened by the address itself has nothing of ours to step back over, so closing
+it replaces the entry instead of leaving the app. The limit dialog is pushed
+but never opened from an address.
+
+`ui/Dialogs.tsx` mounts the open one inside the shell, so it answers the same
+container queries, and `ui/Modal.tsx` draws it with a native `<dialog>` and
+`showModal()` — focus trap, Escape and the top layer are the browser's, so no
+`--z-*` layer is spent on it. Focus lands on the title, not the first button: a
+dialog that opened with its ✕ ringed in verdigris was saying *found* about a
+close button. Escape is taken through `cancel` and never left to the element: a
+closing `<dialog>` fires `close` after the store has moved on, and the limit
+dialog handing over to the plans shut the plans on its way out. jsdom has none
+of the `<dialog>` methods; `test/setup.ts` stands in only as far as `open`.
+
+Narrow, a modal is a sheet: it slides up (`--animate-sheet`), takes the width,
+scrolls inside itself, pins its `footer` within a thumb's reach, and carries a
+handle that puts it away when pulled down past 80px. The pull moves the sheet
+with `translate`, not `transform`, because the entrance is a transform animation
+that holds its last frame and would win over one set by hand.
+
+**The account is the reader's corner of the header.** Behind `isAccountShown`:
+a stamp — the initial reversed out of an ink disc, in the bold italic the
+wordmark's *-lm* is cut in — and the plan's name beside it, because *what am I
+on* is the question most often asked of that button and answering it on the
+button saves the press. Narrow, the stamp alone. Ink and paper only: an avatar
+hashed to a hue would be a third meaning for colour beside the verdicts and the
+author inks. The menu opens on the stamp again, larger, the address and what is
+left, before it offers anything — which is most often all a reader came to
 check — then the account sheet, the plans, and sign out. The sheet is where the
 month is shown in full, count and measure, though nothing else says so before
-two are left: a reader who opens their account has asked. The admin is named
-as the admin, never as *Free*: exempt by role, not by paying.
+two are left: a reader who opens their account has asked. The admin is named as
+the admin, never as *Free*: exempt by role, not by paying.
 
 Signing out is two doors, in order. `DELETE /api/session` first, because
 alexandria's `POST /session` answers with any session the cookie still names,
