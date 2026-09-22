@@ -570,6 +570,13 @@ export const COPY = {
 				'Scribe is free for a limited number of questions each month, and your account shows how many are left. Paid gives more questions, Claude Sonnet 5, and the scan of every page an answer cites. It can be cancelled at any time.',
 			],
 		},
+		contact: {
+			head: 'Anything at all',
+			body: [
+				'Questions, problems, a book you think belongs here, or a quotation that looks wrong: support@socialeating.studio. It is read by the person who made this.',
+			],
+		},
+
 		/** A quotation in each state, as it is drawn in an answer. */
 		key: {
 			verified: 'found on the page',

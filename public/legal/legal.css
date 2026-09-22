@@ -92,6 +92,16 @@ body {
 	font-style: italic;
 }
 
+/* The product's name in prose, set the way the wordmark sets it. */
+.name {
+	font-weight: 300;
+	white-space: nowrap;
+}
+.name b {
+	font-weight: 700;
+	font-style: italic;
+}
+
 .mast nav {
 	display: flex;
 	gap: 1.25rem;
