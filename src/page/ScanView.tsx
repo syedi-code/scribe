@@ -97,7 +97,10 @@ export function ScanView({
 	 * in the bucket: the interface asserting a fact it had not established, in
 	 * the one app that exists to not do that.
 	 */
-	const opened = useAsync(() => openPage(documentId, page), [documentId, page]);
+	const opened = useAsync(
+		() => openPage(documentId, page),
+		[documentId, page]
+	);
 	const state = opened.value;
 	const scan = state?.kind === 'drawn' ? state.scan : null;
 	// Opening the whole file elsewhere is the admin's; every other reader
@@ -250,7 +253,9 @@ export function ScanView({
 					<p
 						role="status"
 						className={`font-app text-small text-ink-soft m-0 ${
-							quiet ? '' : 'absolute inset-x-0 top-1/2 text-center'
+							quiet
+								? ''
+								: 'absolute inset-x-0 top-1/2 text-center'
 						}`}
 					>
 						{locked

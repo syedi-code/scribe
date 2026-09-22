@@ -5,6 +5,7 @@ import { COPY } from '../copy';
 import { useAccount } from '../account/useAccount';
 import { BrandedLabel } from '../models/BrandedLabel';
 import { backDialog } from '../state/dialog';
+import { refreshRoster } from '../state/roster';
 import { Modal } from '../ui/Modal';
 import { priceOf, usePlans } from './usePlans';
 
@@ -12,6 +13,7 @@ type Step =
 	| { kind: 'ready' }
 	| { kind: 'opening' }
 	| { kind: 'not-open' }
+	| { kind: 'already-paid' }
 	| { kind: 'failed'; reason: string };
 
 /**
@@ -39,7 +41,8 @@ export function CheckoutDialog() {
 				window.location.assign(checkout.url);
 				return;
 			}
-			setStep({ kind: 'not-open' });
+			if (checkout.kind === 'already-paid') refreshRoster();
+			setStep({ kind: checkout.kind });
 		} catch (error) {
 			setStep({ kind: 'failed', reason: describeApiError(error) });
 		}
@@ -47,12 +50,14 @@ export function CheckoutDialog() {
 
 	const footer = (
 		<>
-			{step.kind === 'not-open' && (
+			{(step.kind === 'not-open' || step.kind === 'already-paid') && (
 				<p
 					role="status"
 					className="font-app text-small text-ink bg-paper-deep/60 m-0 mb-3 rounded-lg px-3 py-2.5"
 				>
-					{COPY.checkout.notOpen}
+					{step.kind === 'not-open'
+						? COPY.checkout.notOpen
+						: COPY.checkout.alreadyPaid}
 				</p>
 			)}
 			{step.kind === 'failed' && (
@@ -67,7 +72,10 @@ export function CheckoutDialog() {
 				type="button"
 				onClick={pay}
 				disabled={
-					!paid || step.kind === 'opening' || step.kind === 'not-open'
+					!paid ||
+					step.kind === 'opening' ||
+					step.kind === 'not-open' ||
+					step.kind === 'already-paid'
 				}
 				className="font-app text-ui bg-ink text-paper w-full rounded-full px-4 py-3 leading-none transition-opacity enabled:hover:opacity-85 disabled:cursor-default disabled:opacity-40"
 			>

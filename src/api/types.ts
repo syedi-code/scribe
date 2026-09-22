@@ -64,6 +64,20 @@ export interface PlanOffer {
 	price: { amount_cents: number; currency: string; interval: 'month' } | null;
 }
 
+/** `GET /billing`: the plan, and the subscription that keeps it on. */
+export interface Billing {
+	plan: 'free' | 'paid';
+	/** Whether Stripe holds a customer for this reader, so a portal to open. */
+	manageable: boolean;
+	subscription: {
+		status: string;
+		/** When it renews; null once it has been cancelled to end. */
+		renews_at: string | null;
+		/** When it ends, once cancelled; Paid stays on until then. */
+		ends_at: string | null;
+	} | null;
+}
+
 export interface ModelsResponse {
 	models: Model[];
 	/**
