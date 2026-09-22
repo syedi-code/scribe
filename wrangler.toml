@@ -29,7 +29,7 @@ FLAG_IS_ABOUT_SHOWN = "true"
 FLAG_IS_VISITOR_MODE_ENABLED = "false"
 FLAG_IS_GOOGLE_SIGN_IN_SHOWN = "false"
 # Turnstile's public site key; the secret is alexandria's TURNSTILE_SECRET.
-TURNSTILE_SITE_KEY = ""
+TURNSTILE_SITE_KEY = "0x4AAAAAAFAOMLGYEyKamCyH"
 
 [env.preview.vars]
 WORKER_URL = "https://antisocial-worker-staging.iysyed01.workers.dev"
@@ -40,4 +40,4 @@ FLAG_IS_ABOUT_SHOWN = "true"
 FLAG_IS_VISITOR_MODE_ENABLED = "false"
 FLAG_IS_GOOGLE_SIGN_IN_SHOWN = "false"
 # Turnstile's public site key; the secret is alexandria's TURNSTILE_SECRET.
-TURNSTILE_SITE_KEY = ""
+TURNSTILE_SITE_KEY = "0x4AAAAAAFAOMLGYEyKamCyH"
