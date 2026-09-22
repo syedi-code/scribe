@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { COPY } from '../copy';
 import { seePlans } from '../state/dialog';
 import { Modal } from '../ui/Modal';
+import { Billing } from './Billing';
 import { useAccount } from './useAccount';
 
 /**
@@ -28,7 +29,7 @@ export function AccountDialog() {
 				<Row label={COPY.account.plan}>
 					<span className="flex items-center justify-between gap-3">
 						<span>{account.planName}</span>
-						{account.offerPlans && (
+						{account.offerPlans && !account.admin && (
 							<button
 								type="button"
 								onClick={seePlans}
@@ -38,6 +39,7 @@ export function AccountDialog() {
 							</button>
 						)}
 					</span>
+					{!account.admin && <Billing plan={account.plan} />}
 				</Row>
 
 				{allowance && (

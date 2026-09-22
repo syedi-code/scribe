@@ -4,6 +4,7 @@ import { useFlags } from '../flags/context';
 import type { Flags } from '../flags/flags';
 import { useAsync } from '../lib/useAsync';
 import { reportAllowance } from '../state/allowance';
+import { useRosterVersion } from '../state/roster';
 import { ModelContext, type ModelChoice, type ModelState } from './context';
 import type { Model, ModelsResponse } from '../api/types';
 
@@ -41,9 +42,9 @@ const heldBack = (id: string, flags: Flags) =>
 	id === HAIKU && !flags.isClaudeHaikuEnabled;
 
 /**
- * Luna first: a fifth of Haiku's input price and a quarter of its output, and
- * it scores higher. What it spends instead is time — minutes can pass before
- * its first word. One line to change.
+ * Luna, when the server names no default: a fifth of Haiku's input price and
+ * a quarter of its output, and it scores higher. What it spends instead is
+ * time — minutes can pass before its first word.
  */
 export const PREFERRED_MODEL_ID = 'gpt-5.6-luna';
 
@@ -71,7 +72,11 @@ const KNOWN: Model[] = [
 
 export function ModelProvider({ children }: { children: ReactNode }) {
 	const [chosen, setChosen] = useState<string | null>(null);
-	const roster = useAsync(() => api.get<ModelsResponse>('/models'), []);
+	const version = useRosterVersion();
+	const roster = useAsync(
+		() => api.get<ModelsResponse>('/models'),
+		[version]
+	);
 	const { flags, loading: flagsLoading } = useFlags();
 
 	// The roster is the one request this app makes that already knows what the
@@ -108,12 +113,14 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 		];
 
 		const usable = choices.filter((model) => model.available);
+		// The server names the default by plan — Sonnet on Paid, Luna on Free
+		// — so it comes before this build's own preference.
 		const selected =
 			usable.find((model) => model.id === chosen) ??
-			usable.find((model) => model.id === PREFERRED_MODEL_ID) ??
 			usable.find(
 				(model) => model.id === roster.value?.default_model_id
 			) ??
+			usable.find((model) => model.id === PREFERRED_MODEL_ID) ??
 			usable[0] ??
 			null;
 

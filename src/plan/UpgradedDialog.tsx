@@ -1,6 +1,7 @@
 import { COPY } from '../copy';
 import { closeDialog } from '../state/dialog';
 import { useAllowance } from '../state/allowance';
+import { usePlanArrival } from './usePlanArrival';
 import { Modal } from '../ui/Modal';
 
 /**
@@ -10,22 +11,28 @@ import { Modal } from '../ui/Modal';
  * race: a reader can land here a moment before alexandria has heard. So it
  * says what they bought rather than reading it back, and says the delay out
  * loud while the allowance still names the old plan — rather than showing
- * *Free* to someone who has just paid.
+ * *Free* to someone who has just paid — and keeps asking until it lands
+ * (`usePlanArrival`), so the reader sees it arrive rather than reloading.
  */
 export function UpgradedDialog() {
 	const allowance = useAllowance();
-	const pending = allowance !== null && allowance.plan !== 'paid';
+	const arrival = usePlanArrival(allowance?.plan === 'paid');
 
 	return (
 		<Modal title={COPY.upgraded.title}>
 			<p className="font-read text-ui text-ink-soft m-0 leading-normal">
 				{COPY.upgraded.body}
 			</p>
-			{pending && (
-				<p className="font-app text-small text-ink-faint m-0 mt-2">
-					{COPY.upgraded.pending}
-				</p>
-			)}
+			<p
+				role="status"
+				className="font-app text-small text-ink-faint m-0 mt-2"
+			>
+				{arrival === 'arrived'
+					? COPY.upgraded.arrived
+					: arrival === 'slow'
+						? COPY.upgraded.slow
+						: COPY.upgraded.pending}
+			</p>
 			<button
 				type="button"
 				onClick={closeDialog}

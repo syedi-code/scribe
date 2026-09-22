@@ -20,6 +20,13 @@ const resetDay = (at: string) =>
 		timeZone: 'UTC',
 	});
 
+/** A day in the reader's own calendar: Stripe's times are exact instants. */
+const localDay = (at: string) =>
+	new Date(at).toLocaleDateString(undefined, {
+		day: 'numeric',
+		month: 'long',
+	});
+
 const plural = (count: number, one: string, many: string) =>
 	count === 1 ? one : many;
 
@@ -430,6 +437,16 @@ export const COPY = {
 		/** On the menu's second line, where there is room for one short fact. */
 		summary: (plan: string, left: number | null) =>
 			left === null ? plan : `${plan} · ${left} left this month`,
+		renews: (at: string) => `Renews ${localDay(at)}`,
+		/** Cancelled, and still paid for until then. */
+		ends: (at: string) => `Paid until ${localDay(at)}, then Free`,
+		/** Stripe is retrying the card; Paid stays on meanwhile. */
+		pastDue: 'Your last payment did not go through. Stripe will try again.',
+		manage: 'Manage billing',
+		opening: 'Opening…',
+		/** What Manage billing opens, said before it is pressed. */
+		manageNote: 'Cancel, change your card, or see invoices, on Stripe’s page.',
+		manageFailed: 'Billing could not be opened just now.',
 	},
 
 	/* ---- checkout ----
@@ -451,6 +468,9 @@ export const COPY = {
 		/** Where the payment page would have opened. Nothing half-done. */
 		notOpen:
 			'Payments are not open yet, so nothing was charged. When they open, this button takes you straight to payment.',
+		/** Stripe already holds a payment this page had not heard of. */
+		alreadyPaid:
+			'You are already on Paid, so nothing more was charged. It may take a moment to show here.',
 	},
 
 	/* ---- back from paying ---- */
@@ -459,6 +479,9 @@ export const COPY = {
 		body: 'More questions each month, and every model in the switcher.',
 		/** The webhook and the redirect race; say so rather than show Free. */
 		pending: 'It can take a minute for your account to show it.',
+		/** Said once the wait is longer than any webhook should take. */
+		slow: 'This is taking longer than it should. Your payment is safe with Stripe; if Paid has not arrived in a few minutes, write to support@socialeating.studio.',
+		arrived: 'Your account shows it now.',
 		start: 'Start reading',
 	},
 

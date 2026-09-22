@@ -89,15 +89,24 @@ function onPopState() {
  * Where Stripe sends a reader back to: `?checkout=done` or
  * `?checkout=cancelled`, which alexandria will name as the session's success
  * and cancel URLs. Done opens the welcome; cancelled opens checkout again
- * where they left it. The query is taken off either way, so a reload does not
+ * where they left it. `?billing=returned`, from the billing portal, opens the
+ * account again. The query is taken off either way, so a reload does not
  * welcome anyone twice.
  */
 function followCheckoutReturn(): boolean {
 	const query = new URLSearchParams(window.location.search);
 	const returned = query.get('checkout');
-	if (!returned) return false;
+	// Back from Stripe's billing page, the reader lands on the sheet they left
+	// from, and it reads their billing afresh when it opens.
+	const fromPortal = query.get('billing') === 'returned';
+	if (!returned && !fromPortal) return false;
 	query.delete('checkout');
-	const which: Dialog = returned === 'done' ? 'upgraded' : 'checkout';
+	query.delete('billing');
+	const which: Dialog = fromPortal
+		? 'account'
+		: returned === 'done'
+			? 'upgraded'
+			: 'checkout';
 	const rest = query.toString();
 	window.history.replaceState(
 		{ dialog: which, depth: 0 },

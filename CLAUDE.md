@@ -143,6 +143,22 @@ on the redirect, and the two race — so the welcome says what was bought rather
 than reading it back, and says the delay out loud while the allowance still
 names the old plan.
 
+**Back from paying, the tab waits for the webhook, out loud.** Stripe's
+redirect usually beats its webhook, so the tab that loads on `?checkout=done`
+is told Free. `plan/usePlanArrival.ts` asks `GET /billing` every two seconds
+until it says Paid, then `refreshRoster()` (`state/roster.ts`) asks for the
+roster again, so Sonnet unlocks and the counter changes without a reload.
+Past thirty seconds the welcome says the wait is long and names the support
+address; past two minutes it stops asking. The account sheet reads
+`GET /billing` each time it opens — when Paid renews or ends, a failed payment
+said plainly, and *Manage billing*, which mints a Stripe portal link on the
+press and follows it. Back from the portal (`?billing=returned`) the account
+sheet opens again, and if billing names another plan than the tab believes,
+the roster is asked again. A checkout refused with `ALREADY_PAID` says nothing
+more was charged and will not offer the button again. The default model is
+the server's (`default_model_id`, Sonnet on Paid) before this build's own
+preference, which is only a fallback.
+
 **There is no Plans tab.** Tabs are the places a reader reads, and a tab of
 billing beside the library is the storefront a reading tool should not be; the
 compact tab bar has no room for one either. What a tab would have bought — an
