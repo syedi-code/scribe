@@ -445,7 +445,8 @@ export const COPY = {
 		manage: 'Manage billing',
 		opening: 'Opening…',
 		/** What Manage billing opens, said before it is pressed. */
-		manageNote: 'Cancel, change your card, or see invoices, on Stripe’s page.',
+		manageNote:
+			'Cancel, change your card, or see invoices, on Stripe’s page.',
 		manageFailed: 'Billing could not be opened just now.',
 	},
 
