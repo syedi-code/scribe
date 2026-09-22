@@ -147,6 +147,19 @@ function Card({
 				</ul>
 			</div>
 
+			{plan.page_scans !== undefined && (
+				<div className="border-paper-deep mt-3 border-t pt-3">
+					<p className="font-app text-tiny text-ink-faint m-0 mb-1.5">
+						{COPY.plan.plans.sources}
+					</p>
+					<p className="font-app text-ui text-ink m-0">
+						{plan.page_scans
+							? COPY.plan.plans.sourceScan
+							: COPY.plan.plans.sourceText}
+					</p>
+				</div>
+			)}
+
 			{children && <div className="mt-auto pt-5">{children}</div>}
 		</section>
 	);

@@ -272,7 +272,7 @@ describe('before the document behind a citation has arrived', () => {
 		});
 
 		expect(
-			await screen.findByRole('button', { name: 'See the scan' })
+			await screen.findByRole('button', { name: /^See the scan/ })
 		).toBeTruthy();
 		expect(screen.queryByText('This page has no scan to show.')).toBeNull();
 	});

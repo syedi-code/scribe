@@ -315,6 +315,8 @@ export const COPY = {
 		noText: 'This page has no extracted text.',
 		unreachable: 'The page could not be fetched just now.',
 		seeScan: 'See the scan',
+		/** In place of *See the scan*, for a reader whose plan has none. */
+		seeScanOnPaid: 'See the scan on Paid',
 		around: (from: number, to: number) => `Read pp. ${from}–${to}`,
 		noScan: 'This page has no scan to show.',
 	},
@@ -327,7 +329,9 @@ export const COPY = {
 		back: 'Back to the passage',
 		loading: 'drawing the page…',
 		unreachable: 'The scan could not be drawn just now.',
-		where: (page: number, of: number) => `PDF p. ${page} of ${of}`,
+		where: (page: number) => `PDF p. ${page}`,
+		/** Said over the sheet when the reader's plan has no scans. */
+		locked: 'The scan of a cited page is part of Paid.',
 		previous: 'Previous page',
 		next: 'Next page',
 		/** Tapping the page magnifies it; the label says which way it will go. */
@@ -393,6 +397,10 @@ export const COPY = {
 			perMonth: (amount: string) => `${amount} a month`,
 			questions: 'questions a month',
 			models: 'Models',
+			/** What a reader sees behind a citation, which differs by plan. */
+			sources: 'Behind each quotation',
+			sourceText: 'The passage it came from',
+			sourceScan: 'The passage, and the scanned page itself',
 			shared: 'On both plans, every quotation is checked against the page it cites, and questions reset on the 1st of each month.',
 			choose: 'Continue to payment',
 			/** Beside the button, not behind it. */

@@ -1,4 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import type { ScanFile } from '../api/documents';
 
 /**
  * The scan renderer, and the only place in the app that knows what a PDF is.
@@ -63,14 +64,18 @@ const ASSETS = '/pdf';
 /** Pixels are rendered, not stretched, but a 3× phone is not worth 3×. */
 const density = () => Math.min(globalThis.devicePixelRatio || 1, 2);
 
-export async function openScan(url: string): Promise<Scan> {
+/**
+ * One page of a scan, ready to draw. alexandria sends a page either as a
+ * one-page PDF cut from the book or as an image already rendered from it;
+ * both are drawn the same way, so the view never needs to know which.
+ */
+export async function openScan(file: ScanFile): Promise<Scan> {
+	if (file.contentType.startsWith('image/')) return openImage(file);
+
 	const library = await pdfjs();
-	const file: PDFDocumentProxy = await library.getDocument({
-		url,
-		// The scans run to hundreds of megabytes and a reader wants one page
-		// of one, so the file is read in pieces if alexandria will serve them.
-		disableAutoFetch: true,
-		disableStream: false,
+	const pdf: PDFDocumentProxy = await library.getDocument({
+		// pdf.js takes the buffer over, and the cache keeps this one.
+		data: file.bytes.slice(),
 		// A scanned page is JBIG2 or JPEG 2000 and a typeset one names fonts
 		// it does not carry; both are decoded from files beside the bundle.
 		// `vite.config.ts` is what puts them there.
@@ -82,13 +87,13 @@ export async function openScan(url: string): Promise<Scan> {
 	}).promise;
 
 	return {
-		pages: file.numPages,
+		pages: pdf.numPages,
 		draw(pageNo, canvas, width) {
 			let task: { cancel: () => void } | null = null;
 			let dropped = false;
 
 			const done = (async () => {
-				const page = await file.getPage(pageNo);
+				const page = await pdf.getPage(pageNo);
 				if (dropped) return;
 
 				const unit = page.getViewport({ scale: 1 });
@@ -122,6 +127,27 @@ export async function openScan(url: string): Promise<Scan> {
 					task?.cancel();
 				},
 			};
+		},
+	};
+}
+
+/** A rendered page image, drawn the way a PDF page is, to the width it is shown. */
+async function openImage(file: ScanFile): Promise<Scan> {
+	const image = await createImageBitmap(
+		new Blob([file.bytes.slice()], { type: file.contentType })
+	);
+	return {
+		pages: 1,
+		draw(_pageNo, canvas, width) {
+			const height = Math.round((image.height / image.width) * width);
+			canvas.width = Math.round(width * density());
+			canvas.height = Math.round(height * density());
+			canvas.style.width = `${width}px`;
+			canvas.style.height = `${height}px`;
+			canvas
+				.getContext('2d')
+				?.drawImage(image, 0, 0, canvas.width, canvas.height);
+			return { done: Promise.resolve(), cancel: () => undefined };
 		},
 	};
 }

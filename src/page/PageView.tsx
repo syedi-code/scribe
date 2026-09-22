@@ -8,6 +8,7 @@ import { useCitedPage } from '../citations/useCitedPage';
 import { findQuote } from '../citations/window';
 import { useAsync } from '../lib/useAsync';
 import { closePage, useOpenPage } from '../state/reader';
+import { ScanLink } from './ScanLink';
 import { ScanView } from './ScanView';
 import type { AnswerCitation, PageText, QuoteContext } from '../api/types';
 
@@ -325,13 +326,7 @@ export function PageView() {
 						    still in the air. */}
 						<footer className="border-paper-deep mt-auto flex h-11 shrink-0 items-center gap-4 border-t px-5">
 							{page?.viewable ? (
-								<button
-									type="button"
-									onClick={() => setScanned(citation)}
-									className="font-app text-small text-ink-soft hover:text-ink border-paper-deep border-b"
-								>
-									{COPY.pageView.seeScan}
-								</button>
+								<ScanLink onOpen={() => setScanned(citation)} />
 							) : page ? (
 								<span className="font-app text-small text-ink-soft">
 									{COPY.pageView.noScan}

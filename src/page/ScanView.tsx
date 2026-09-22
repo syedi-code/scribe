@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { scanUrl } from '../api/documents';
+import { useAccount } from '../account/useAccount';
+import { ApiError } from '../api/client';
+import { fileUrl, loadScanPage } from '../api/documents';
 import { COPY } from '../copy';
 import { useAsync } from '../lib/useAsync';
+import { seePlans } from '../state/dialog';
 import { openScan, type Scan } from './pdf';
 
 /**
@@ -17,18 +20,44 @@ import { openScan, type Scan } from './pdf';
  * Nothing here checks anything, and nothing here is coloured. A scan is the
  * paper the quote was read off, and the verdict about it is already in the
  * header behind this layer.
+ *
+ * One page at a time, and only near the page cited. alexandria cuts each page
+ * out of the book and sends that alone, and serves nothing further than a page
+ * either side of a citation (the page a quote runs onto, or the one it begins
+ * on), so the reader can turn exactly that far, and the buttons stop there.
  */
 
 /** How far a tap magnifies. Enough that a scanned footnote is readable. */
 const MAGNIFIED = 2.4;
 /** The paper is inset from the edges, so the page reads as a sheet on a table. */
 const GUTTER = 12;
+/** How far from the cited page alexandria will serve, and so how far to turn. */
+const REACH = 1;
 
-/** What came back when the reader asked for the scan. */
+/** What came back when the reader asked for a page of the scan. */
 type Opened =
 	| { kind: 'none' }
-	| { kind: 'drawn'; url: string; scan: Scan }
-	| { kind: 'undrawable'; url: string; why: string };
+	| { kind: 'locked' }
+	| { kind: 'drawn'; scan: Scan }
+	| { kind: 'undrawable'; why: string };
+
+async function openPage(documentId: string, pageNo: number): Promise<Opened> {
+	let file;
+	try {
+		file = await loadScanPage(documentId, pageNo);
+	} catch (error) {
+		if (error instanceof ApiError) {
+			if (error.code === 'SCAN_REQUIRES_PAID') return { kind: 'locked' };
+			if (error.status === 404) return { kind: 'none' };
+		}
+		throw error;
+	}
+	try {
+		return { kind: 'drawn', scan: await openScan(file) };
+	} catch (error) {
+		return { kind: 'undrawable', why: String(error) };
+	}
+}
 
 interface Focus {
 	/** Where the tap was, as a fraction of the page, and where on screen. */
@@ -58,29 +87,26 @@ export function ScanView({
 	const holder = useRef<HTMLDivElement>(null);
 	const canvas = useRef<HTMLCanvasElement>(null);
 	const focus = useRef<Focus | null>(null);
+	const { admin } = useAccount();
 
 	/**
-	 * Three outcomes, kept apart, because they are three different things to
-	 * tell a reader: the document has no file behind it, the file is there and
-	 * could not be drawn, or here is the scan. Collapsing the middle one into
-	 * the first said *this page has no scan to show* about a book whose scan
-	 * is sitting in the bucket — which is the interface asserting a fact it
-	 * had not established, in the one app that exists to not do that.
+	 * The outcomes are kept apart, because they are different things to tell
+	 * a reader: there is no scan of this page, the scan is part of Paid, the
+	 * page came and could not be drawn, or here it is. Collapsing *could not be
+	 * drawn* into *no scan* said the second about a book whose scan is sitting
+	 * in the bucket: the interface asserting a fact it had not established, in
+	 * the one app that exists to not do that.
 	 */
-	const opened = useAsync(async (): Promise<Opened> => {
-		const url = await scanUrl(documentId);
-		if (!url) return { kind: 'none' };
-		try {
-			return { kind: 'drawn', url, scan: await openScan(url) };
-		} catch (error) {
-			return { kind: 'undrawable', url, why: String(error) };
-		}
-	}, [documentId]);
+	const opened = useAsync(() => openPage(documentId, page), [documentId, page]);
 	const state = opened.value;
 	const scan = state?.kind === 'drawn' ? state.scan : null;
-	// The file is worth offering whenever we know where it is, and most worth
-	// offering when we could not draw it.
-	const url = state && 'url' in state ? state.url : null;
+	// Opening the whole file elsewhere is the admin's; every other reader
+	// holds only the page.
+	const file = useAsync(admin ? () => fileUrl(documentId) : null, [
+		admin,
+		documentId,
+	]);
+	const url = file.value;
 
 	// The drawer mounts this on the page a citation named and unmounts it when
 	// the reader goes back, so there is no stale page to reset: opening a scan
@@ -102,7 +128,7 @@ export function ScanView({
 		if (!scan || !sheet || width <= 0) return;
 		let live = true;
 		setDrawing(true);
-		const task = scan.draw(page, sheet, Math.round(width * zoom));
+		const task = scan.draw(1, sheet, Math.round(width * zoom));
 		const settle = (broke: boolean) => {
 			if (!live) return;
 			setDrawing(false);
@@ -116,7 +142,7 @@ export function ScanView({
 			live = false;
 			task.cancel();
 		};
-	}, [scan, page, width, zoom]);
+	}, [scan, width, zoom]);
 
 	// Keep whatever was under the finger under the finger, once the page it
 	// was tapped on has been redrawn at the new size.
@@ -129,16 +155,22 @@ export function ScanView({
 		sheet.scrollTop = held.y * sheet.scrollHeight - held.top;
 	}, [drawing, zoom]);
 
+	const within = useCallback(
+		(to: number) => to >= 1 && Math.abs(to - pageNo) <= REACH,
+		[pageNo]
+	);
 	const turn = useCallback(
 		(to: number) => {
-			if (!scan || to < 1 || to > scan.pages) return;
+			if (!within(to)) return;
 			setPage(to);
+			setDrawing(true);
+			setFailed(false);
 			// A page is turned to at its head, however far down the last one
 			// the reader had scrolled.
 			const sheet = holder.current;
 			if (sheet) sheet.scrollTop = 0;
 		},
-		[scan]
+		[within]
 	);
 
 	// Arrow keys turn the page. Escape belongs to whatever is open and is
@@ -172,6 +204,9 @@ export function ScanView({
 	const trouble =
 		failed || Boolean(opened.error) || state?.kind === 'undrawable';
 	const nothing = state?.kind === 'none';
+	const locked = state?.kind === 'locked';
+	const quiet = trouble || nothing || locked;
+	const busy = opened.loading || (Boolean(scan) && drawing);
 
 	return (
 		<div className="bg-paper absolute inset-0 flex flex-col">
@@ -190,7 +225,7 @@ export function ScanView({
 					</span>
 				)}
 				<span className="font-app text-small text-ink-faint ml-auto shrink-0 tabular-nums">
-					{scan ? COPY.scan.where(page, scan.pages) : ''}
+					{COPY.scan.where(page)}
 				</span>
 			</header>
 
@@ -204,28 +239,37 @@ export function ScanView({
 				<canvas
 					ref={canvas}
 					role="img"
-					aria-label={COPY.scan.where(page, scan?.pages ?? 0)}
+					aria-label={COPY.scan.where(page)}
 					onClick={magnify}
 					className={`bg-paper-lift block shadow-[0_1px_3px_rgba(36,31,26,0.18)] ${
 						zoom > 1 ? 'cursor-zoom-out' : 'mx-auto cursor-zoom-in'
-					} ${trouble || nothing ? 'hidden' : ''}`}
+					} ${quiet || !scan ? 'hidden' : ''}`}
 				/>
 
-				{(opened.loading || drawing || trouble || nothing) && (
+				{(busy || quiet) && (
 					<p
 						role="status"
 						className={`font-app text-small text-ink-soft m-0 ${
-							trouble || nothing
-								? ''
-								: 'absolute inset-x-0 top-1/2 text-center'
+							quiet ? '' : 'absolute inset-x-0 top-1/2 text-center'
 						}`}
 					>
-						{nothing
-							? COPY.pageView.noScan
-							: trouble
-								? COPY.scan.unreachable
-								: COPY.scan.loading}
+						{locked
+							? COPY.scan.locked
+							: nothing
+								? COPY.pageView.noScan
+								: trouble
+									? COPY.scan.unreachable
+									: COPY.scan.loading}
 					</p>
+				)}
+				{locked && (
+					<button
+						type="button"
+						onClick={seePlans}
+						className="font-app text-small text-ink-soft hover:text-ink border-paper-deep mt-3 border-b"
+					>
+						{COPY.plan.see}
+					</button>
 				)}
 
 				{/* What actually went wrong, for the reader who wants to say
@@ -243,7 +287,7 @@ export function ScanView({
 				<button
 					type="button"
 					onClick={() => turn(page - 1)}
-					disabled={!scan || page <= 1}
+					disabled={!within(page - 1)}
 					aria-label={COPY.scan.previous}
 					className="text-ink-soft hover:text-ink press text-ask flex h-11 w-9 items-center justify-center disabled:opacity-30"
 				>
@@ -252,7 +296,7 @@ export function ScanView({
 				<button
 					type="button"
 					onClick={() => turn(page + 1)}
-					disabled={!scan || page >= scan.pages}
+					disabled={!within(page + 1)}
 					aria-label={COPY.scan.next}
 					className="text-ink-soft hover:text-ink press text-ask -ml-3 flex h-11 w-9 items-center justify-center disabled:opacity-30"
 				>
