@@ -3,6 +3,7 @@ import { libraryWorks } from '../api/library';
 import { CITATION_STATUS } from '../citations/status';
 import { COPY } from '../copy';
 import { useAsync } from '../lib/useAsync';
+import { LegalLinks } from '../ui/LegalLinks';
 
 const ABOUT = COPY.about;
 
@@ -83,6 +84,7 @@ export function AboutPanel() {
 					<Paragraphs {...ABOUT.limits} />
 					<Paragraphs {...ABOUT.privacy} />
 					<Paragraphs {...ABOUT.cost} />
+					<LegalLinks className="mt-8" />
 				</article>
 			</div>
 		</section>
