@@ -3,6 +3,7 @@ import { COPY } from '../copy';
 import { useAccount } from '../account/useAccount';
 import { BrandedLabel } from '../models/BrandedLabel';
 import { openDialog } from '../state/dialog';
+import { LegalLinks } from '../ui/LegalLinks';
 import { Modal } from '../ui/Modal';
 import { priceOf, usePlans } from './usePlans';
 import type { PlanOffer } from '../api/types';
@@ -77,6 +78,7 @@ export function PlansDialog() {
 					<p className="font-app text-small text-ink-soft m-0 mt-4">
 						{COPY.plan.plans.shared}
 					</p>
+					<LegalLinks className="mt-3" />
 				</>
 			)}
 		</Modal>

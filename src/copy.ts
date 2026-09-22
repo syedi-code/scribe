@@ -560,14 +560,14 @@ export const COPY = {
 		privacy: {
 			head: 'Your questions and privacy',
 			body: [
-				'Your questions, and the pages Scribe reads to answer them, are sent to OpenAI or Anthropic, depending on the model you choose. Your conversations are saved to your account so you can come back to them.',
+				'Your questions, and the pages Scribe reads to answer them, are sent to OpenAI or Anthropic, depending on the model you choose. Your conversations are saved to your account so you can come back to them, and are deleted 30 days after their last message.',
 				'Do not include anything private or sensitive.',
 			],
 		},
 		cost: {
 			head: 'Cost',
 			body: [
-				'Scribe is free for a limited number of questions each month, and your account shows how many are left. A paid plan with more questions and more models is on the way.',
+				'Scribe is free for a limited number of questions each month, and your account shows how many are left. Paid gives more questions, Claude Sonnet 5, and the scan of every page an answer cites. It can be cancelled at any time.',
 			],
 		},
 		/** A quotation in each state, as it is drawn in an answer. */
@@ -577,6 +577,11 @@ export const COPY = {
 			no_text_layer: 'could not be checked',
 		},
 		sample: 'the quoted words',
+	},
+
+	legal: {
+		terms: 'Terms',
+		privacy: 'Privacy',
 	},
 
 	/* ---- add a book ---- */
