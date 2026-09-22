@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
-import { describeApiError, openSession } from '../api/client';
+import { useRef, type ReactNode } from 'react';
+import { describeApiError } from '../api/client';
+import { loadFlags } from '../flags/load';
 import { useAsync } from '../lib/useAsync';
-import { reportIdentity } from '../state/identity';
+import { openReader } from './openReader';
 import { Wordmark } from './Wordmark';
 
 /**
@@ -9,17 +10,34 @@ import { Wordmark } from './Wordmark';
  * Cloudflare Access JWT for the cookie every other route expects, and a model
  * roster fetched before it would come back 401.
  *
+ * With visitor mode on, a visitor with no session is made a guest instead, or
+ * let in to look without one (`openReader`), so the gate only ever stops a
+ * reader when something is actually wrong.
+ *
  * While it is in flight the screen is paper and nothing else — a spinner for
- * something that takes one round trip is worse than a quiet page. If it fails,
- * the reason is the only thing on screen, in the reader's terms.
+ * something that takes one round trip is worse than a quiet page. The one
+ * thing on it is the slot Turnstile draws into, for the few visitors it wants
+ * a click from. If opening fails, the reason is the only thing on screen, in
+ * the reader's terms.
  */
 export function SessionGate({ children }: { children: ReactNode }) {
+	const slot = useRef<HTMLDivElement>(null);
 	const session = useAsync(
-		() => openSession().then((user) => (reportIdentity(user), user)),
+		() =>
+			openReader(
+				async () => (await loadFlags()).isVisitorModeEnabled,
+				() => slot.current
+			),
 		[]
 	);
 
-	if (session.loading) return <div className="bg-paper h-full" />;
+	if (session.loading) {
+		return (
+			<div className="bg-paper grid h-full content-end justify-items-center pb-10">
+				<div ref={slot} />
+			</div>
+		);
+	}
 
 	if (session.error) {
 		return (

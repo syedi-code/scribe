@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AccountDialog } from '../account/AccountDialog';
+import { SignInDialog } from '../account/SignInDialog';
 import { CheckoutDialog } from '../plan/CheckoutDialog';
 import { LimitDialog } from '../plan/LimitDialog';
 import { PlansDialog } from '../plan/PlansDialog';
@@ -23,5 +24,6 @@ export function Dialogs() {
 	if (open === 'checkout') return <CheckoutDialog />;
 	if (open === 'upgraded') return <UpgradedDialog />;
 	if (open === 'limit') return <LimitDialog />;
+	if (open === 'signin') return <SignInDialog />;
 	return null;
 }

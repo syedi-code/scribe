@@ -16,6 +16,8 @@ export interface Identity {
 		role: 'admin' | 'member';
 		/** Absent on a worker that predates plans. */
 		plan?: 'free' | 'paid';
+		/** A visitor who has not signed in (scribe#38). Absent means no. */
+		guest?: boolean;
 	};
 }
 
@@ -41,10 +43,15 @@ export interface Model {
  */
 export interface Allowance {
 	plan: 'free' | 'paid';
+	/**
+	 * A visitor: `used` and `limit` are for ever, not a month, and nothing
+	 * comes back until they sign in. Absent on a worker that predates visitors.
+	 */
+	guest?: boolean;
 	used: number;
 	limit: number | null;
-	/** Midnight UTC on the first of next month. */
-	resets_at: string;
+	/** Midnight UTC on the first of next month; null for a visitor. */
+	resets_at: string | null;
 }
 
 /**

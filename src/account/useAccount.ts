@@ -31,8 +31,11 @@ export function useAccount() {
 			: plan === 'paid'
 				? COPY.plan.plans.paid
 				: COPY.plan.plans.free,
-		/** Nobody is offered what they already have, or what the admin never needs. */
-		offerPlans: !admin && plan !== 'paid',
+		/**
+		 * Nobody is offered what they already have, or what the admin never
+		 * needs; a visitor is asked to sign in first, not sold a plan.
+		 */
+		offerPlans: !admin && plan !== 'paid' && !identity?.guest,
 		allowance,
 		left: remainingOf(allowance),
 		leaving,

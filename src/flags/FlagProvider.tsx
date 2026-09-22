@@ -1,8 +1,8 @@
 import { useMemo, type ReactNode } from 'react';
-import { api } from '../api/client';
 import { useAsync } from '../lib/useAsync';
 import { FlagContext, type FlagState } from './context';
-import { DEFAULT_FLAGS, type Flags } from './flags';
+import { DEFAULT_FLAGS } from './flags';
+import { loadFlags } from './load';
 
 /**
  * One fetch of `GET /api/flags`, held for the life of the tab.
@@ -14,7 +14,7 @@ import { DEFAULT_FLAGS, type Flags } from './flags';
  * on.
  */
 export function FlagProvider({ children }: { children: ReactNode }) {
-	const asked = useAsync(() => api.get<Flags>('/flags'), []);
+	const asked = useAsync(() => loadFlags(), []);
 
 	const value = useMemo<FlagState>(
 		() => ({

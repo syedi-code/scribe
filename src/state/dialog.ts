@@ -1,4 +1,5 @@
 import { createStore, useStore } from '../lib/store';
+import { reportSignInReason, type SignInReason } from './visitor';
 
 /**
  * The one modal that is open, if any, and where it sits in the browser's
@@ -15,7 +16,8 @@ import { createStore, useStore } from '../lib/store';
  * sending a reader back from checkout. That is what a *Plans* tab would have
  * bought, without a tab of billing beside the three places a reader reads.
  */
-export type Dialog = 'account' | 'plans' | 'checkout' | 'upgraded' | 'limit';
+export type Dialog =
+	'account' | 'plans' | 'checkout' | 'upgraded' | 'limit' | 'signin';
 
 /** The modals a URL may open. The limit is raised by the app, never linked to. */
 const ADDRESSABLE: readonly Dialog[] = ['account', 'plans', 'checkout'];
@@ -149,3 +151,13 @@ export function resetDialog() {
  * and nowhere else, so every button that offers a plan already points at it.
  */
 export const seePlans = () => openDialog('plans');
+
+/**
+ * Where every *Sign in* leads, with why it was opened, which the dialog says
+ * in its first line: the free questions are spent, the visitor could not be
+ * let in as a guest, or the reader chose to.
+ */
+export function openSignIn(reason: SignInReason) {
+	reportSignInReason(reason);
+	openDialog('signin');
+}

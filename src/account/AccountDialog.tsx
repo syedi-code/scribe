@@ -61,9 +61,11 @@ export function AccountDialog() {
 									used={allowance.used}
 									limit={allowance.limit}
 								/>
-								<span className="font-app text-small text-ink-faint mt-1.5 block">
-									{COPY.plan.resets(allowance.resets_at)}
-								</span>
+								{allowance.resets_at && (
+									<span className="font-app text-small text-ink-faint mt-1.5 block">
+										{COPY.plan.resets(allowance.resets_at)}
+									</span>
+								)}
 							</>
 						)}
 					</Row>

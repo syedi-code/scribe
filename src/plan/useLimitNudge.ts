@@ -60,7 +60,9 @@ export function useLimitNudge() {
 	const standing = standingOf(allowance);
 
 	useEffect(() => {
-		if (!shown || atHome || busy || open || !allowance) return;
+		// A visitor is asked to sign in, not offered a plan (VisitorNotice).
+		if (!shown || atHome || busy || open || !allowance || allowance.guest)
+			return;
 		if (standing !== 'last-few' && standing !== 'spent') return;
 		if (raiseOnce(`${allowance.resets_at}:${standing}`))
 			openDialog('limit');

@@ -159,6 +159,33 @@ more was charged and will not offer the button again. The default model is
 the server's (`default_model_id`, Sonnet on Paid) before this build's own
 preference, which is only a fallback.
 
+**A visitor is let in, not kept out** (scribe#38, behind
+`isVisitorModeEnabled`, off). `ui/openReader.ts` opens the session as always;
+only if that is refused with a 401, and the flag is on, is the visitor made a
+guest past Turnstile (`api/turnstile.ts`, loaded for visitors alone, in
+`interaction-only` mode into the slot `SessionGate` keeps on screen). A
+visitor who cannot be made a guest is still let in to look — standing `none`
+in `state/visitor.ts` — and any question, typed or suggested, opens the
+sign-in dialog instead of being asked (`ChatProvider`'s `ask`). The flags are
+one shared request (`flags/load.ts`), so a signed-in reader's session never
+waits on them.
+
+A guest's allowance is for ever and has no reset date: `resets_at` is null,
+and every place that formats it checks. `plan/VisitorNotice.tsx` says
+*3 questions without signing in* before the first, counts only at one left,
+and spent says why the composer closed. A guest is offered sign-in, never a
+plan. The corner says *Sign in* instead of a stamp (`account/AccountCorner`).
+
+`account/SignInDialog.tsx` is ours, not Cloudflare's picker: each button is a
+plain link to `/login/github` or `/login/google` (behind
+`isGoogleSignInShown`), each an Access app with one way of signing in. The
+draft is kept in session storage across the trip (`keepDraftForSignIn`).
+`functions/login/[[path]].ts` opens the alexandria session itself with the
+assertion Access attaches — Access scopes its own cookie to the app's path,
+so it may never reach `/api` — carrying the guest cookie so the guest's
+questions move into the account, then redirects only to a path on this site
+(`lib/safeNext.ts`; an open redirect otherwise).
+
 **There is no Plans tab.** Tabs are the places a reader reads, and a tab of
 billing beside the library is the storefront a reading tool should not be; the
 compact tab bar has no room for one either. What a tab would have bought — an

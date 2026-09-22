@@ -584,6 +584,40 @@ export const COPY = {
 		privacy: 'Privacy',
 	},
 
+	/* ---- a visitor, before signing in (scribe#38) ----
+	   Said as what is possible, not as what is withheld: a visitor is being
+	   let in, not kept out. */
+	visitor: {
+		signIn: 'Sign in',
+		/** Under the composer, before any question is asked. */
+		allowance: (limit: number) =>
+			`${limit} ${plural(limit, 'question', 'questions')} without signing in`,
+		/** Only once one is left, the way the monthly count waits for two. */
+		lastOne: '1 question left before you sign in',
+		/** After *Sign in*, for a visitor who could not be let in as a guest. */
+		lookingNote: 'to ask. It is free.',
+		spent: 'Sign in to keep asking',
+		spentNote: 'Your questions and answers come with you.',
+		/** In the closed composer; the notice under it says what to do. */
+		placeholder: 'Your free questions are used',
+		/** The refused turn, when the composer was not closed in time. */
+		refused: 'That question was not asked — sign in to keep going.',
+		dialog: {
+			title: 'Sign in to Scribe',
+			/** Why the dialog opened, said first, in a line. */
+			lead: {
+				spent: 'You have asked your free questions. Sign in to keep going; what you have asked comes with you.',
+				blocked: 'Sign in to ask. It is free, and takes a moment.',
+				chosen: 'Sign in to keep your conversations and ask more each month.',
+			},
+			github: 'Continue with GitHub',
+			google: 'Continue with Google',
+			/** Beside the buttons, so nobody wonders what signing in costs. */
+			free: 'Free, with an account you already have. No card.',
+			kept: 'What you have typed will be here when you come back.',
+		},
+	},
+
 	/* ---- add a book ---- */
 	add: {
 		drop: 'Drop a PDF here',

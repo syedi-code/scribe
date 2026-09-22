@@ -1,5 +1,6 @@
 import { COPY } from '../copy';
 import { reportAllowance } from '../state/allowance';
+import { openSignIn } from '../state/dialog';
 import type { Allowance } from '../api/types';
 
 /**
@@ -17,7 +18,13 @@ export async function refuseSpentMonth(
 	if (response.status !== 402) return response;
 	const body = (await response.json().catch(() => null)) as {
 		allowance?: Allowance;
+		code?: string;
 	} | null;
 	reportAllowance(body?.allowance);
+	// A visitor's free questions are spent: the way on is to sign in.
+	if (body?.code === 'SIGN_IN_REQUIRED') {
+		openSignIn('spent');
+		throw new Error(COPY.visitor.refused);
+	}
 	throw new Error(COPY.plan.refused);
 }
