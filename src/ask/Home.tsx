@@ -2,6 +2,7 @@ import { useFlag } from '../flags/context';
 import { standingOf, useAllowance } from '../state/allowance';
 import { Arrival } from './Arrival';
 import { ComposerSlot } from './ComposerSlot';
+import { HomeFooter } from './HomeFooter';
 import { Opening } from './Opening';
 import { RunningLine } from './RunningLine';
 import { Subtitle } from './Subtitle';
@@ -16,6 +17,9 @@ import { Suggestions } from './Suggestions';
  *
  * The column is the whole of this file. What each piece is, and when it
  * arrives, belongs to the piece — `Arrival` holds the sequence.
+ *
+ * The terms and the privacy note close the column, faint and last, for the
+ * reader who wants them and the payment processor that looks for them.
  *
  * A spent month takes the questions away. Each one asks on a press, so
  * offering three things to ask under a composer that has just said it cannot
@@ -37,6 +41,7 @@ export function Home({
 			<RunningLine />
 			<ComposerSlot slot={composerSlot} />
 			{!spent && <Suggestions />}
+			<HomeFooter />
 		</Arrival>
 	);
 }
