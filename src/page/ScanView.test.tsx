@@ -1,35 +1,51 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from 'vitest';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { renderApp, stubFetch, verified } from '../test/harness';
+import { renderApp, verified } from '../test/harness';
 import { closePage, openPage } from '../state/reader';
+import { readDialog, resetDialog } from '../state/dialog';
+import { reportIdentity, resetIdentity } from '../state/identity';
 import { PageView } from './PageView';
-import type { AnswerCitation } from '../api/types';
+import type { AnswerCitation, Identity } from '../api/types';
+import type { ScanFile } from '../api/documents';
 
 /**
- * The scan behind a citation, on a phone.
+ * The scan behind a citation, one page at a time.
  *
- * What this replaces: a signed link handed to the browser's own PDF viewer,
- * in a tab opened *after* an await — which iOS blocks as a popup, and which,
- * when it did open, landed on page 1 of a four-hundred-page book because
- * Safari ignores `#page=`. A citation to p. 21 has to open on p. 21.
+ * What this replaces, twice over. First a signed link into the browser's own
+ * PDF viewer, which on a phone opened page 1 of a four-hundred-page book. Then
+ * the whole file, drawn here a page at a time — which handed every signed-in
+ * reader the entire library, one `/files/sign` away. alexandria now cuts the
+ * cited page out and sends that alone, on Paid, and nothing further from a
+ * citation than the page either side of it.
  */
 
-const drawn: { page: number; width: number }[] = [];
-/** Set by a test that wants opening the file to fail the way production did. */
+const drawn: { file: string; width: number }[] = [];
+/** Set by a test that wants a page to fail to draw the way production did. */
 let refuse: string | null = null;
 
 vi.mock('./pdf', () => ({
-	openScan: () =>
+	openScan: (file: ScanFile) =>
 		refuse
 			? Promise.reject(new Error(refuse))
 			: Promise.resolve({
-					pages: 300,
+					pages: 1,
 					draw: (
-						page: number,
+						_page: number,
 						_canvas: HTMLCanvasElement,
 						width: number
 					) => {
-						drawn.push({ page, width });
+						drawn.push({
+							file: new TextDecoder().decode(file.bytes),
+							width,
+						});
 						return { done: Promise.resolve(), cancel: () => {} };
 					},
 				}),
@@ -43,13 +59,84 @@ beforeAll(() => {
 	});
 });
 
+const reader = (over: Partial<Identity['user']>): Identity['user'] => ({
+	id: 'u1',
+	email: 'reader@example.test',
+	name: null,
+	role: 'member',
+	plan: 'paid',
+	...over,
+});
+
+const DOCUMENT = (
+	id: string,
+	fileKey: string | null = 'works/nietzsche.pdf'
+) => ({
+	document: {
+		document_id: id,
+		page_offset: 0,
+		page_count: 232,
+		text: 'searchable',
+		has_file: fileKey !== null,
+		work_id: 'w1',
+		work_title: 'Beyond Good and Evil',
+		creator: 'Friedrich Nietzsche',
+		file_key: fileKey,
+	},
+});
+
+/** How the scan route answers in a test: the page, or a refusal with its code. */
+let scanAnswer: (page: number) => { status: number; code?: string } = () => ({
+	status: 200,
+});
+let fileKey: string | null = 'works/nietzsche.pdf';
+let asked: string[] = [];
+
+function server() {
+	asked = [];
+	vi.stubGlobal(
+		'fetch',
+		vi.fn(async (input: string, init?: RequestInit) => {
+			const url = String(input);
+			asked.push(`${init?.method ?? 'GET'} ${url}`);
+			const scan = /\/cited\/([^/]+)\/pages\/(\d+)\/scan$/.exec(url);
+			if (scan) {
+				const answer = scanAnswer(Number(scan[2]));
+				return {
+					ok: answer.status === 200,
+					status: answer.status,
+					headers: new Headers({ 'content-type': 'application/pdf' }),
+					arrayBuffer: async () =>
+						new TextEncoder().encode(`page ${scan[2]}`).buffer,
+					json: async () => ({ error: 'refused', code: answer.code }),
+				};
+			}
+			const json = /\/documents\/([^/?]+)$/.exec(url)
+				? DOCUMENT(/\/documents\/([^/?]+)$/.exec(url)![1], fileKey)
+				: url.endsWith('/files/sign')
+					? { token: 't0k' }
+					: { pages: [] };
+			return { ok: true, status: 200, json: async () => json };
+		})
+	);
+}
+
+beforeEach(() => {
+	resetDialog();
+	resetIdentity();
+	reportIdentity(reader({}));
+	scanAnswer = () => ({ status: 200 });
+	fileKey = 'works/nietzsche.pdf';
+	server();
+});
+
 afterEach(() => {
 	act(() => closePage());
 	drawn.length = 0;
 	refuse = null;
 });
 
-/** One book per test: a signed scan is fetched once and kept for the tab. */
+/** One book per test: a page is fetched once and kept for the tab. */
 const into = (documentId: string, pageNo: number): AnswerCitation => {
 	const citation = verified('P1', 'the will to truth');
 	return {
@@ -59,76 +146,118 @@ const into = (documentId: string, pageNo: number): AnswerCitation => {
 	};
 };
 
-const SIGNED = { document: { file_key: 'works/nietzsche.pdf' }, token: 't0k' };
-const HAS_FILE = {
-	document: {
-		document_id: 'doc-x',
-		page_offset: 0,
-		page_count: 232,
-		text: 'searchable',
-		has_file: true,
-		work_id: 'w1',
-		work_title: 'Beyond Good and Evil',
-		creator: 'Friedrich Nietzsche',
-		file_key: 'works/Kant, Immanuel - What is Enlightenment.pdf',
-	},
-	token: 't0k',
-};
-
 const openScanFor = async (citation: AnswerCitation) => {
-	stubFetch(SIGNED);
 	renderApp(<PageView />);
 	act(() => openPage(citation));
-	fireEvent.click(screen.getByRole('button', { name: 'See the scan' }));
+	fireEvent.click(
+		await screen.findByRole('button', { name: 'See the scan' })
+	);
 	await screen.findByRole('button', { name: /Back to the passage/ });
 };
 
-describe('the scan', () => {
-	it('opens on the page the citation named', async () => {
+const press = (name: string) =>
+	fireEvent.click(screen.getByRole('button', { name }));
+
+describe('the scan, on Paid', () => {
+	it('opens on the page the citation named, and asks for that page alone', async () => {
 		await openScanFor(into('doc-opens', 21));
 
-		expect(await screen.findByText('PDF p. 21 of 300')).toBeTruthy();
+		expect(await screen.findByText('PDF p. 21')).toBeTruthy();
 		await waitFor(() => expect(drawn).toHaveLength(1));
-		expect(drawn[0].page).toBe(21);
+		expect(drawn[0].file).toBe('page 21');
+		expect(asked).toContain('GET /api/cited/doc-opens/pages/21/scan');
 	});
 
-	it('turns to the next page and back', async () => {
+	it('turns one page either way, and no further', async () => {
 		await openScanFor(into('doc-turns', 21));
-		await screen.findByText('PDF p. 21 of 300');
+		await screen.findByText('PDF p. 21');
 
-		fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
-		expect(await screen.findByText('PDF p. 22 of 300')).toBeTruthy();
+		press('Next page');
+		expect(await screen.findByText('PDF p. 22')).toBeTruthy();
+		await waitFor(() => expect(drawn.at(-1)?.file).toBe('page 22'));
+		expect(
+			screen
+				.getByRole('button', { name: 'Next page' })
+				.hasAttribute('disabled')
+		).toBe(true);
 
-		fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
-		expect(await screen.findByText('PDF p. 21 of 300')).toBeTruthy();
+		press('Previous page');
+		press('Previous page');
+		expect(await screen.findByText('PDF p. 20')).toBeTruthy();
+		await waitFor(() => expect(drawn.at(-1)?.file).toBe('page 20'));
+		expect(
+			screen
+				.getByRole('button', { name: 'Previous page' })
+				.hasAttribute('disabled')
+		).toBe(true);
 	});
 
-	// The file is hundreds of megabytes and the reader is on a phone: the page
-	// is drawn at the size it is shown, and magnifying it draws it again
-	// rather than stretching what was already drawn.
+	it('never asks for the whole file, and offers no link to it', async () => {
+		await openScanFor(into('doc-whole', 21));
+		await waitFor(() => expect(drawn).toHaveLength(1));
+
+		expect(asked.some((call) => call.includes('/files/'))).toBe(false);
+		expect(screen.queryByRole('link', { name: 'Open the PDF' })).toBeNull();
+	});
+
+	// The reader is on a phone: the page is drawn at the size it is shown, and
+	// magnifying it draws it again rather than stretching what was drawn.
 	it('redraws the page when it is magnified, at the larger size', async () => {
 		await openScanFor(into('doc-zoom', 21));
 		await waitFor(() => expect(drawn).toHaveLength(1));
 		const fitted = drawn[0].width;
 
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Magnify the page' })
-		);
+		press('Magnify the page');
 		await waitFor(() => expect(drawn).toHaveLength(2));
 		expect(drawn[1].width).toBeGreaterThan(fitted);
 		expect(
 			screen.getByRole('button', { name: 'Fit the page' })
 		).toBeTruthy();
 	});
+});
 
+describe('on Free', () => {
+	it('shows where the scan would be, and what opens it', async () => {
+		reportIdentity(reader({ plan: 'free' }));
+		renderApp(<PageView />);
+		act(() => openPage(into('doc-free', 21)));
+
+		const offer = await screen.findByRole('button', {
+			name: 'See the scan on Paid',
+		});
+		expect(
+			screen.queryByRole('button', { name: 'See the scan' })
+		).toBeNull();
+
+		fireEvent.click(offer);
+		expect(readDialog()).toBe('plans');
+		expect(asked.some((call) => call.includes('/scan'))).toBe(false);
+	});
+
+	// A plan can lapse while a tab is open; the server is the one that knows.
+	it('says the scan is part of Paid when the server says so', async () => {
+		scanAnswer = () => ({ status: 403, code: 'SCAN_REQUIRES_PAID' });
+		await openScanFor(into('doc-lapsed', 21));
+
+		expect(
+			await screen.findByText('The scan of a cited page is part of Paid.')
+		).toBeTruthy();
+		press('See plans');
+		expect(readDialog()).toBe('plans');
+	});
+});
+
+describe('the admin', () => {
 	// A tab opened after an await is a popup, and a phone blocks it. The way
 	// out to the file is a link the reader taps, so the tap is the navigation.
-	it('offers the whole file as a link, not a window opened later', async () => {
-		await openScanFor(into('doc-link', 21));
+	it('keeps the whole file a link away, encoded a segment at a time', async () => {
+		reportIdentity(reader({ role: 'admin', plan: undefined }));
+		fileKey = 'works/Kant, Immanuel - What is Enlightenment.pdf';
+		await openScanFor(into('doc-admin', 21));
 
 		const out = await screen.findByRole('link', { name: 'Open the PDF' });
 		expect(out.getAttribute('href')).toBe(
-			'/api/files/works/nietzsche.pdf?token=t0k#page=21'
+			'/api/files/works/Kant%2C%20Immanuel%20-%20What%20is%20Enlightenment.pdf?token=t0k#page=21'
 		);
 	});
 });
@@ -171,7 +300,7 @@ describe('going back from the scan', () => {
  */
 describe('when the scan cannot be drawn', () => {
 	it('says so, rather than saying the book has no scan', async () => {
-		refuse = 'the file could not be read';
+		refuse = 'the page could not be read';
 		await openScanFor(into('doc-refused', 21));
 
 		expect(
@@ -180,49 +309,20 @@ describe('when the scan cannot be drawn', () => {
 		expect(screen.queryByText('This page has no scan to show.')).toBeNull();
 	});
 
-	it('keeps the file within reach, which is when it matters most', async () => {
-		refuse = 'the file could not be read';
-		await openScanFor(into('doc-refused-link', 21));
-
-		await screen.findByText('The scan could not be drawn just now.');
-		const out = screen.getByRole('link', { name: 'Open the PDF' });
-		expect(out.getAttribute('href')).toContain('/api/files/');
-	});
-
 	it('shows what went wrong, so it can be reported', async () => {
-		refuse = 'MissingPDFException: 404';
+		refuse = 'InvalidPDFException: bad XRef';
 		await openScanFor(into('doc-refused-why', 21));
 
-		expect(await screen.findByText(/MissingPDFException/)).toBeTruthy();
+		expect(await screen.findByText(/InvalidPDFException/)).toBeTruthy();
 	});
 
-	// The message is only true when the document really has no file.
-	it('still says there is no scan when there is no file', async () => {
-		stubFetch({ document: { file_key: null }, token: null });
-		renderApp(<PageView />);
-		act(() => openPage(into('doc-fileless', 21)));
-		fireEvent.click(screen.getByRole('button', { name: 'See the scan' }));
+	// Only true when alexandria says there is no scan of this page to cut.
+	it('says there is no scan when the server has none', async () => {
+		scanAnswer = () => ({ status: 404, code: 'SCAN_UNAVAILABLE' });
+		await openScanFor(into('doc-unavailable', 21));
 
 		expect(
 			await screen.findByText('This page has no scan to show.')
 		).toBeTruthy();
-	});
-});
-
-/**
- * Six of the library's keys carry a space or a comma. Unencoded, the path the
- * browser sent was not the path the token was minted over.
- */
-describe('a file whose name has to be encoded', () => {
-	it('is asked for a path segment at a time', async () => {
-		stubFetch(HAS_FILE);
-		renderApp(<PageView />);
-		act(() => openPage(into('doc-spaced', 21)));
-		fireEvent.click(screen.getByRole('button', { name: 'See the scan' }));
-
-		const out = await screen.findByRole('link', { name: 'Open the PDF' });
-		expect(out.getAttribute('href')).toBe(
-			'/api/files/works/Kant%2C%20Immanuel%20-%20What%20is%20Enlightenment.pdf?token=t0k#page=21'
-		);
 	});
 });

@@ -37,15 +37,16 @@ const MEMBER = {
 const PLANS: PlanOffer[] = [
 	{
 		id: 'free',
-		turns_per_month: 5,
+		turns_per_month: 20,
 		models: [
 			{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'openai' },
 		],
+		page_scans: false,
 		price: null,
 	},
 	{
 		id: 'paid',
-		turns_per_month: 500,
+		turns_per_month: 150,
 		models: [
 			{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'openai' },
 			{
@@ -54,6 +55,7 @@ const PLANS: PlanOffer[] = [
 				provider: 'anthropic',
 			},
 		],
+		page_scans: true,
 		price: null,
 	},
 ];
@@ -218,10 +220,21 @@ describe('the plans', () => {
 		const paid = await screen.findByRole('region', {
 			name: COPY.plan.plans.paid,
 		});
-		expect(paid.textContent).toContain('500');
+		expect(paid.textContent).toContain('150');
 		expect(paid.textContent).toContain('Claude Sonnet 5');
 		const free = screen.getByRole('region', { name: COPY.plan.plans.free });
 		expect(free.textContent).toContain(COPY.plan.plans.current);
+	});
+
+	it('says what each plan shows behind a quotation', async () => {
+		app({ atHome: true });
+		act(() => openDialog('plans'));
+		const paid = await screen.findByRole('region', {
+			name: COPY.plan.plans.paid,
+		});
+		expect(paid.textContent).toContain(COPY.plan.plans.sourceScan);
+		const free = screen.getByRole('region', { name: COPY.plan.plans.free });
+		expect(free.textContent).toContain(COPY.plan.plans.sourceText);
 	});
 
 	it('never shows a price it has not been given', async () => {
@@ -250,7 +263,7 @@ describe('checkout', () => {
 		});
 		app({ atHome: true });
 		act(() => openDialog('checkout'));
-		await screen.findByText(COPY.checkout.perMonth(500));
+		await screen.findByText(COPY.checkout.perMonth(150));
 		press(COPY.checkout.pay);
 		expect(await screen.findByRole('status')).toBeTruthy();
 		expect(screen.getByRole('status').textContent).toBe(
@@ -268,7 +281,7 @@ describe('checkout', () => {
 		vi.stubGlobal('location', { ...window.location, assign });
 		app({ atHome: true });
 		act(() => openDialog('checkout'));
-		await screen.findByText(COPY.checkout.perMonth(500));
+		await screen.findByText(COPY.checkout.perMonth(150));
 		press(COPY.checkout.pay);
 		await waitFor(() =>
 			expect(assign).toHaveBeenCalledWith(

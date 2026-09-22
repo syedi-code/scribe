@@ -55,6 +55,11 @@ export interface PlanOffer {
 	id: 'free' | 'paid';
 	turns_per_month: number;
 	models: { id: string; label: string; provider: string }[];
+	/**
+	 * Whether the scan of a cited page opens, one page at a time. Absent on a
+	 * worker that predates it, which served the whole file to every plan.
+	 */
+	page_scans?: boolean;
 	/** Null until there is a price to show. */
 	price: { amount_cents: number; currency: string; interval: 'month' } | null;
 }

@@ -11,12 +11,27 @@ import type { Identity } from './types';
 
 export class ApiError extends Error {
 	readonly status: number;
+	/** alexandria's machine-readable reason, when it sends one. */
+	readonly code: string | undefined;
 
-	constructor(status: number, message: string) {
+	constructor(status: number, message: string, code?: string) {
 		super(message);
 		this.name = 'ApiError';
 		this.status = status;
+		this.code = code;
 	}
+}
+
+/** An error response as an ApiError, reading the body alexandria sends. */
+export async function apiErrorOf(
+	response: Response,
+	fallback: string
+): Promise<ApiError> {
+	const body = (await response.json().catch(() => null)) as {
+		error?: string;
+		code?: string;
+	} | null;
+	return new ApiError(response.status, body?.error ?? fallback, body?.code);
 }
 
 /** What a reader is told when a request fails, in their terms rather than the wire's. */
@@ -40,12 +55,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 	});
 
 	if (!response.ok) {
-		const body = (await response.json().catch(() => null)) as {
-			error?: string;
-		} | null;
-		throw new ApiError(
-			response.status,
-			body?.error ?? `${init?.method ?? 'GET'} ${path} failed`
+		throw await apiErrorOf(
+			response,
+			`${init?.method ?? 'GET'} ${path} failed`
 		);
 	}
 	return response.status === 204

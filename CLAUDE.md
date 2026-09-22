@@ -536,6 +536,17 @@ not pay for nine times the pixels. The whole file is still one tap away, as a
 link rather than a window opened later. Escape puts away the scan before the
 drawer.
 
+**A reader holds the page they were cited, never the book.** The scan is part
+of Paid, and alexandria cuts the cited page out and sends that alone
+(`/cited/:document/pages/:page/scan`), for the cited page and one either side
+— the page a quote runs onto. `ScanView` turns exactly that far and its
+chevrons stop there. The drawer's text comes from `/cited/.../pages` under the
+same rule. The whole file, and the *Open the PDF* link to it, are the admin's:
+before this, every signed-in reader could sign any key and take the library.
+On Free the drawer's footer says *See the scan on Paid* where the button would
+be, and a scan refused with `SCAN_REQUIRES_PAID` (a plan that lapsed while the
+tab was open) says so over the sheet and offers the plans.
+
 **A scan that will not draw is not a book without a scan.** Three outcomes,
 kept apart in `ScanView`: the document has no file, the file is there and could
 not be drawn, or here is the page. Collapsing the middle into the first printed
