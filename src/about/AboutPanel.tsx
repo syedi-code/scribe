@@ -84,6 +84,7 @@ export function AboutPanel() {
 					<Paragraphs {...ABOUT.limits} />
 					<Paragraphs {...ABOUT.privacy} />
 					<Paragraphs {...ABOUT.cost} />
+					<Paragraphs {...ABOUT.contact} />
 					<LegalLinks className="mt-8" />
 				</article>
 			</div>
