@@ -13,5 +13,5 @@
 	},
 	// The flag registry is shared with the app: the Pages Function reads the
 	// same names and fallbacks the browser does.
-	"include": ["functions/**/*.ts", "src/flags/flags.ts"]
+	"include": ["functions/**/*.ts", "src/flags/flags.ts", "src/lib/safeNext.ts", "src/flags/visitor.ts"]
 }

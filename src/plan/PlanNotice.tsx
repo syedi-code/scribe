@@ -4,6 +4,8 @@ import { useConversation } from '../chat/context';
 import { useFlag } from '../flags/context';
 import { seePlans } from '../state/dialog';
 import { remainingOf, standingOf, useAllowance } from '../state/allowance';
+import { LookingNotice, VisitorNotice } from './VisitorNotice';
+import { useStanding } from '../state/visitor';
 
 /**
  * What is left of the month, and what a paid plan would give instead.
@@ -29,9 +31,11 @@ export function PlanNotice() {
 	const allowance = useAllowance();
 	const { offerPlans } = useAccount();
 	const { atHome } = useConversation();
-	const standing = standingOf(allowance);
+	const standing = useStanding() === 'none' ? 'none' : standingOf(allowance);
 	const left = remainingOf(allowance);
 
+	if (standing === 'none') return <LookingNotice />;
+	if (allowance?.guest) return <VisitorNotice allowance={allowance} />;
 	if (!shown || !allowance) return null;
 	if (standing !== 'last-few' && standing !== 'spent') return null;
 	const spent = standing === 'spent';
@@ -51,7 +55,9 @@ export function PlanNotice() {
 				<p className="font-app text-small text-ink-soft m-0 mt-0.5">
 					{/* Spent, the date is already in the closed composer
 					    above, so it is not said twice. */}
-					{!spent && `${COPY.plan.resets(allowance.resets_at)} `}
+					{!spent &&
+						allowance.resets_at &&
+						`${COPY.plan.resets(allowance.resets_at)} `}
 					{spent && atHome
 						? COPY.plan.stillOpen
 						: offerPlans && COPY.plan.offer}

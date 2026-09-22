@@ -1,0 +1,8 @@
+# Scribe answers questions from a library of books. The pages worth finding
+# are the home page and the terms; the API and the conversations are
+# not pages, and the books are not ours to be indexed.
+User-agent: *
+Allow: /$
+Allow: /legal/
+Disallow: /api/
+Disallow: /login/

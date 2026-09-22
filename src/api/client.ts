@@ -90,6 +90,20 @@ export async function openSession(): Promise<Identity['user']> {
 }
 
 /**
+ * `POST /session/guest` — a visitor's session, for a Turnstile token
+ * Cloudflare will vouch for. alexandria makes the guest and sets the same
+ * `__session` cookie a signed-in reader holds; everything after it is the
+ * same request a reader makes.
+ */
+export async function openGuestSession(
+	turnstileToken: string
+): Promise<Identity['user']> {
+	await api.post('/session/guest', { turnstile_token: turnstileToken });
+	const { user } = await api.get<Identity>('/me');
+	return user;
+}
+
+/**
  * Access's own sign-out, on this origin. It clears `CF_Authorization` and
  * sends the browser back through the login.
  */

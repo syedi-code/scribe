@@ -5,6 +5,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { readFlags } from './src/flags/flags';
+import { visitorConfig } from './src/flags/visitor';
 
 /**
  * What pdf.js needs beside its own code to draw a scanned page.
@@ -85,17 +86,22 @@ function devFlags(): Plugin {
 	return {
 		name: 'scribe:dev-flags',
 		configureServer(server) {
+			const environment = () => ({
+				...section('vars'),
+				...(existsSync('.dev.vars')
+					? assignments(readFileSync('.dev.vars', 'utf8'))
+					: {}),
+				...process.env,
+			});
 			server.middlewares.use('/api/flags', (_request, response) => {
-				const flags = readFlags({
-					...section('vars'),
-					...(existsSync('.dev.vars')
-						? assignments(readFileSync('.dev.vars', 'utf8'))
-						: {}),
-					...process.env,
-				});
 				response.setHeader('Content-Type', 'application/json');
 				response.setHeader('Cache-Control', 'no-store');
-				response.end(JSON.stringify(flags));
+				response.end(JSON.stringify(readFlags(environment())));
+			});
+			server.middlewares.use('/api/visitor', (_request, response) => {
+				response.setHeader('Content-Type', 'application/json');
+				response.setHeader('Cache-Control', 'no-store');
+				response.end(JSON.stringify(visitorConfig(environment())));
 			});
 		},
 	};

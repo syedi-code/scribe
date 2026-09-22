@@ -2,6 +2,7 @@ import { libraryCount } from '../api/library';
 import { COPY } from '../copy';
 import { useAsync } from '../lib/useAsync';
 import { RunningModel } from '../models/RunningModel';
+import { useStanding } from '../state/visitor';
 import { SETTLE, useSettle } from './settle';
 
 /**
@@ -19,13 +20,16 @@ export function RunningLine() {
 	const settle = useSettle(SETTLE.line);
 	const books = useAsync(() => libraryCount(), []);
 	const library = books.value === null ? null : COPY.library(books.value);
+	// A visitor with no session has no roster to be running one of, and
+	// "no models available" would read as a fault rather than as a door.
+	const looking = useStanding() === 'none';
 
 	return (
 		<div
 			className={`relative z-(--z-lifted) mt-6 grid justify-items-center gap-0.5 ${settle.className}`}
 			style={settle.style}
 		>
-			<RunningModel hero />
+			{!looking && <RunningModel hero />}
 			{library && (
 				<p className="font-app text-small text-ink-faint m-0">
 					{library.before}

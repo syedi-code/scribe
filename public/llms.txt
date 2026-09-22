@@ -1,0 +1,23 @@
+# Scribe
+
+> Scribe answers questions about philosophy and theory from a library of
+> about a hundred and thirty books, and checks every quotation in its answers
+> against the page it cites before the reader sees it.
+
+Scribe is a reading tool, not a general chatbot. It searches its own library,
+reads the pages it finds, and quotes them. After each answer, every quotation
+is looked for, word for word, on the page it names; the reader sees which
+quotations were found, which were not, and which could not be checked. A
+quotation marked found is in the book exactly as quoted; that does not mean
+the answer reads it well.
+
+It does not answer from memory about books it does not hold, and it does not
+give out copies of the books.
+
+- [Scribe](https://scribe.socialeating.studio/): ask a question
+- [Terms](https://scribe.socialeating.studio/legal/terms.html): plans, prices,
+  cancelling and refunds
+- [Privacy](https://scribe.socialeating.studio/legal/privacy.html): what is
+  kept, who sees it, and for how long
+- Source: [scribe](https://github.com/syedi-code/scribe) (this frontend) and
+  [alexandria](https://github.com/syedi-code/alexandria) (the library and API)

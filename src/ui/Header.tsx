@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { COPY } from '../copy';
-import { AccountMenu } from '../account/AccountMenu';
+import { AccountCorner } from '../account/AccountCorner';
 import { useConversation } from '../chat/context';
 import { useFlag } from '../flags/context';
 import { RunningModel } from '../models/RunningModel';
@@ -155,7 +155,7 @@ export function Header({
 				<TabBar tab={tab} onTab={onTab} railable={railable} />
 				{account && (
 					<div className="pointer-events-auto @max-compact:col-start-2 @max-compact:row-start-1">
-						<AccountMenu />
+						<AccountCorner />
 					</div>
 				)}
 			</div>

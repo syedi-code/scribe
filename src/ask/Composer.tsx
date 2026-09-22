@@ -6,6 +6,8 @@ import { PlanNotice } from '../plan/PlanNotice';
 import { standingOf, useAllowance } from '../state/allowance';
 import { registerComposer } from '../state/composer';
 import { setDraft, useDraft } from '../state/draft';
+import { openSignIn } from '../state/dialog';
+import { useStanding } from '../state/visitor';
 
 /**
  * One composer.
@@ -26,7 +28,11 @@ export function Composer() {
 	// when the reader can be told why it is shut.
 	const explained = useFlag('isPlanLimitShown');
 	const allowance = useAllowance();
-	const spent = explained && standingOf(allowance) === 'spent';
+	// A visitor's closed composer is always explained, by VisitorNotice.
+	const spent =
+		(explained || Boolean(allowance?.guest)) &&
+		standingOf(allowance) === 'spent';
+	const standing = useStanding();
 
 	useEffect(() => {
 		registerComposer(field.current);
@@ -45,6 +51,12 @@ export function Composer() {
 	const submit = () => {
 		const text = draft.trim();
 		if (!text || busy || spent) return;
+		// A visitor we could not let in as a guest: the question is kept, and
+		// the way to ask it is to sign in.
+		if (standing === 'none') {
+			openSignIn('blocked');
+			return;
+		}
 		setDraft('');
 		ask(text);
 	};
@@ -69,9 +81,11 @@ export function Composer() {
 					}}
 					disabled={spent}
 					placeholder={
-						spent && allowance
-							? COPY.plan.back(allowance.resets_at)
-							: COPY.askPlaceholder
+						spent && allowance?.guest
+							? COPY.visitor.placeholder
+							: spent && allowance?.resets_at
+								? COPY.plan.back(allowance.resets_at)
+								: COPY.askPlaceholder
 					}
 					aria-label={COPY.askPlaceholder}
 					className="font-read text-ask text-ink max-h-32 flex-1 resize-none border-0 bg-transparent py-1 font-light outline-none"

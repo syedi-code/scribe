@@ -12,7 +12,10 @@ import { COPY } from '../copy';
 import { api, ApiError, describeApiError } from '../api/client';
 import { useModels } from '../models/context';
 import { reportAllowance } from '../state/allowance';
+import { openSignIn } from '../state/dialog';
+import { setDraft } from '../state/draft';
 import { closePage } from '../state/reader';
+import { readStanding } from '../state/visitor';
 import { ChatContext, type ChatState } from './context';
 import { refuseSpentMonth } from './refusal';
 import { forgetThread, loadThread, readThread, warmThread } from './threads';
@@ -132,6 +135,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 	const ask = useCallback(
 		(text: string) => {
 			setFailure(null);
+			// A visitor we could not let in as a guest has no session to ask
+			// with. The question is kept for when they come back signed in, from
+			// the composer or a suggestion alike.
+			if (readStanding() === 'none') {
+				setDraft(text);
+				openSignIn('blocked');
+				return;
+			}
 			const send = async () => {
 				let id = target.current.id;
 				if (!id) {

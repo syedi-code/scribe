@@ -28,7 +28,7 @@ export function LimitDialog() {
 				spent ? COPY.plan.nudge.spent : COPY.plan.nudge.lastFew(left)
 			}
 		>
-			{allowance && (
+			{allowance?.resets_at && (
 				<p className="font-app text-ui text-ink-soft m-0">
 					{spent
 						? COPY.plan.back(allowance.resets_at)

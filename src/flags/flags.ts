@@ -31,6 +31,14 @@ export interface Flags {
 	isAccountShown: boolean;
 	/** Whether the About tab is offered: what Scribe is, and what it keeps. */
 	isAboutShown: boolean;
+	/**
+	 * Whether a visitor who has not signed in may look around and ask a few
+	 * questions (scribe#38). Off, a visitor with no session is shown why and
+	 * nothing else, which is what happened behind Access on every path.
+	 */
+	isVisitorModeEnabled: boolean;
+	/** Whether the sign-in dialog offers Google, once that Access app exists. */
+	isGoogleSignInShown: boolean;
 }
 
 interface Flag {
@@ -55,6 +63,14 @@ export const FLAGS: Record<keyof Flags, Flag> = {
 	},
 	isAboutShown: {
 		env: 'FLAG_IS_ABOUT_SHOWN',
+		fallback: false,
+	},
+	isVisitorModeEnabled: {
+		env: 'FLAG_IS_VISITOR_MODE_ENABLED',
+		fallback: false,
+	},
+	isGoogleSignInShown: {
+		env: 'FLAG_IS_GOOGLE_SIGN_IN_SHOWN',
 		fallback: false,
 	},
 };
