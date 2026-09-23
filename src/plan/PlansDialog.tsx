@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { COPY } from '../copy';
 import { useAccount } from '../account/useAccount';
 import { TierMark } from '../models/TierMark';
-import { tierNamesOf } from '../models/tiers';
+import { tiersOf } from '../models/tiers';
 import { openDialog } from '../state/dialog';
 import { LegalLinks } from '../ui/LegalLinks';
 import { Modal } from '../ui/Modal';
@@ -139,9 +139,9 @@ function Card({
 					{COPY.plan.plans.models}
 				</p>
 				<ul className="m-0 grid list-none gap-1 p-0">
-					{tierNamesOf(plan.models).map((name) => (
-						<li key={name} className="text-ui text-ink">
-							<TierMark name={name} />
+					{tiersOf(plan.models).map((tier) => (
+						<li key={tier.id} className="text-ui">
+							<TierMark name={tier.name} tier={tier.id} />
 						</li>
 					))}
 				</ul>

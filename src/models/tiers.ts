@@ -16,14 +16,6 @@
  * without taking a name away from the reader.
  */
 
-/**
- * What both names begin with. The mark sets the stem in the app's weight and
- * the tail a weight up, so the pair reads as a family and separates exactly
- * where it differs — see `@utility tier-mark`. A name that does not start with
- * it is printed whole.
- */
-export const TIER_STEM = 'Om';
-
 export type TierId = 'omicron' | 'omega';
 
 export interface Tier {
@@ -64,9 +56,9 @@ export function tierOfModel(modelId: string): Tier | null {
 	return TIERS.find((tier) => tier.models.includes(modelId)) ?? null;
 }
 
-/** Whether a name is a tier's, and so is set as a mark rather than as words. */
-export const isTierName = (name: string): boolean =>
-	TIERS.some((tier) => tier.name === name);
+/** The tier a name belongs to, or null if it is a model's own name. */
+export const tierByName = (name: string): Tier | null =>
+	TIERS.find((tier) => tier.name === name) ?? null;
 
 /** Every model id any tier can stand for. */
 export const TIERED_MODEL_IDS: readonly string[] = TIERS.flatMap(
@@ -74,13 +66,10 @@ export const TIERED_MODEL_IDS: readonly string[] = TIERS.flatMap(
 );
 
 /**
- * The tiers a plan opens, named as the switcher names them and in the
- * switcher's order. The plans card is sold in the same words the composer
+ * The tiers a plan opens, in the switcher's order. The plans card is sold in the same words the composer
  * offers, or the abstraction leaks at the one screen where it matters most.
  */
-export function tierNamesOf(models: readonly { id: string }[]): string[] {
+export function tiersOf(models: readonly { id: string }[]): Tier[] {
 	const held = new Set(models.map((model) => model.id));
-	return TIERS.filter((tier) => tier.models.some((id) => held.has(id))).map(
-		(tier) => tier.name
-	);
+	return TIERS.filter((tier) => tier.models.some((id) => held.has(id)));
 }

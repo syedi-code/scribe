@@ -423,15 +423,32 @@ in. A title is a slant, never a weight.
 **A tier's name is set by the stylesheet too.** `@utility tier-mark`, used at
 every one of the four places a tier is printed — the composer, its menu, the
 plans card, and the line signing an answer. Omicron and Omega are marks rather
-than words of the interface, so they are set the way the wordmark is: the
-reading face, `--weight-text`, the mark's own tracking, and the tail a weight up
-so `Om` reads as the family and the rest as the choice. The wordmark tells its
-tail apart in bold italic and that cannot be borrowed — an italic here means a
-book — so weight alone does it. Both cuts are already preloaded, so the mark is
-never painted in a fallback and re-set. `TierMark` decides only where the name
-divides, and prints a name that does not share the stem whole and unmarked,
-because the admin's own models are not marks. `styles/theme.test.ts` fails if a
-component sets one by hand, or if either cut stops being preloaded.
+than words of the interface: the reading face, bold, and tracked tighter than
+anything else in the app (-0.03em, against the wordmark's -0.012em), because two
+short names set in bold want the letters closer than a line of prose does. The
+wordmark tells its tail apart in bold italic and that cannot be borrowed — an
+italic here means a book — so weight and tracking do it. Both cuts are already
+preloaded, so the mark is never painted in a fallback and re-set.
+
+**The tiers have an ink each, and it is one hue at two depths.** Every other hue
+in the file is spoken for — three verdicts, six authors, three makers — so a
+fourth system in a fourth hue would be a fourth thing colour means here, and the
+whole point of the rule is that it means two. So `--color-tier-omicron` and
+`--color-tier-omega` are one petrol at two depths: the pair reads as the family
+it is, and the greater tier is simply the deeper ink. Petrol is the one band the
+others leave free, a good 25° off verdigris and clear of the makers' terracotta,
+teal and blue. They sit under the same carve-out the maker marks do — colour
+inside the switcher, which is chrome, so a tier's ink never lands beside an
+author's. A tier out of reach loses its ink and is struck and faint instead: a
+colour on something unpickable reads as a state rather than as a name. A model
+with no tier — the admin's own — keeps its maker's ink and is never given one of
+these, because it is not a mark.
+
+They are **plain rules, not utilities**, for exactly the reason the author inks
+are: the class is built from the tier at run time, so Tailwind's scanner never
+sees the name and would emit no rule at all. `styles/theme.test.ts` fails on a
+utility, on a component that sets a mark by hand, and if either cut stops being
+preloaded.
 
 Omega's descender is why the trigger is not set `leading-none`: that cuts the
 line box to the cap height, and the `g` lost its tail inside the composer. The

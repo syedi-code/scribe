@@ -4,7 +4,7 @@ import { startCheckout } from '../api/billing';
 import { COPY } from '../copy';
 import { useAccount } from '../account/useAccount';
 import { TierMark } from '../models/TierMark';
-import { tierNamesOf } from '../models/tiers';
+import { tiersOf } from '../models/tiers';
 import { backDialog } from '../state/dialog';
 import { refreshRoster } from '../state/roster';
 import { Modal } from '../ui/Modal';
@@ -105,10 +105,10 @@ export function CheckoutDialog() {
 							{COPY.checkout.perMonth(paid.turns_per_month)}
 						</Row>
 						<Row label={COPY.checkout.models}>
-							{tierNamesOf(paid.models).map((name, at) => (
-								<span key={name}>
+							{tiersOf(paid.models).map((tier, at) => (
+								<span key={tier.id}>
 									{at > 0 && ', '}
-									<TierMark name={name} />
+									<TierMark name={tier.name} tier={tier.id} />
 								</span>
 							))}
 						</Row>
