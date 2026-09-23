@@ -39,18 +39,24 @@ export const COPY = {
 	/** The bare number is what is shown; this is what it is read out as. */
 	sessionCount: (count: number) =>
 		`${count} ${count === 1 ? 'session' : 'sessions'}`,
-	running: 'running',
 	newQuestion: 'New question',
 	/** Only while the server is actually being asked what it called this one. */
 	naming: 'naming…',
 	unnamed: 'untitled',
 	modelsEmpty: 'no models available',
 	noKey: 'no key set',
-	/** A model the reader's plan leaves out. Named by plan, never "upgrade". */
-	onPaid: 'on Paid',
 	/** A model only the admin is sent. */
 	adminOnly: 'yours alone',
 	inUse: 'in use',
+
+	/* The switcher inside the composer. The tiers name themselves
+	   (`models/tiers.ts`); these are the words around them. */
+	model: {
+		/** The control has no visible label, so it carries one for a reader who cannot see it. */
+		choose: 'Which model answers',
+		/** Named by plan, never "upgrade". */
+		requiresPro: 'requires Pro',
+	},
 
 	/* ---- home ----
 	   Questions worth asking of this library in particular, and answerable
@@ -323,7 +329,7 @@ export const COPY = {
 		unreachable: 'The page could not be fetched just now.',
 		seeScan: 'See the scan',
 		/** In place of *See the scan*, for a reader whose plan has none. */
-		seeScanOnPaid: 'See the scan on Paid',
+		seeScanOnPaid: 'See the scan on Pro',
 		around: (from: number, to: number) => `Read pp. ${from}–${to}`,
 		noScan: 'This page has no scan to show.',
 	},
@@ -338,7 +344,7 @@ export const COPY = {
 		unreachable: 'The scan could not be drawn just now.',
 		where: (page: number) => `PDF p. ${page}`,
 		/** Said over the sheet when the reader's plan has no scans. */
-		locked: 'The scan of a cited page is part of Paid.',
+		locked: 'The scan of a cited page is part of Pro.',
 		previous: 'Previous page',
 		next: 'Next page',
 		/** Tapping the page magnifies it; the label says which way it will go. */
@@ -372,7 +378,7 @@ export const COPY = {
 		/** The month, in the reader’s own locale: the reset is a date, not a countdown. */
 		resets: (at: string) => `Resets ${resetDay(at)}.`,
 		/** What a paid plan is, said as what it gives rather than what it costs. */
-		offer: 'A paid plan gives you more questions each month, and the better models to ask them of.',
+		offer: 'Pro gives you more questions each month, and the better model to ask them of.',
 		see: 'See plans',
 		/** The refused turn, when the composer was not disabled in time. */
 		refused: 'That question was not asked — this month’s are used up.',
@@ -390,13 +396,13 @@ export const COPY = {
 			later: 'Not now',
 		},
 
-		/* Free beside Paid. A card says only what differs; what both share is
+		/* Free beside Pro. A card says only what differs; what both share is
 		   said once, under them. */
 		plans: {
 			title: 'Plans',
 			current: 'Your plan',
 			free: 'Free',
-			paid: 'Paid',
+			paid: 'Pro',
 			/** Not the plan's name again: what free actually means here. */
 			freePrice: 'No card needed',
 			/** Until there is a price. Never a made-up figure. */
@@ -439,8 +445,8 @@ export const COPY = {
 			left === null ? plan : `${plan} · ${left} left this month`,
 		renews: (at: string) => `Renews ${localDay(at)}`,
 		/** Cancelled, and still paid for until then. */
-		ends: (at: string) => `Paid until ${localDay(at)}, then Free`,
-		/** Stripe is retrying the card; Paid stays on meanwhile. */
+		ends: (at: string) => `Pro until ${localDay(at)}, then Free`,
+		/** Stripe is retrying the card; Pro stays on meanwhile. */
 		pastDue: 'Your last payment did not go through. Stripe will try again.',
 		manage: 'Manage billing',
 		opening: 'Opening…',
@@ -454,7 +460,7 @@ export const COPY = {
 	   Everything about the purchase before the button, so nothing arrives as
 	   a surprise on the page after it. */
 	checkout: {
-		title: 'Paid plan',
+		title: 'Pro',
 		questions: 'Questions',
 		perMonth: (count: number) => `${count} a month`,
 		models: 'Models',
@@ -471,17 +477,17 @@ export const COPY = {
 			'Payments are not open yet, so nothing was charged. When they open, this button takes you straight to payment.',
 		/** Stripe already holds a payment this page had not heard of. */
 		alreadyPaid:
-			'You are already on Paid, so nothing more was charged. It may take a moment to show here.',
+			'You are already on Pro, so nothing more was charged. It may take a moment to show here.',
 	},
 
 	/* ---- back from paying ---- */
 	upgraded: {
-		title: 'You’re on Paid',
+		title: 'You’re on Pro',
 		body: 'More questions each month, and every model in the switcher.',
 		/** The webhook and the redirect race; say so rather than show Free. */
 		pending: 'It can take a minute for your account to show it.',
 		/** Said once the wait is longer than any webhook should take. */
-		slow: 'This is taking longer than it should. Your payment is safe with Stripe; if Paid has not arrived in a few minutes, write to support@socialeating.studio.',
+		slow: 'This is taking longer than it should. Your payment is safe with Stripe; if Pro has not arrived in a few minutes, write to support@socialeating.studio.',
 		arrived: 'Your account shows it now.',
 		start: 'Start reading',
 	},
@@ -567,7 +573,7 @@ export const COPY = {
 		cost: {
 			head: 'Cost',
 			body: [
-				'Scribe is free for a limited number of questions each month, and your account shows how many are left. Paid gives more questions, Claude Sonnet 5, and the scan of every page an answer cites. It can be cancelled at any time.',
+				'Scribe is free for a limited number of questions each month, and your account shows how many are left. Pro gives more questions, the higher-thinking model, and the scan of every page an answer cites. It can be cancelled at any time.',
 			],
 		},
 		contact: {

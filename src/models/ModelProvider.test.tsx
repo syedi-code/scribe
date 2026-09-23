@@ -6,35 +6,34 @@ import { DEFAULT_FLAGS } from '../flags/flags';
 import { FlagContext } from '../flags/context';
 import { stubFetch } from '../test/harness';
 import { ModelProvider } from './ModelProvider';
-import { RunningModel } from './RunningModel';
+import { ModelPicker } from './ModelPicker';
 
 /**
- * The feature flag a reader can actually see the effect of: whether Claude
- * Haiku 4.5 is pickable. Held back it is struck through and disabled, and
- * turning it on is a variable on the deployment, not a change here.
+ * A reader chooses Omicron or Omega. Which model each stands for is this
+ * build's business and the docs' — never the switcher's.
  */
-const ROSTER = {
-	models: [
-		{
-			id: 'gpt-5.6-luna',
-			label: 'GPT-5.6 Luna',
-			provider: 'openai',
-			acceptsFiles: true,
-		},
-		{
-			id: 'claude-haiku-4-5-20251001',
-			label: 'Claude Haiku 4.5',
-			provider: 'anthropic',
-			acceptsFiles: true,
-		},
-	],
-	default_model_id: 'gpt-5.6-luna',
+const luna = {
+	id: 'gpt-5.6-luna',
+	label: 'GPT-5.6 Luna',
+	provider: 'openai',
+	acceptsFiles: true,
+};
+const haiku = {
+	id: 'claude-haiku-4-5-20251001',
+	label: 'Claude Haiku 4.5',
+	provider: 'anthropic',
+	acceptsFiles: true,
+};
+const sonnet = {
+	id: 'claude-sonnet-5',
+	label: 'Claude Sonnet 5',
+	provider: 'anthropic',
+	acceptsFiles: true,
 };
 
-async function switcher(
-	isClaudeHaikuEnabled: boolean,
-	roster: object = ROSTER
-) {
+const ROSTER = { models: [luna, haiku], default_model_id: luna.id };
+
+async function open(roster: object = ROSTER, isClaudeHaikuEnabled = true) {
 	stubFetch(roster);
 	render(
 		<FlagContext
@@ -44,52 +43,82 @@ async function switcher(
 			}}
 		>
 			<ModelProvider>
-				<RunningModel />
+				<ModelPicker />
 			</ModelProvider>
 		</FlagContext>
 	);
-	fireEvent.click(await screen.findByRole('button', { name: /Luna/ }));
-	return screen.getByRole('menuitem', { name: /Claude Haiku/ });
+	fireEvent.click(await screen.findByRole('button', { name: /Omicron/ }));
 }
 
-const luna = ROSTER.models[0];
-const [sonnet, haiku] = [
-	{
-		id: 'claude-sonnet-5',
-		label: 'Claude Sonnet 5',
-		provider: 'anthropic',
-		acceptsFiles: true,
-	},
-	ROSTER.models[1],
-];
-
-describe("a model on a plan above the reader's", () => {
-	beforeEach(() => resetDialog());
-
-	it('says which plan has it, and shows the plans when pressed', async () => {
-		await switcher(true, {
-			models: [luna],
-			locked: [sonnet, haiku],
+describe('the switcher names tiers, never models', () => {
+	it('shows no maker or model name anywhere in the menu', async () => {
+		await open({
+			models: [luna, haiku],
+			locked: [sonnet],
 			default_model_id: luna.id,
 		});
-		const locked = screen.getByRole('menuitem', { name: /Sonnet 5/ });
-		expect(locked.textContent).toContain(COPY.onPaid);
-		expect(locked.textContent).not.toContain(COPY.noKey);
-		fireEvent.click(locked);
+		const menu = screen.getByRole('menu');
+		for (const leak of [
+			'GPT',
+			'Luna',
+			'Claude',
+			'Haiku',
+			'Sonnet',
+			'Gemini',
+		]) {
+			expect(menu.textContent).not.toContain(leak);
+		}
+		expect(menu.textContent).toContain('Omicron');
+		expect(menu.textContent).toContain('Omega');
+	});
+
+	it('says what choosing one means, rather than how good it is', async () => {
+		await open();
+		expect(
+			screen.getByRole('menuitem', { name: /Omicron/ }).textContent
+		).toContain('lower thinking');
+	});
+});
+
+describe('a tier the reader’s plan does not open', () => {
+	beforeEach(() => resetDialog());
+
+	it('says it needs Pro, and shows the plans when pressed', async () => {
+		await open({
+			models: [luna],
+			locked: [sonnet],
+			default_model_id: luna.id,
+		});
+		const shut = screen.getByRole('menuitem', { name: /Omega/ });
+		expect(shut.textContent).toContain(COPY.model.requiresPro);
+		expect(shut.textContent).not.toContain(COPY.noKey);
+		expect(shut.innerHTML).toContain('line-through');
+		fireEvent.click(shut);
 		expect(readDialog()).toBe('plans');
 	});
 
-	it('still says no key set when there is none', async () => {
-		await switcher(true, { models: [luna], default_model_id: luna.id });
-		const missing = screen.getByRole('menuitem', { name: /Sonnet 5/ });
+	// A plan is a decision; a missing key is a broken deployment. Saying the
+	// second when the first is true is what sent free readers to the logs.
+	it('still says no key set when there is none anywhere', async () => {
+		await open({ models: [luna], default_model_id: luna.id });
+		const missing = screen.getByRole('menuitem', { name: /Omega/ });
 		expect(missing.textContent).toContain(COPY.noKey);
 		expect(missing.hasAttribute('disabled')).toBe(true);
 	});
 });
 
-describe("the admin's own model", () => {
-	it('is offered to the admin, from the roster alone', async () => {
-		await switcher(true, {
+describe('a tier stands for whichever of its models can run', () => {
+	it('falls back to the second when the first has no key', async () => {
+		await open({ models: [haiku], default_model_id: haiku.id });
+		const omicron = screen.getByRole('menuitem', { name: /Omicron/ });
+		expect(omicron.hasAttribute('disabled')).toBe(false);
+		expect(omicron.textContent).not.toContain(COPY.noKey);
+	});
+});
+
+describe('the admin’s own model', () => {
+	it('is offered under its own name, having no tier', async () => {
+		await open({
 			models: [
 				luna,
 				{
@@ -108,24 +137,7 @@ describe("the admin's own model", () => {
 	});
 
 	it('is never named to anyone the roster leaves it out for', async () => {
-		await switcher(true);
+		await open();
 		expect(screen.queryByRole('menuitem', { name: /Sol/ })).toBeNull();
-		expect(screen.queryByRole('menuitem', { name: /Gemini/ })).toBeNull();
-	});
-});
-
-describe('the Haiku flag', () => {
-	it('lets Haiku be chosen when it is on', async () => {
-		const haiku = await switcher(true);
-		expect(haiku.hasAttribute('disabled')).toBe(false);
-		expect(haiku.innerHTML).not.toContain('line-through');
-	});
-
-	it('holds Haiku back when it is off', async () => {
-		const haiku = await switcher(false);
-		expect(haiku.hasAttribute('disabled')).toBe(true);
-		expect(haiku.innerHTML).toContain('line-through');
-		// Held back is a decision of ours, never a missing key.
-		expect(haiku.textContent).not.toContain('no key set');
 	});
 });

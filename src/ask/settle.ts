@@ -25,7 +25,7 @@ export function useArrival(): ArrivalState {
 /** Where each piece of the column falls in the sequence. */
 export const SETTLE = {
 	subtitle: 0,
-	line: 1,
+	library: 1,
 	composer: 2,
 	suggestions: 3,
 } as const;

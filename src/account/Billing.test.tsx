@@ -169,9 +169,7 @@ describe('the account sheet, on Paid', () => {
 		app();
 		act(() => openDialog('account'));
 
-		expect(
-			await screen.findByText(/Paid until .*, then Free/)
-		).toBeTruthy();
+		expect(await screen.findByText(/Pro until .*, then Free/)).toBeTruthy();
 	});
 
 	it('says plainly when a payment did not go through', async () => {

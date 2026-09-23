@@ -6,69 +6,66 @@ import { useAsync } from '../lib/useAsync';
 import { reportAllowance } from '../state/allowance';
 import { useRosterVersion } from '../state/roster';
 import { ModelContext, type ModelChoice, type ModelState } from './context';
+import { TIERS, TIERED_MODEL_IDS, tierOfModel } from './tiers';
 import type { Model, ModelsResponse } from '../api/types';
 
 /**
- * The model roster and the selection, in one place, because the switcher is
- * rendered twice — under the wordmark at home, and in the header once a
- * conversation starts — and two switchers would be two selections.
+ * The roster and the selection, in one place, because the switcher is drawn
+ * inside the composer and the composer is portalled between the home screen
+ * and the dock — one provider, one selection, wherever it is standing.
  *
- * `GET /models` returns the models this reader may choose, and under `locked`
- * those a plan above theirs would open. Everything the roster knows about is
- * listed; a locked one says which plan has it, and one with no key at all is
- * shown disabled rather than hidden, so a reader can see what Scribe could run
- * if it were configured for it. The two used to read alike — a free reader was
- * told Claude had *no key set* when the key was fine and the plan was the
- * reason.
+ * `GET /models` answers in model ids, and so does the chat route. This is
+ * where that vocabulary stops: everything above it speaks in tiers
+ * (`tiers.ts`), and a row's `id` is simply whichever model the tier resolved
+ * to. A tier with several models behind it takes the first one the worker has
+ * a key for, so losing a provider narrows what runs without taking a name
+ * away from the reader.
  *
- * The admin's own models are not known here. They arrive only in the admin's
- * roster, through the path for a model this build has never heard of, so no
- * one else is shown one they could never have.
+ * A tier a higher plan would open is listed, not hidden, and says so — that
+ * row is the one door to the plans a reader finds on their own, at the moment
+ * they want what it opens. A tier with no key anywhere is listed too, and says
+ * something different: the two used to read alike, and a free reader was told
+ * a key was missing when the key was fine and the plan was the reason.
+ *
+ * The admin's own models have no tier. They arrive only in the admin's roster,
+ * through the path for a model this build has never heard of, so nobody else
+ * is ever shown one they could not have.
  */
 
 /**
  * Held back from the switcher, and shown as held back rather than quietly
- * dropped: a reader can see what Scribe could run, and that the reason it is
- * not running is a decision rather than a missing key.
- *
- * Haiku is behind `isClaudeHaikuEnabled` — it is five times Luna's input and
- * four times its output, for a lower score, and every step of the agent loop
- * pays that again, so it is turned on for as long as someone wants it and off
- * again by flipping a variable.
+ * dropped. Haiku stands behind Luna in Omicron, so this only decides which
+ * model the tier resolves to — never whether the tier is offered.
  */
 const HAIKU = 'claude-haiku-4-5-20251001';
 
 const heldBack = (id: string, flags: Flags) =>
 	id === HAIKU && !flags.isClaudeHaikuEnabled;
 
-/**
- * Luna, when the server names no default: a fifth of Haiku's input price and
- * a quarter of its output, and it scores higher. What it spends instead is
- * time — minutes can pass before its first word.
- */
-export const PREFERRED_MODEL_ID = 'gpt-5.6-luna';
+/** The tier a new reader starts on when the server names no default. */
+export const PREFERRED_TIER_ID = 'omicron';
 
-/** Models Scribe knows of, so one without a key can be named rather than omitted. */
-const KNOWN: Model[] = [
-	{
+/** Models Scribe knows the name of, so one without a key can still be named. */
+const KNOWN: Record<string, Model> = {
+	'gpt-5.6-luna': {
 		id: 'gpt-5.6-luna',
 		label: 'GPT-5.6 Luna',
 		provider: 'openai',
 		acceptsFiles: true,
 	},
-	{
+	'claude-sonnet-5': {
 		id: 'claude-sonnet-5',
 		label: 'Claude Sonnet 5',
 		provider: 'anthropic',
 		acceptsFiles: true,
 	},
-	{
-		id: 'claude-haiku-4-5-20251001',
+	[HAIKU]: {
+		id: HAIKU,
 		label: 'Claude Haiku 4.5',
 		provider: 'anthropic',
 		acceptsFiles: true,
 	},
-];
+};
 
 export function ModelProvider({ children }: { children: ReactNode }) {
 	const [chosen, setChosen] = useState<string | null>(null);
@@ -87,51 +84,82 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 	}, [roster.value]);
 
 	const value = useMemo<ModelState>(() => {
-		const available = roster.value?.models ?? [];
-		const byId = new Map(available.map((model) => [model.id, model]));
+		const offered = roster.value?.models ?? [];
+		const byId = new Map(offered.map((model) => [model.id, model]));
 		const locked = new Set(
 			(roster.value?.locked ?? []).map((model) => model.id)
 		);
-		const choices: ModelChoice[] = [
-			...KNOWN.map((model) => ({
-				...(byId.get(model.id) ?? model),
-				available: byId.has(model.id) && !heldBack(model.id, flags),
-				comingSoon: heldBack(model.id, flags),
-				locked: locked.has(model.id) && !heldBack(model.id, flags),
-			})),
-			// A model the server offers that this build has never heard of.
-			...available
-				.filter(
-					(model) => !KNOWN.some((known) => known.id === model.id)
-				)
-				.map((model) => ({
-					...model,
-					available: true,
-					comingSoon: false,
-					locked: false,
-				})),
-		];
 
-		const usable = choices.filter((model) => model.available);
-		// The server names the default by plan — Sonnet on Paid, Luna on Free
-		// — so it comes before this build's own preference.
+		/** One row per tier, standing for the best model it can reach. */
+		const rows: ModelChoice[] = TIERS.map((tier) => {
+			const usable = tier.models.find(
+				(id) => byId.has(id) && !heldBack(id, flags)
+			);
+			const shut = tier.models.find((id) => locked.has(id));
+			const waiting = tier.models.find((id) => heldBack(id, flags));
+			// Whichever model speaks for the tier — the one that can run, else
+			// the one a plan would open, else the first, so the row always has
+			// an id to be selected and sent by.
+			const id = usable ?? shut ?? waiting ?? tier.models[0];
+			const model = byId.get(id) ?? KNOWN[id];
+
+			return {
+				...(model ?? {
+					id,
+					label: tier.name,
+					provider: 'openai' as const,
+					acceptsFiles: true,
+				}),
+				id,
+				// The tier's name stands in for the model's, everywhere a
+				// reader can see. Nothing below this line knows the difference.
+				label: tier.name,
+				tier: tier.id,
+				note: tier.note,
+				available: Boolean(usable),
+				comingSoon: !usable && !shut && Boolean(waiting),
+				locked: !usable && Boolean(shut),
+			};
+		});
+
+		// A model the server offers that belongs to no tier: the admin's.
+		const untiered: ModelChoice[] = offered
+			.filter((model) => !TIERED_MODEL_IDS.includes(model.id))
+			.map((model) => ({
+				...model,
+				tier: null,
+				note: '',
+				available: true,
+				comingSoon: false,
+				locked: false,
+			}));
+
+		const choices = [...rows, ...untiered];
+		const open = choices.filter((choice) => choice.available);
+		// The server names the default by plan — Omega on Pro, Omicron on Free
+		// — so its word comes before this build's own preference.
+		const byDefault = roster.value?.default_model_id;
 		const selected =
-			usable.find((model) => model.id === chosen) ??
-			usable.find(
-				(model) => model.id === roster.value?.default_model_id
-			) ??
-			usable.find((model) => model.id === PREFERRED_MODEL_ID) ??
-			usable[0] ??
+			open.find((choice) => choice.id === chosen) ??
+			open.find((choice) => choice.id === byDefault) ??
+			open.find((choice) => choice.tier === PREFERRED_TIER_ID) ??
+			open[0] ??
 			null;
 
 		return {
 			choices,
 			selected,
 			select: setChosen,
-			labelFor: (id) =>
-				id ? (choices.find((m) => m.id === id)?.label ?? id) : null,
-			// A flag still in flight is a roster not yet decided: Haiku would
-			// read as held back for a frame and then stop being.
+			labelFor: (id) => {
+				if (!id) return null;
+				return (
+					tierOfModel(id)?.name ??
+					choices.find((choice) => choice.id === id)?.label ??
+					KNOWN[id]?.label ??
+					id
+				);
+			},
+			// A flag still in flight is a roster not yet decided.
 			loading: roster.loading || flagsLoading,
 		};
 	}, [roster.value, roster.loading, flags, flagsLoading, chosen]);

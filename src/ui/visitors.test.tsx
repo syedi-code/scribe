@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COPY } from '../copy';
+import { ModelContext } from '../models/context';
 import { ChatContext } from '../chat/context';
 import { refuseSpentMonth } from '../chat/refusal';
 import { FlagContext } from '../flags/context';
@@ -19,7 +20,7 @@ import { readDialog, resetDialog } from '../state/dialog';
 import { keepDraftForSignIn, setDraft } from '../state/draft';
 import { resetIdentity } from '../state/identity';
 import { readStanding, reportStanding } from '../state/visitor';
-import { chat } from '../test/harness';
+import { chat, models } from '../test/harness';
 import { AccountCorner } from '../account/AccountCorner';
 import { Dialogs } from './Dialogs';
 import { openReader } from './openReader';
@@ -360,9 +361,11 @@ describe('a visitor we could not let in', () => {
 		const ask = vi.fn();
 		render(
 			<FlagContext value={{ flags: DEFAULT_FLAGS, loading: false }}>
-				<ChatContext value={chat({ atHome: true, ask })}>
-					<Composer />
-				</ChatContext>
+				<ModelContext value={models}>
+					<ChatContext value={chat({ atHome: true, ask })}>
+						<Composer />
+					</ChatContext>
+				</ModelContext>
 			</FlagContext>
 		);
 		const field = screen.getByRole('textbox');
