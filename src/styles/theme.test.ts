@@ -69,6 +69,65 @@ const PRINTS_A_BOOK_NAME = [
 	'src/page/ScanView.tsx', // over the scan
 ];
 
+/**
+ * Four places print a tier's name. Each asks the stylesheet how a mark is set,
+ * for the same reason the six that print a book name do.
+ */
+const PRINTS_A_TIER_NAME = [
+	'src/models/ModelPicker.tsx', // in the composer, and in its menu
+	'src/plan/PlansDialog.tsx', // on the plans card
+	'src/plan/CheckoutDialog.tsx', // in the review before paying
+	'src/ask/AnswerFooter.tsx', // under an answer, signing it
+];
+
+describe('a tier set as a mark', () => {
+	it('is declared once, in the stylesheet', () => {
+		expect(THEME).toContain('@utility tier-mark');
+	});
+
+	it('is what every component that prints a tier name reaches for', () => {
+		for (const path of PRINTS_A_TIER_NAME) {
+			expect(
+				readFileSync(path, 'utf8'),
+				`${path} prints a tier name without TierMark`
+			).toContain('TierMark');
+		}
+	});
+
+	// An italic in this app means a book, so the mark cannot borrow the
+	// wordmark's bold italic to tell its tail apart; it uses weight alone.
+	it('separates its tail by weight, never by a slant', () => {
+		const declared = THEME.slice(THEME.indexOf('@utility tier-mark'));
+		const body = declared.slice(0, declared.indexOf('\n}'));
+
+		expect(body).toContain('font-family: var(--font-read)');
+		expect(body).toContain('font-weight: var(--weight-text)');
+		expect(body).toContain('font-synthesis: none');
+		expect(body).not.toContain('font-style: italic');
+		expect(body).toContain('font-weight: 700');
+	});
+
+	// Both of its cuts are on screen at first paint. A weight discovered late
+	// is re-set in front of the reader, which is what made a title look bold
+	// on a phone -- twice.
+	it('is set in cuts that are preloaded', () => {
+		const html = readFileSync('index.html', 'utf8');
+		for (const weight of ['300', '700']) {
+			const face = THEME.split('@font-face').find(
+				(one) =>
+					one.includes(`font-weight: ${weight}`) &&
+					!one.includes('font-style: italic')
+			);
+			const url = /url\('([^']+)'\)/.exec(face ?? '')?.[1];
+			expect(url, `no roman declared at ${weight}`).toBeTruthy();
+			expect(
+				html.includes(url!),
+				`the ${weight} roman is declared but never preloaded`
+			).toBe(true);
+		}
+	});
+});
+
 describe('a work set as a work', () => {
 	it('is declared once, in the stylesheet', () => {
 		expect(THEME).toContain('@utility work-title');
@@ -219,9 +278,10 @@ describe('an author ink', () => {
 
 	it('is a rule of its own, not a utility waiting to be scanned', () => {
 		for (const slot of SLOTS) {
-			expect(THEME, `author-c${slot} is not declared as a rule`).toContain(
-				`.author-c${slot} {`
-			);
+			expect(
+				THEME,
+				`author-c${slot} is not declared as a rule`
+			).toContain(`.author-c${slot} {`);
 			expect(THEME).not.toContain(`@utility author-c${slot}`);
 		}
 	});

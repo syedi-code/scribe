@@ -3,6 +3,7 @@ import { COPY } from '../copy';
 import { useDismiss } from '../lib/useDismiss';
 import { seePlans } from '../state/dialog';
 import { useModels, type ModelChoice } from './context';
+import { TierMark } from './TierMark';
 
 /**
  * The line under a tier's name: what choosing it means, and — only when it
@@ -31,6 +32,11 @@ function noteFor(choice: ModelChoice): string {
  * The menu opens **upward**. The composer is at the foot of the screen on
  * every layout, and a menu hung below it would open off the bottom of a phone.
  *
+ * Its rows are inset and rounded inside the menu's own padding, so a row under
+ * the pointer is a lozenge with air around it rather than a band ruled to the
+ * edge — which left a sliver of unlit padding above the first row and below
+ * the last, and read as a miss rather than as a margin.
+ *
  * A tier a plan would open is listed rather than hidden, struck through and
  * unpickable, and pressing it opens the plans. It is the only place in the app
  * where a reader meets the paid plan without going looking for it, so it has
@@ -55,12 +61,15 @@ export function ModelPicker() {
 				aria-label={`${COPY.model.choose}: ${name}`}
 				disabled={!selected && !loading}
 				onClick={() => setOpen((was) => !was)}
-				className="font-app text-small text-ink-soft hover:bg-paper-deep hover:text-ink flex max-w-[9rem] items-center gap-1 rounded-full px-2.5 py-1.5 leading-none transition-colors disabled:cursor-default disabled:opacity-35"
+				// `leading-none` clipped the descender of Omega's g, because
+				// the name is set in the reading face and the line box was cut
+				// to the cap height. The row is sized by its padding instead.
+				className="text-ink-soft hover:bg-paper-deep hover:text-ink flex items-center gap-1.5 rounded-full px-2.5 py-1 text-small leading-normal whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-35"
 			>
-				<span className="truncate">{name}</span>
+				<TierMark name={name} />
 				<span
 					aria-hidden
-					className={`text-[0.75em] transition-transform duration-200 ease-paper ${
+					className={`text-ink-faint ease-paper text-[0.7em] transition-transform duration-200 ${
 						open ? 'rotate-180' : ''
 					}`}
 				>
@@ -68,58 +77,59 @@ export function ModelPicker() {
 				</span>
 			</button>
 
-			<div
-				role="menu"
-				hidden={!open}
-				// Hung from the bottom of the trigger and squared off its right
-				// edge, so it grows up and inward and never off a narrow screen.
-				className="border-paper-deep bg-paper-lift absolute right-0 bottom-full z-(--z-menu) mb-2 w-[15rem] max-w-[calc(100cqw-2.5rem)] overflow-hidden rounded-xl border py-1 shadow-[0_-16px_34px_-24px_rgba(36,31,26,0.9)]"
-			>
-				{choices.map((choice) => {
-					const inUse = choice.id === selected?.id;
-					const shut = choice.locked;
-					const dead = !choice.available && !shut;
+			{open && (
+				<div
+					role="menu"
+					// Hung from the top of the trigger and squared off its right
+					// edge, so it grows up and inward and never off a narrow
+					// screen. It rises as it fades, the way everything that
+					// arrives over the page here does.
+					className="border-paper-deep bg-paper-lift animate-rise absolute right-0 bottom-full z-(--z-menu) mb-2 w-[16rem] max-w-[calc(100cqw-2.5rem)] origin-bottom rounded-2xl border p-1.5 shadow-[0_-18px_38px_-26px_rgba(36,31,26,0.9)]"
+				>
+					{choices.map((choice) => {
+						const inUse = choice.id === selected?.id;
+						const shut = choice.locked;
+						const dead = !choice.available && !shut;
+						const struck = shut || dead;
 
-					return (
-						<button
-							key={choice.id}
-							role="menuitem"
-							type="button"
-							disabled={dead}
-							onClick={() => {
-								close();
-								if (shut) seePlans();
-								else select(choice.id);
-							}}
-							className="font-app flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left enabled:hover:bg-paper-deep disabled:cursor-default"
-						>
-							<span className="flex w-full items-baseline justify-between gap-3">
-								<span
-									className={`text-ui truncate ${
-										choice.comingSoon ? 'line-through' : ''
-									} ${
-										choice.available
-											? 'text-ink'
-											: 'text-ink-faint line-through'
-									}`}
-								>
-									{choice.label}
+						return (
+							<button
+								key={choice.id}
+								role="menuitem"
+								type="button"
+								disabled={dead}
+								onClick={() => {
+									close();
+									if (shut) seePlans();
+									else select(choice.id);
+								}}
+								className="enabled:hover:bg-paper-deep flex w-full flex-col items-start gap-0.5 rounded-xl px-2.5 py-2 text-left transition-colors disabled:cursor-default"
+							>
+								<span className="flex w-full items-baseline justify-between gap-3">
+									<TierMark
+										name={choice.label}
+										className={`text-ui ${
+											struck
+												? 'text-ink-faint line-through'
+												: 'text-ink'
+										}`}
+									/>
+									{inUse && (
+										<span className="font-app text-tiny text-ink-faint shrink-0">
+											{COPY.inUse}
+										</span>
+									)}
 								</span>
-								{inUse && (
-									<span className="text-tiny text-ink-faint shrink-0">
-										{COPY.inUse}
-									</span>
-								)}
-							</span>
-							{/* What choosing it means — and, only when it is out
-							    of reach, the one reason it is. */}
-							<span className="text-tiny text-ink-faint">
-								{noteFor(choice)}
-							</span>
-						</button>
-					);
-				})}
-			</div>
+								{/* What choosing it means — and, only when it is out
+								    of reach, the one reason it is. */}
+								<span className="font-app text-tiny text-ink-faint">
+									{noteFor(choice)}
+								</span>
+							</button>
+						);
+					})}
+				</div>
+			)}
 		</div>
 	);
 }
