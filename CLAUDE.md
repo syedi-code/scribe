@@ -111,7 +111,9 @@ told their questions came back a day early.
 `state/dialog.ts` opens `plan/PlansDialog.tsx` — from the composer's notice, the
 limit dialog, the account menu, the account sheet — and checkout is reached from
 there and nowhere else. Nobody is offered what they already have: a paid reader
-and the admin see no offer anywhere.
+and the admin see no offer anywhere. The plan is called **Pro** to a reader; the
+wire and the database still say `paid`, because a plan enum is a breaking
+two-repo change and the name is not.
 
 What the plans say comes from `GET /plans`, which alexandria answers from the
 same `TURNS_PER_MONTH` and model table it enforces, so the page that sells a
@@ -124,7 +126,7 @@ A card carries only what differs — the questions a month, set large because it
 is the difference a reader feels, then the models — and what both plans share
 is said once under them. The plan on offer is drawn forward and holds the only
 filled button; the reader's own is named, not shaded, because shading it made
-the plan they are on look like the better one. Narrow, Paid comes first, so its
+the plan they are on look like the better one. Narrow, Pro comes first, so its
 button is in reach without scrolling. None of it leans on anyone: the price and
 the billing terms sit beside the button rather than behind it, nothing counts
 down, *Not now* is as plain as the offer, and Free is described as it is.
@@ -146,17 +148,17 @@ names the old plan.
 **Back from paying, the tab waits for the webhook, out loud.** Stripe's
 redirect usually beats its webhook, so the tab that loads on `?checkout=done`
 is told Free. `plan/usePlanArrival.ts` asks `GET /billing` every two seconds
-until it says Paid, then `refreshRoster()` (`state/roster.ts`) asks for the
-roster again, so Sonnet unlocks and the counter changes without a reload.
+until it says Pro, then `refreshRoster()` (`state/roster.ts`) asks for the
+roster again, so Omega unlocks and the counter changes without a reload.
 Past thirty seconds the welcome says the wait is long and names the support
 address; past two minutes it stops asking. The account sheet reads
-`GET /billing` each time it opens — when Paid renews or ends, a failed payment
+`GET /billing` each time it opens — when Pro renews or ends, a failed payment
 said plainly, and *Manage billing*, which mints a Stripe portal link on the
 press and follows it. Back from the portal (`?billing=returned`) the account
 sheet opens again, and if billing names another plan than the tab believes,
 the roster is asked again. A checkout refused with `ALREADY_PAID` says nothing
 more was charged and will not offer the button again. The default model is
-the server's (`default_model_id`, Sonnet on Paid) before this build's own
+the server's (`default_model_id`, Omega on Pro) before this build's own
 preference, which is only a fallback.
 
 **A visitor is let in, not kept out** (scribe#38, behind
@@ -444,8 +446,9 @@ variable in `styles/theme.css`. No arbitrary hex in a component, ever.
 of what colour means here. The three status inks land only on marks — the stamp,
 the margin rule, the verdict line. The six author inks (`--author-c0…5`) land
 only on a surname, in the prose and in every reference to it. Nothing else in
-the app is coloured, with one exception that never reaches the reading surface:
-a provider dot inside the model switcher.
+the app is coloured, with one exception that never reaches the reading
+surface: a maker's name where one is still printed, which since the switcher
+started naming tiers is only an answer signed by one of the admin's models.
 
 The author inks are chosen against the prose rather than against the paper: L
 0.34 in OKLCH, the band the text itself sits in, so a name reads as ink from
@@ -489,9 +492,8 @@ itself — so a brand colour never lands beside an author's ink.
 `--z-menu`, declared once in `styles/theme.css` and read as `z-(--z-rail)`. A
 number written in a component is a bug and `styles/theme.test.ts` fails on one:
 two things at `20` in two files is how the rail came up underneath the home
-screen's subtitle. A layer is a whole subtree, so the model menu is `--z-menu`
-above the header and no higher than `--z-lifted` when it hangs from the home
-screen's model line. A scrim and the panel it dims share a layer and are ordered
+screen's subtitle. A layer is a whole subtree, so the model menu is `--z-menu`,
+which it needs wherever the composer is standing. A scrim and the panel it dims share a layer and are ordered
 by the DOM, scrim first.
 
 **No mobile fork.** One component tree, container queries on the app shell.
@@ -546,9 +548,18 @@ code keeps it (30-day deletion, for one). The key to the three rules under a
 quotation is drawn from `CITATION_STATUS`, so it cannot come to describe a
 mark the answers no longer make.
 
-**Narrow, the header is two rows.** The mark and the running model on the left
-of the first with the account stamp opposite, and the tabs centred on the
-second; on the home screen the mark folds away and the stamp keeps
+**The switcher is inside the composer, ranged right beside the button that
+sends** — `models/ModelPicker.tsx`, on the row under the question. Which model
+answers is part of asking and is chosen at the moment of asking, so it belongs
+to the question and not to the chrome; it used to sit under the wordmark *and*
+again in the header, which was a standing statement about the app in the place a
+choice about this question belongs. Its menu opens **upward** (`bottom-full`):
+the composer is at the foot of every layout and a menu hung below it opens off
+the bottom of a phone. The controls are a row of their own rather than beside
+the field, which on a phone had left about twelve characters to type in.
+
+**Narrow, the header is two rows.** The mark on the left of the first with the
+account stamp opposite, and the tabs centred on the second; on the home screen the mark folds away and the stamp keeps
 its corner, so it never moves between screens and never sits in a row of words. One row ran past
 a 360px phone once Sessions and About were both there, and tabs jammed against
 the right edge of a screen with nothing on its left read as leftovers. The
@@ -580,13 +591,13 @@ link rather than a window opened later. Escape puts away the scan before the
 drawer.
 
 **A reader holds the page they were cited, never the book.** The scan is part
-of Paid, and alexandria cuts the cited page out and sends that alone
+of Pro, and alexandria cuts the cited page out and sends that alone
 (`/cited/:document/pages/:page/scan`), for the cited page and one either side
 — the page a quote runs onto. `ScanView` turns exactly that far and its
 chevrons stop there. The drawer's text comes from `/cited/.../pages` under the
 same rule. The whole file, and the *Open the PDF* link to it, are the admin's:
 before this, every signed-in reader could sign any key and take the library.
-On Free the drawer's footer says *See the scan on Paid* where the button would
+On Free the drawer's footer says *See the scan on Pro* where the button would
 be, and a scan refused with `SCAN_REQUIRES_PAID` (a plan that lapsed while the
 tab was open) says so over the sheet and offers the plans.
 
@@ -657,11 +668,13 @@ and one not is the fact, and a total would hide the one that failed. A pip is
 
 **The home screen says what Scribe is, under the mark and not in it.**
 `ask/Subtitle.tsx` settles in first after the mark finishes typing, ahead of
-the running line, and it is not part of `Wordmark`, so it stays behind when
+`ask/LibraryLine.tsx` — how much there is to read, which is the size of the
+thing rather than what is being done to it, so it belongs with the line that
+says what Scribe is — and it is not part of `Wordmark`, so it stays behind when
 the mark travels to the header. A line of the prose — the reading face, light,
 lower case like the mark, `--text-lede` wide and `--text-prose` narrow — set
-close under the mark as one lockup, with the running line kept further off:
-one says what Scribe is, the other what it is doing now. Not an italic, which
+close under the mark as one lockup, with the library count kept just under it.
+Not an italic, which
 means a book, and not spaced capitals, which read as a label stuck on. One line
 wide; narrow it breaks at its comma and nowhere else. Narrow the mark is set
 larger (2.9rem) to take the room a phone's home screen had left empty.
@@ -752,22 +765,42 @@ is actually polling for a title. A conversation that is still untitled after
 that is `untitled` — promising a name that is not coming is how `naming…` came
 to sit in the rail for ever.
 
-**A model can be held back.** `heldBack()` in `models/ModelProvider.tsx`, shown
-struck through and unpickable rather than hidden, so a reader can see what
-Scribe could run. Haiku is held back on cost — five times Luna's input and four
+**A reader chooses a tier, never a model.** `models/tiers.ts` holds the two —
+**Omicron** and **Omega**, Greek for *little O* and *great O*, so the order is
+in the names and nothing has to explain it — and each names the models it may
+stand for, best first. `ModelProvider` resolves a tier to the first of its
+models the worker has a key for; the row's `id` is still that real model id, so
+the wire and the saved answers never learn about tiers, and `labelFor()` maps a
+saved model id back to the tier that wrote it.
+
+This is not decoration. A published model name pins the cost of every answer to
+one vendor's price list **in public**, so the model cannot be changed without it
+reading as a downgrade — and it invites the only comparison that loses, *why pay
+you $20 when the model is $20*. A tier can be re-pointed on a Tuesday. What is
+underneath is in the docs, because the roster is in a public repository anyway.
+`ModelProvider.test.tsx` fails if a maker's or a model's name reaches the menu.
+
+The tier names are sold in the same words everywhere: `tierNamesOf()` maps the
+model list `GET /plans` returns, so the plans card and the checkout review say
+*Omega* where they used to say *Claude Sonnet 5*.
+
+**A model can be held back.** `heldBack()` in `models/ModelProvider.tsx`. Haiku
+is held back on cost — five times Luna's input and four
 times its output, for a lower score, and every step of the agent loop pays it
 again — so it is behind `isClaudeHaikuEnabled` rather than a constant: a
-decision about money changes more often than the code around it. The strike and
-the disabled row say _held back_ on their own: a _coming soon_ beside them was the
-same fact twice, and it is the one claim of the three that needs no words.
-_no key set_ still does, because it is a different claim — that the deployment
-is missing a key rather than that we chose this. `Add a book` is held back the
+decision about money changes more often than the code around it. It stands
+behind Luna inside Omicron, so the flag now decides which model that tier
+resolves to and never whether the tier is offered. The strike and the disabled
+row say _held back_ on their own: a _coming soon_ beside them was the same fact
+twice, and it is the one claim of the three that needs no words. _no key set_
+still does, because it is a different claim — that the deployment is missing a
+key rather than that we chose this. `Add a book` is held back the
 same way and always has been: the tab is struck through and disabled with no
 label, and `add/AddPanel.tsx` waits for an ingestion to exist behind it.
 
 **A model can be on a plan above the reader's, which is not a missing key.**
-`GET /models` lists those under `locked`, and the switcher says _on Paid_ beside
-them and opens the plans when one is pressed. Before it did, every paid model
+`GET /models` lists those under `locked`, and the switcher says _requires Pro_
+beside that tier, strikes it through and opens the plans when it is pressed. Before it did, every paid model
 told a free reader _no key set_, which read as a broken deployment. The admin's
 own models — GPT-5.6 Sol, at twenty times Luna's price — are in no plan, are
 not in `KNOWN`, and arrive only in the admin's roster, marked _yours alone_; no

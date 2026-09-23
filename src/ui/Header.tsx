@@ -3,7 +3,6 @@ import { COPY } from '../copy';
 import { AccountCorner } from '../account/AccountCorner';
 import { useConversation } from '../chat/context';
 import { useFlag } from '../flags/context';
-import { RunningModel } from '../models/RunningModel';
 import { TabBar } from './TabBar';
 import { Travel } from './Travel';
 import { Wordmark } from './Wordmark';
@@ -117,9 +116,8 @@ export function Header({
 				onTransitionEnd={() => {
 					if (!bare) setArrived(true);
 				}}
-				// Opening, the fade waits half the journey, so the model line
-				// comes up under a mark that has all but landed rather than
-				// through one still crossing it.
+				// Opening, the fade waits half the journey, so the mark
+				// arrives rather than crossing the row already lit.
 				className={`grid transition-[grid-template-rows,opacity] duration-300 ease-paper @max-compact:col-start-1 @max-compact:row-start-1 ${
 					bare
 						? 'grid-rows-[0fr] opacity-0'
@@ -127,22 +125,19 @@ export function Header({
 				}`}
 			>
 				<div className={folding ? 'overflow-hidden' : ''}>
-					<div className="grid gap-0.5">
-						<button
-							type="button"
-							onClick={() => {
-								onTab('ask');
-								newQuestion();
-							}}
-							ref={mark}
-							title={COPY.home}
-							aria-label={COPY.home}
-							className="justify-self-start"
-						>
-							<Wordmark className="text-[17px]" />
-						</button>
-						<RunningModel />
-					</div>
+					<button
+						type="button"
+						onClick={() => {
+							onTab('ask');
+							newQuestion();
+						}}
+						ref={mark}
+						title={COPY.home}
+						aria-label={COPY.home}
+						className="block"
+					>
+						<Wordmark className="text-[17px]" />
+					</button>
 				</div>
 			</div>
 

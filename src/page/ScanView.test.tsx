@@ -223,7 +223,7 @@ describe('on Free', () => {
 		act(() => openPage(into('doc-free', 21)));
 
 		const offer = await screen.findByRole('button', {
-			name: 'See the scan on Paid',
+			name: 'See the scan on Pro',
 		});
 		expect(
 			screen.queryByRole('button', { name: 'See the scan' })
@@ -240,7 +240,7 @@ describe('on Free', () => {
 		await openScanFor(into('doc-lapsed', 21));
 
 		expect(
-			await screen.findByText('The scan of a cited page is part of Paid.')
+			await screen.findByText('The scan of a cited page is part of Pro.')
 		).toBeTruthy();
 		press('See plans');
 		expect(readDialog()).toBe('plans');

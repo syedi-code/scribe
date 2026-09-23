@@ -105,25 +105,6 @@ describe('the home screen', () => {
 		expect(count.className).toContain('underline');
 		expect(count.parentElement?.textContent).toBe('with 105 works');
 	});
-
-	it('stands the model line above the composer, so its menu is not behind it', () => {
-		stubFetch(LIBRARY);
-		renderApp(<Home composerSlot={() => {}} />);
-		fireEvent.click(screen.getByRole('button', { name: /Claude/ }));
-
-		const menu = screen.getByRole('menu');
-		const column = menu.closest('.row-span-full')!;
-		const line = [...column.children].find((child) =>
-			child.contains(menu)
-		)!;
-		expect(line.className).toContain('z-(--z-lifted)');
-
-		// Every other child of the column sits at the default level, so the
-		// explicit one wins however the DOM is ordered.
-		for (const child of column.children) {
-			if (child !== line) expect(child.className).not.toContain('z-(');
-		}
-	});
 });
 
 const step = (over: Partial<WorkStep>): WorkStep => ({

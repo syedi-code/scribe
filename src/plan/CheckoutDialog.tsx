@@ -3,7 +3,7 @@ import { describeApiError } from '../api/client';
 import { startCheckout } from '../api/billing';
 import { COPY } from '../copy';
 import { useAccount } from '../account/useAccount';
-import { BrandedLabel } from '../models/BrandedLabel';
+import { tierNamesOf } from '../models/tiers';
 import { backDialog } from '../state/dialog';
 import { refreshRoster } from '../state/roster';
 import { Modal } from '../ui/Modal';
@@ -104,12 +104,7 @@ export function CheckoutDialog() {
 							{COPY.checkout.perMonth(paid.turns_per_month)}
 						</Row>
 						<Row label={COPY.checkout.models}>
-							{paid.models.map((model, at) => (
-								<span key={model.id}>
-									{at > 0 && ', '}
-									<BrandedLabel label={model.label} />
-								</span>
-							))}
+							{tierNamesOf(paid.models).join(', ')}
 						</Row>
 						<Row label={COPY.checkout.price}>{priceOf(paid)}</Row>
 						<Row label={COPY.checkout.billing}>

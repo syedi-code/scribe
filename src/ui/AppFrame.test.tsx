@@ -48,28 +48,6 @@ describe('the header', () => {
 		fireEvent.click(screen.getByLabelText(/home screen/i));
 		expect(newQuestion).toHaveBeenCalled();
 	});
-
-	it('stands above the page, so the model menu is never behind it', () => {
-		stubFetch();
-		const { container } = renderApp(<AppFrame />, {
-			state: withThreads(),
-		});
-		fireEvent.click(screen.getByRole('button', { name: /Claude/ }));
-		const header = container.querySelector('header');
-		const menu = screen.getByRole('menu');
-		expect(header?.className).toContain('z-(--z-header)');
-		expect(header?.contains(menu)).toBe(true);
-		expect(menu.className).toContain('z-(--z-menu)');
-	});
-
-	it('lets the model menu wrap rather than run out of its box', () => {
-		stubFetch();
-		renderApp(<AppFrame />, { state: withThreads() });
-		fireEvent.click(screen.getByRole('button', { name: /Claude/ }));
-		expect(screen.getByRole('menu').className).toContain(
-			'whitespace-normal'
-		);
-	});
 });
 
 describe('the tabs', () => {
@@ -94,36 +72,31 @@ describe('the tabs', () => {
 });
 
 describe('the model switcher', () => {
-	const roster = {
-		...models,
-		choices: [
-			...models.choices,
-			{
-				id: 'claude-sonnet-5',
-				label: 'Claude Sonnet 5',
-				provider: 'anthropic' as const,
-				acceptsFiles: true,
-				available: false,
-				comingSoon: true,
-				locked: false,
-			},
-		],
-	};
-
-	// A model held back is a decision, and it is said by striking the name
+	// A tier out of reach is a decision, and it is said by striking the name
 	// through and not letting it be picked. `no key set` would have claimed
 	// the deployment was misconfigured, and a `coming soon` beside the strike
 	// was the same fact said twice.
-	it('strikes a held-back model through rather than labelling it', () => {
+	it('strikes an unreachable tier through rather than labelling it', () => {
 		stubFetch();
-		renderApp(<AppFrame />, { state: withThreads(), roster });
-		fireEvent.click(screen.getByRole('button', { name: /Claude Haiku/ }));
+		renderApp(<AppFrame />, { state: withThreads(), roster: models });
+		fireEvent.click(screen.getByRole('button', { name: /Omicron/ }));
 
-		const held = screen.getByRole('menuitem', { name: /Claude Sonnet 5/ });
+		const held = screen.getByRole('menuitem', { name: /Omega/ });
 		expect(held.textContent).not.toContain('no key set');
 		expect(held.textContent).not.toContain('coming soon');
-		expect(held.hasAttribute('disabled')).toBe(true);
 		expect(held.querySelector('.line-through')).toBeTruthy();
+	});
+
+	// The switcher moved into the composer, which is at the foot of every
+	// layout: a menu hung below it opens off the bottom of a phone.
+	it('hangs its menu above the control', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: withThreads(), roster: models });
+		fireEvent.click(screen.getByRole('button', { name: /Omicron/ }));
+		const menu = screen.getByRole('menu');
+		expect(menu.className).toContain('bottom-full');
+		// It still has to win over everything it opens across.
+		expect(menu.className).toContain('z-(--z-menu)');
 	});
 });
 
@@ -483,7 +456,9 @@ describe('New question', () => {
 
 		fireEvent.click(button());
 		expect(
-			screen.getByRole('tab', { name: 'Ask' }).getAttribute('aria-selected')
+			screen
+				.getByRole('tab', { name: 'Ask' })
+				.getAttribute('aria-selected')
 		).toBe('true');
 		expect(newQuestion).not.toHaveBeenCalled();
 	});

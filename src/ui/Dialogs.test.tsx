@@ -213,7 +213,7 @@ describe('a modal and the back button', () => {
 });
 
 describe('the plans', () => {
-	it('sets the number that differs large, and names the models', async () => {
+	it('sets the number that differs large, and names the tiers', async () => {
 		reportAllowance(month(2));
 		app({ atHome: true });
 		act(() => openDialog('plans'));
@@ -221,7 +221,10 @@ describe('the plans', () => {
 			name: COPY.plan.plans.paid,
 		});
 		expect(paid.textContent).toContain('150');
-		expect(paid.textContent).toContain('Claude Sonnet 5');
+		// The card sells the tier the switcher offers, never the model
+		// underneath it, or the abstraction leaks where it matters most.
+		expect(paid.textContent).toContain('Omega');
+		expect(paid.textContent).not.toContain('Sonnet');
 		const free = screen.getByRole('region', { name: COPY.plan.plans.free });
 		expect(free.textContent).toContain(COPY.plan.plans.current);
 	});

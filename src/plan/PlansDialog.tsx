@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { COPY } from '../copy';
 import { useAccount } from '../account/useAccount';
-import { BrandedLabel } from '../models/BrandedLabel';
+import { tierNamesOf } from '../models/tiers';
 import { openDialog } from '../state/dialog';
 import { LegalLinks } from '../ui/LegalLinks';
 import { Modal } from '../ui/Modal';
@@ -138,12 +138,9 @@ function Card({
 					{COPY.plan.plans.models}
 				</p>
 				<ul className="m-0 grid list-none gap-1 p-0">
-					{plan.models.map((model) => (
-						<li
-							key={model.id}
-							className="font-app text-ui text-ink"
-						>
-							<BrandedLabel label={model.label} />
+					{tierNamesOf(plan.models).map((name) => (
+						<li key={name} className="font-app text-ui text-ink">
+							{name}
 						</li>
 					))}
 				</ul>
