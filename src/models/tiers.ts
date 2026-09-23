@@ -1,9 +1,11 @@
 /**
  * The two names a reader chooses between, and the models behind them.
  *
- * A reader picks Omicron or Omega; they never pick `claude-sonnet-5`. The
- * names are Greek for *little O* and *great O*, which is the whole of the
- * relationship — nothing has to be explained for the order to be read.
+ * A reader picks Alpha or Omega; they never pick `claude-sonnet-5`. The names
+ * are the first letter of the Greek alphabet and the last, which is the whole
+ * of the relationship — nothing has to be explained for the order to be read,
+ * and the pair is old enough to carry *the whole of a thing* without being
+ * told to.
  *
  * Naming the tier rather than the model is not decoration. A published model
  * name pins the cost of every answer to one vendor's price list in public, so
@@ -16,7 +18,7 @@
  * without taking a name away from the reader.
  */
 
-export type TierId = 'omicron' | 'omega';
+export type TierId = 'alpha' | 'omega';
 
 export interface Tier {
 	id: TierId;
@@ -32,8 +34,8 @@ export interface Tier {
 
 export const TIERS: readonly Tier[] = [
 	{
-		id: 'omicron',
-		name: 'Omicron',
+		id: 'alpha',
+		name: 'Alpha',
 		note: 'lower thinking',
 		models: ['gpt-5.6-luna', 'claude-haiku-4-5-20251001'],
 		pro: false,

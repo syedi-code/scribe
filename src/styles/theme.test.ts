@@ -119,7 +119,7 @@ describe('a tier set as a mark', () => {
 	 * chrome, so a tier's ink never lands beside an author's.
 	 */
 	it('takes an ink per tier, as a plain rule and never a utility', () => {
-		for (const tier of ['omicron', 'omega']) {
+		for (const tier of ['alpha', 'omega']) {
 			expect(THEME).toContain(`--color-tier-${tier}:`);
 			// The class is built from the tier at run time, so Tailwind's
 			// scanner never sees the name -- which is how every author ink

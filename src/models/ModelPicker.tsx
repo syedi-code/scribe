@@ -22,7 +22,7 @@ function noteFor(choice: ModelChoice): string {
 }
 
 /**
- * `Omicron ▾`, inside the composer, beside the button that sends.
+ * `Alpha ▾`, inside the composer, beside the button that sends.
  *
  * It belongs to the question being written rather than to the app, which is
  * why it sits in the box and not in the header: the choice is part of asking,

@@ -31,7 +31,7 @@ export interface Model {
 }
 
 /**
- * What this reader may still ask for this month.
+ * What this reader may still ask for this week.
  *
  * `limit` is null for an unlimited reader — the admin — and rendering that as
  * a number is how "4 of null" gets shipped. Everything that reads this treats
@@ -44,13 +44,13 @@ export interface Model {
 export interface Allowance {
 	plan: 'free' | 'paid';
 	/**
-	 * A visitor: `used` and `limit` are for ever, not a month, and nothing
+	 * A visitor: `used` and `limit` are for ever, not a week, and nothing
 	 * comes back until they sign in. Absent on a worker that predates visitors.
 	 */
 	guest?: boolean;
 	used: number;
 	limit: number | null;
-	/** Midnight UTC on the first of next month; null for a visitor. */
+	/** Midnight UTC on the coming Monday; null for a visitor. */
 	resets_at: string | null;
 }
 
@@ -61,6 +61,8 @@ export interface Allowance {
 export interface PlanOffer {
 	id: 'free' | 'paid';
 	turns_per_month: number;
+	/** What the server actually enforces; `turns_per_month` is the same figure over an average month. */
+	turns_per_week: number;
 	models: { id: string; label: string; provider: string }[];
 	/**
 	 * Whether the scan of a cited page opens, one page at a time. Absent on a

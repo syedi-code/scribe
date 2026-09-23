@@ -37,7 +37,8 @@ const MEMBER = {
 const PLANS: PlanOffer[] = [
 	{
 		id: 'free',
-		turns_per_month: 20,
+		turns_per_month: 13,
+		turns_per_week: 3,
 		models: [
 			{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'openai' },
 		],
@@ -46,7 +47,8 @@ const PLANS: PlanOffer[] = [
 	},
 	{
 		id: 'paid',
-		turns_per_month: 150,
+		turns_per_month: 108,
+		turns_per_week: 25,
 		models: [
 			{ id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', provider: 'openai' },
 			{
@@ -124,7 +126,7 @@ describe('the limit, raised inside a conversation', () => {
 	it('is raised once two questions are left, as a count and a date', () => {
 		reportAllowance(month(3));
 		app();
-		expect(dialog()?.textContent).toContain('2 questions left this month');
+		expect(dialog()?.textContent).toContain('2 questions left this week');
 		expect(dialog()?.textContent).toContain('Resets');
 	});
 
@@ -220,7 +222,7 @@ describe('the plans', () => {
 		const paid = await screen.findByRole('region', {
 			name: COPY.plan.plans.paid,
 		});
-		expect(paid.textContent).toContain('150');
+		expect(paid.textContent).toContain('25');
 		// The card sells the tier the switcher offers, never the model
 		// underneath it, or the abstraction leaks where it matters most.
 		expect(paid.textContent).toContain('Omega');
@@ -266,7 +268,7 @@ describe('checkout', () => {
 		});
 		app({ atHome: true });
 		act(() => openDialog('checkout'));
-		await screen.findByText(COPY.checkout.perMonth(150));
+		await screen.findByText(COPY.checkout.perWeek(25));
 		press(COPY.checkout.pay);
 		expect(await screen.findByRole('status')).toBeTruthy();
 		expect(screen.getByRole('status').textContent).toBe(
@@ -284,7 +286,7 @@ describe('checkout', () => {
 		vi.stubGlobal('location', { ...window.location, assign });
 		app({ atHome: true });
 		act(() => openDialog('checkout'));
-		await screen.findByText(COPY.checkout.perMonth(150));
+		await screen.findByText(COPY.checkout.perWeek(25));
 		press(COPY.checkout.pay);
 		await waitFor(() =>
 			expect(assign).toHaveBeenCalledWith(
@@ -318,7 +320,7 @@ describe('the account', () => {
 		openMenu();
 		const menu = screen.getByRole('menu');
 		expect(menu.textContent).toContain(MEMBER.email);
-		expect(menu.textContent).toContain('Free · 3 left this month');
+		expect(menu.textContent).toContain('Free · 3 left this week');
 	});
 
 	it('opens the account sheet with the month measured', () => {

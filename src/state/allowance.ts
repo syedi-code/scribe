@@ -2,7 +2,7 @@ import { createStore, useStore } from '../lib/store';
 import type { Allowance } from '../api/types';
 
 /**
- * What this reader has left this month.
+ * What this reader has left this week.
  *
  * A store rather than a provider because it has two writers and no single
  * owner: the roster carries it when `GET /models` lands, and every finished
@@ -24,15 +24,15 @@ export const readAllowance = () => allowance.get();
 export const resetAllowance = () => allowance.set(null);
 
 /**
- * Later news wins, with one exception: within one month, a payload cannot
+ * Later news wins, with one exception: within one week, a payload cannot
  * lower `used` below a figure a finished answer has already reported. The
  * roster is fetched once a tab, and an answer finishing after it is newer, so
  * the roster's copy going stale is the expected case rather than a race.
  *
- * The exception is scoped to the month, which `resets_at` names. Without that
- * scope the guard eats the rollover: on the first of the month the server
+ * The exception is scoped to the week, which `resets_at` names. Without that
+ * scope the guard eats the rollover: on the Monday the server
  * rightly says nought used, that is lower than yesterday's figure, and a
- * reader whose month had turned over would have gone on being told they had
+ * reader whose week had turned over would have gone on being told they had
  * none left until they reloaded the tab.
  */
 export const reportAllowance = (next: Allowance | undefined | null) => {

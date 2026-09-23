@@ -58,16 +58,16 @@ describe('the plan notice', () => {
 	it('counts down the last few', () => {
 		reportAllowance(free(19));
 		show(true);
-		expect(screen.getByText(/1 question left this month/)).toBeTruthy();
+		expect(screen.getByText(/1 question left this week/)).toBeTruthy();
 	});
 
 	it('says questions, plural, at two', () => {
 		reportAllowance(free(18));
 		show(true);
-		expect(screen.getByText(/2 questions left this month/)).toBeTruthy();
+		expect(screen.getByText(/2 questions left this week/)).toBeTruthy();
 	});
 
-	it('explains the silence once the month is spent', () => {
+	it('explains the silence once the week is spent', () => {
 		reportAllowance(free(20));
 		show(true);
 		expect(screen.getByText(COPY.plan.spent)).toBeTruthy();
@@ -112,18 +112,18 @@ describe('the plan notice', () => {
 	});
 });
 
-describe('the day a month resets', () => {
+describe('the day an allowance comes back', () => {
 	const zone = process.env.TZ;
 	afterEach(() => {
 		process.env.TZ = zone;
 	});
 
-	// Midnight UTC on the first is still the thirtieth in New York, and a
-	// reader there was told their questions came back a day early.
-	it('is the first of the month wherever the reader is', () => {
+	// Midnight UTC on Monday is still Sunday in New York, and a reader there
+	// was told their questions came back a day early.
+	it('is the Monday wherever the reader is', () => {
 		process.env.TZ = 'America/Los_Angeles';
-		const said = COPY.plan.resets('2026-10-01T00:00:00.000Z');
-		expect(said).toMatch(/\b1\b/);
-		expect(said).not.toMatch(/30/);
+		const said = COPY.plan.resets('2026-09-28T00:00:00.000Z');
+		expect(said).toMatch(/Monday/);
+		expect(said).not.toMatch(/Sunday/);
 	});
 });
