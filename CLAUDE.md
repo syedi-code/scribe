@@ -420,6 +420,26 @@ the body stayed Light fixed the run-in head and made every title in the app
 read as emphasised instead, since 400 is the step a checked quotation is set
 in. A title is a slant, never a weight.
 
+**A tier's name is set by the stylesheet too.** `@utility tier-mark`, used at
+every one of the four places a tier is printed — the composer, its menu, the
+plans card, and the line signing an answer. Omicron and Omega are marks rather
+than words of the interface, so they are set the way the wordmark is: the
+reading face, `--weight-text`, the mark's own tracking, and the tail a weight up
+so `Om` reads as the family and the rest as the choice. The wordmark tells its
+tail apart in bold italic and that cannot be borrowed — an italic here means a
+book — so weight alone does it. Both cuts are already preloaded, so the mark is
+never painted in a fallback and re-set. `TierMark` decides only where the name
+divides, and prints a name that does not share the stem whole and unmarked,
+because the admin's own models are not marks. `styles/theme.test.ts` fails if a
+component sets one by hand, or if either cut stops being preloaded.
+
+Omega's descender is why the trigger is not set `leading-none`: that cuts the
+line box to the cap height, and the `g` lost its tail inside the composer. The
+row is sized by its padding. Its menu's rows are inset and rounded inside the
+menu's own padding, so a row under the pointer is a lozenge with air around it —
+ruled to the edge they left a sliver of unlit padding above the first and below
+the last, which reads as a miss rather than as a margin.
+
 **An italic is preloaded, or it arrives too late to be one.** A roman is
 discovered in the markup; an italic only once the stylesheet has been parsed.
 On a phone that gap is long enough to paint, and what painted was the prose in

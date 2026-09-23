@@ -1,4 +1,6 @@
 import { BrandedLabel } from '../models/BrandedLabel';
+import { TierMark } from '../models/TierMark';
+import { isTierName } from '../models/tiers';
 import { COPY } from '../copy';
 import { toggleOnlyCited, useOnlyCited } from '../state/reader';
 import type { AnswerCitation } from '../api/types';
@@ -41,7 +43,11 @@ export function AnswerFooter({
 				{model && !checking ? (
 					<>
 						{' — '}
-						<BrandedLabel label={model} />
+						{isTierName(model) ? (
+							<TierMark name={model} />
+						) : (
+							<BrandedLabel label={model} />
+						)}
 					</>
 				) : null}
 			</span>

@@ -404,6 +404,33 @@
 	font-synthesis: none;
 }
 
+/* A tier's name -- Omicron, Omega -- wherever it is printed: in the composer,
+   in its menu, on the plans card, under an answer. Named here for the same
+   reason a work's title is: the next decision about how a tier is set is made
+   once rather than in four components.
+
+   It is set the way the wordmark is, and for the same reason -- these are
+   marks, not words of the interface. The reading face, the weight the app is
+   set in, and the mark's own tracking; then the part that tells the two apart
+   a weight up, so `Om` reads as the family and the tail as the choice. The
+   wordmark distinguishes its tail in bold italic, which cannot be borrowed
+   here: an italic in this app means a book.
+
+   Both cuts are preloaded (Light 300 and Bold 700), so the mark is never
+   painted in a fallback and then re-set -- which is what made a book title
+   look bold on a phone, twice. `font-synthesis: none` for the same reason a
+   title has it: a faked weight is the thing being complained about. */
+@utility tier-mark {
+	font-family: var(--font-read);
+	font-weight: var(--weight-text);
+	letter-spacing: -0.012em;
+	font-synthesis: none;
+
+	& b {
+		font-weight: 700;
+	}
+}
+
 /* One class per ink, so a component names the slot and the stylesheet owns the
    value. Weight is deliberately not touched: a name sits mid-sentence and has
    to stay in the same cut as its neighbours. */

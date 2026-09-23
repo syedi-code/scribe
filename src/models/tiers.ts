@@ -16,6 +16,14 @@
  * without taking a name away from the reader.
  */
 
+/**
+ * What both names begin with. The mark sets the stem in the app's weight and
+ * the tail a weight up, so the pair reads as a family and separates exactly
+ * where it differs — see `@utility tier-mark`. A name that does not start with
+ * it is printed whole.
+ */
+export const TIER_STEM = 'Om';
+
 export type TierId = 'omicron' | 'omega';
 
 export interface Tier {
@@ -55,6 +63,10 @@ export const TIERS: readonly Tier[] = [
 export function tierOfModel(modelId: string): Tier | null {
 	return TIERS.find((tier) => tier.models.includes(modelId)) ?? null;
 }
+
+/** Whether a name is a tier's, and so is set as a mark rather than as words. */
+export const isTierName = (name: string): boolean =>
+	TIERS.some((tier) => tier.name === name);
 
 /** Every model id any tier can stand for. */
 export const TIERED_MODEL_IDS: readonly string[] = TIERS.flatMap(
