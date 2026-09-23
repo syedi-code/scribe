@@ -95,16 +95,38 @@ describe('a tier set as a mark', () => {
 	});
 
 	// An italic in this app means a book, so the mark cannot borrow the
-	// wordmark's bold italic to tell its tail apart; it uses weight alone.
-	it('separates its tail by weight, never by a slant', () => {
+	// wordmark's slant; it is set apart by weight, and by being drawn tighter
+	// than anything else here.
+	it('is bold, tracked tighter than the prose, and never slanted', () => {
 		const declared = THEME.slice(THEME.indexOf('@utility tier-mark'));
 		const body = declared.slice(0, declared.indexOf('\n}'));
 
 		expect(body).toContain('font-family: var(--font-read)');
-		expect(body).toContain('font-weight: var(--weight-text)');
+		expect(body).toContain('font-weight: 700');
 		expect(body).toContain('font-synthesis: none');
 		expect(body).not.toContain('font-style: italic');
-		expect(body).toContain('font-weight: 700');
+
+		const tracking = /letter-spacing: (-?[\d.]+)em/.exec(body)?.[1];
+		expect(tracking, 'the mark sets no tracking').toBeTruthy();
+		// Tighter than the wordmark's own -0.012em.
+		expect(Number(tracking)).toBeLessThan(-0.012);
+	});
+
+	/**
+	 * A fourth hue would be a fourth thing colour means here, and the rule is
+	 * that it means two. The pair is one hue at two depths, under the same
+	 * carve-out the maker marks sit in: colour inside the switcher, which is
+	 * chrome, so a tier's ink never lands beside an author's.
+	 */
+	it('takes an ink per tier, as a plain rule and never a utility', () => {
+		for (const tier of ['omicron', 'omega']) {
+			expect(THEME).toContain(`--color-tier-${tier}:`);
+			// The class is built from the tier at run time, so Tailwind's
+			// scanner never sees the name -- which is how every author ink
+			// once shipped with no rule behind it at all.
+			expect(THEME).toContain(`.tier-${tier} {`);
+			expect(THEME).not.toContain(`@utility tier-${tier}`);
+		}
 	});
 
 	// Both of its cuts are on screen at first paint. A weight discovered late

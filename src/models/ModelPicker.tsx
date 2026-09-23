@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { COPY } from '../copy';
 import { useDismiss } from '../lib/useDismiss';
 import { seePlans } from '../state/dialog';
+import { BrandedLabel } from './BrandedLabel';
 import { useModels, type ModelChoice } from './context';
 import { TierMark } from './TierMark';
 
@@ -66,7 +67,7 @@ export function ModelPicker() {
 				// to the cap height. The row is sized by its padding instead.
 				className="text-ink-soft hover:bg-paper-deep hover:text-ink flex items-center gap-1.5 rounded-full px-2.5 py-1 text-small leading-normal whitespace-nowrap transition-colors disabled:cursor-default disabled:opacity-35"
 			>
-				<TierMark name={name} />
+				<TierMark name={name} tier={selected?.tier} />
 				<span
 					aria-hidden
 					className={`text-ink-faint ease-paper text-[0.7em] transition-transform duration-200 ${
@@ -106,14 +107,28 @@ export function ModelPicker() {
 								className="enabled:hover:bg-paper-deep flex w-full flex-col items-start gap-0.5 rounded-xl px-2.5 py-2 text-left transition-colors disabled:cursor-default"
 							>
 								<span className="flex w-full items-baseline justify-between gap-3">
-									<TierMark
-										name={choice.label}
-										className={`text-ui ${
-											struck
-												? 'text-ink-faint line-through'
-												: 'text-ink'
-										}`}
-									/>
+									{choice.tier ? (
+										<TierMark
+											name={choice.label}
+											// An ink says which tier this is;
+											// out of reach, it is struck and
+											// faint instead, because a colour
+											// on something unpickable reads as
+											// a state rather than a name.
+											tier={struck ? null : choice.tier}
+											className={`text-ui ${
+												struck
+													? 'text-ink-faint line-through'
+													: ''
+											}`}
+										/>
+									) : (
+										<span className="font-app text-ui text-ink truncate">
+											<BrandedLabel
+												label={choice.label}
+											/>
+										</span>
+									)}
 									{inUse && (
 										<span className="font-app text-tiny text-ink-faint shrink-0">
 											{COPY.inUse}

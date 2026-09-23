@@ -111,6 +111,21 @@
 	--color-openai: #3d7f6a;
 	--color-google: #4a6fa5;
 
+	/* The two tiers, in the switcher and wherever a tier is named.
+	   Every other hue in this file is spoken for -- three verdicts, six
+	   authors, three makers -- so a fourth system in a fourth hue would be a
+	   fourth thing colour means here, and the whole point of the rule above is
+	   that it means two. So these are one hue at two depths rather than two
+	   hues: the pair reads as a family, which is what it is, and the greater
+	   tier is simply the deeper ink. Petrol, because it is the one band the
+	   others leave free -- a good 25 degrees off verdigris, and clear of the
+	   makers' terracotta, teal and blue.
+	   They live under the same carve-out the maker marks do: colour inside the
+	   switcher, which is chrome, so a tier's ink never lands beside an
+	   author's. */
+	--color-tier-omicron: #5d8296;
+	--color-tier-omega: #1d5570;
+
 	--color-edge: #cfc4ab;
 	/* What a matched passage is laid on. It was a slightly deeper cream and
 	   sat 1.18:1 off the paper, which is to say it was barely a highlight at
@@ -422,13 +437,22 @@
    title has it: a faked weight is the thing being complained about. */
 @utility tier-mark {
 	font-family: var(--font-read);
-	font-weight: var(--weight-text);
-	letter-spacing: -0.012em;
+	font-weight: 700;
+	/* Tighter than the wordmark's own. Two short names set in bold want the
+	   letters closer than a line of prose does, or they read as a word of the
+	   interface rather than as a mark. */
+	letter-spacing: -0.03em;
 	font-synthesis: none;
+}
 
-	& b {
-		font-weight: 700;
-	}
+/* One class per tier. Plain rules for the same reason the author inks are:
+   the class is built from the tier at run time, so Tailwind's scanner never
+   sees the name and would emit no rule at all for it. */
+.tier-omicron {
+	color: var(--color-tier-omicron);
+}
+.tier-omega {
+	color: var(--color-tier-omega);
 }
 
 /* One class per ink, so a component names the slot and the stylesheet owns the
