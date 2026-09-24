@@ -79,7 +79,7 @@ describe('the model switcher', () => {
 	it('strikes an unreachable tier through rather than labelling it', () => {
 		stubFetch();
 		renderApp(<AppFrame />, { state: withThreads(), roster: models });
-		fireEvent.click(screen.getByRole('button', { name: /Omicron/ }));
+		fireEvent.click(screen.getByRole('button', { name: /Alpha/ }));
 
 		const held = screen.getByRole('menuitem', { name: /Omega/ });
 		expect(held.textContent).not.toContain('no key set');
@@ -92,7 +92,7 @@ describe('the model switcher', () => {
 	it('hangs its menu above the control', () => {
 		stubFetch();
 		renderApp(<AppFrame />, { state: withThreads(), roster: models });
-		fireEvent.click(screen.getByRole('button', { name: /Omicron/ }));
+		fireEvent.click(screen.getByRole('button', { name: /Alpha/ }));
 		const menu = screen.getByRole('menu');
 		expect(menu.className).toContain('bottom-full');
 		// It still has to win over everything it opens across.

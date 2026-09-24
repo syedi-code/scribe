@@ -127,7 +127,7 @@ function Card({
 
 			<p className="m-0 mt-4 flex items-baseline gap-2">
 				<span className="font-read text-ink text-[2.4rem] leading-none font-light tabular-nums">
-					{plan.turns_per_month}
+					{plan.turns_per_week}
 				</span>
 				<span className="font-app text-small text-ink-soft">
 					{COPY.plan.plans.questions}

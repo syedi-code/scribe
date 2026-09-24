@@ -43,7 +43,7 @@ export function AccountDialog() {
 				</Row>
 
 				{allowance && (
-					<Row label={COPY.account.month}>
+					<Row label={COPY.account.week}>
 						{allowance.limit === null ? (
 							COPY.account.unlimited
 						) : (
@@ -113,7 +113,7 @@ function Measure({ used, limit }: { used: number; limit: number }) {
 			aria-valuemin={0}
 			aria-valuemax={limit}
 			aria-valuenow={Math.min(used, limit)}
-			aria-label={COPY.account.month}
+			aria-label={COPY.account.week}
 			className="bg-paper-deep mt-2 block h-1 overflow-hidden rounded-full"
 		>
 			<span

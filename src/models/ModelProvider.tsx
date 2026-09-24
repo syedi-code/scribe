@@ -34,7 +34,7 @@ import type { Model, ModelsResponse } from '../api/types';
 
 /**
  * Held back from the switcher, and shown as held back rather than quietly
- * dropped. Haiku stands behind Luna in Omicron, so this only decides which
+ * dropped. Haiku stands behind Luna in Alpha, so this only decides which
  * model the tier resolves to — never whether the tier is offered.
  */
 const HAIKU = 'claude-haiku-4-5-20251001';
@@ -43,7 +43,7 @@ const heldBack = (id: string, flags: Flags) =>
 	id === HAIKU && !flags.isClaudeHaikuEnabled;
 
 /** The tier a new reader starts on when the server names no default. */
-export const PREFERRED_TIER_ID = 'omicron';
+export const PREFERRED_TIER_ID = 'alpha';
 
 /** Models Scribe knows the name of, so one without a key can still be named. */
 const KNOWN: Record<string, Model> = {
@@ -136,7 +136,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 
 		const choices = [...rows, ...untiered];
 		const open = choices.filter((choice) => choice.available);
-		// The server names the default by plan — Omega on Pro, Omicron on Free
+		// The server names the default by plan — Omega on Pro, Alpha on Free
 		// — so its word comes before this build's own preference.
 		const byDefault = roster.value?.default_model_id;
 		const selected =

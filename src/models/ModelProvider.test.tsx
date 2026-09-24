@@ -9,7 +9,7 @@ import { ModelProvider } from './ModelProvider';
 import { ModelPicker } from './ModelPicker';
 
 /**
- * A reader chooses Omicron or Omega. Which model each stands for is this
+ * A reader chooses Alpha or Omega. Which model each stands for is this
  * build's business and the docs' — never the switcher's.
  */
 const luna = {
@@ -47,7 +47,7 @@ async function open(roster: object = ROSTER, isClaudeHaikuEnabled = true) {
 			</ModelProvider>
 		</FlagContext>
 	);
-	fireEvent.click(await screen.findByRole('button', { name: /Omicron/ }));
+	fireEvent.click(await screen.findByRole('button', { name: /Alpha/ }));
 }
 
 describe('the switcher names tiers, never models', () => {
@@ -68,14 +68,14 @@ describe('the switcher names tiers, never models', () => {
 		]) {
 			expect(menu.textContent).not.toContain(leak);
 		}
-		expect(menu.textContent).toContain('Omicron');
+		expect(menu.textContent).toContain('Alpha');
 		expect(menu.textContent).toContain('Omega');
 	});
 
 	it('says what choosing one means, rather than how good it is', async () => {
 		await open();
 		expect(
-			screen.getByRole('menuitem', { name: /Omicron/ }).textContent
+			screen.getByRole('menuitem', { name: /Alpha/ }).textContent
 		).toContain('lower thinking');
 	});
 });
@@ -110,9 +110,9 @@ describe('a tier the reader’s plan does not open', () => {
 describe('a tier stands for whichever of its models can run', () => {
 	it('falls back to the second when the first has no key', async () => {
 		await open({ models: [haiku], default_model_id: haiku.id });
-		const omicron = screen.getByRole('menuitem', { name: /Omicron/ });
-		expect(omicron.hasAttribute('disabled')).toBe(false);
-		expect(omicron.textContent).not.toContain(COPY.noKey);
+		const alpha = screen.getByRole('menuitem', { name: /Alpha/ });
+		expect(alpha.hasAttribute('disabled')).toBe(false);
+		expect(alpha.textContent).not.toContain(COPY.noKey);
 	});
 });
 

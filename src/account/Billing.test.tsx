@@ -39,14 +39,16 @@ const PAID: Billing = {
 const PLANS: PlanOffer[] = [
 	{
 		id: 'free',
-		turns_per_month: 20,
+		turns_per_month: 13,
+		turns_per_week: 3,
 		models: [],
 		page_scans: false,
 		price: null,
 	},
 	{
 		id: 'paid',
-		turns_per_month: 150,
+		turns_per_month: 108,
+		turns_per_week: 25,
 		models: [],
 		page_scans: true,
 		price: { amount_cents: 2000, currency: 'usd', interval: 'month' },
@@ -337,7 +339,7 @@ describe('a checkout Stripe already has', () => {
 		app();
 		act(() => openDialog('checkout'));
 		// The button is there before the plans are, and disabled until they are.
-		await screen.findByText(COPY.checkout.perMonth(150));
+		await screen.findByText(COPY.checkout.perWeek(25));
 
 		fireEvent.click(
 			await screen.findByRole('button', { name: COPY.checkout.pay })

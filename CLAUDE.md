@@ -76,9 +76,9 @@ the reason it closed, so nobody is left wondering why typing stopped working.
 "4 of null" ships. Nothing is said until the allowance is known at all, because
 the only thing worse than no counter is a counter that flashes a wrong number.
 
-A later figure wins, except that within one month nothing may lower `used`
+A later figure wins, except that within one week nothing may lower `used`
 below what a finished answer reported — the roster is fetched once a tab and
-goes stale behind it. That exception is scoped to the month by `resets_at`,
+goes stale behind it. That exception is scoped to the week by `resets_at`,
 because unscoped it eats the rollover: on the first the server rightly says
 nought used, which is lower, and the reader would be told they had none left
 until they reloaded.
@@ -92,7 +92,7 @@ Held back, a refused turn still says why — it just says it for the first time
 at the moment of refusal.
 
 Inside a conversation it is also said once as a dialog — at two left and at
-none, once a month each, only after an answer has finished and never over
+none, once a week each, only after an answer has finished and never over
 another dialog (`plan/useLimitNudge.ts`). A line under the composer is easy to
 read past while an answer is being read. The home screen gets no dialog: the
 composer is the whole screen there, so it closes, names the day questions come
@@ -101,11 +101,12 @@ back, and the three suggested questions go, because each one asks on a press.
 A 402 on the chat stream is caught in the transport's `fetch`
 (`chat/refusal.ts`). Left to `DefaultChatTransport` the reader was shown the
 response body — raw JSON under their question. The body carries the allowance,
-so the refusal itself tells the counter the month is spent.
+so the refusal itself tells the counter the week is spent.
 
-The reset is formatted in UTC. alexandria names midnight UTC on the first,
-which is the thirtieth anywhere west of Greenwich, and a reader in New York was
-told their questions came back a day early.
+The reset is formatted in UTC, and as a weekday rather than a date. alexandria
+names midnight UTC on Monday, which is Sunday anywhere west of Greenwich, and a
+reader in New York was told their questions came back a day early. *Monday* is
+also a thing a reader can hold without counting, which a date is not.
 
 **Every offer of a paid plan goes to one place.** `seePlans()` in
 `state/dialog.ts` opens `plan/PlansDialog.tsx` — from the composer's notice, the
@@ -122,7 +123,7 @@ reader's roster only lists free models, which is why it is a route of its own.
 A price is shown only once alexandria sends one; until then the card says so,
 and never a made-up figure.
 
-A card carries only what differs — the questions a month, set large because it
+A card carries only what differs — the questions a week, set large because it
 is the difference a reader feels, then the models — and what both plans share
 is said once under them. The plan on offer is drawn forward and holds the only
 filled button; the reader's own is named, not shaded, because shading it made
@@ -229,7 +230,7 @@ hashed to a hue would be a third meaning for colour beside the verdicts and the
 author inks. The menu opens on the stamp again, larger, the address and what is
 left, before it offers anything — which is most often all a reader came to
 check — then the account sheet, the plans, and sign out. The sheet is where the
-month is shown in full, count and measure, though nothing else says so before
+week is shown in full, count and measure, though nothing else says so before
 two are left: a reader who opens their account has asked. The admin is named as
 the admin, never as *Free*: exempt by role, not by paying.
 
@@ -422,7 +423,7 @@ in. A title is a slant, never a weight.
 
 **A tier's name is set by the stylesheet too.** `@utility tier-mark`, used at
 every one of the four places a tier is printed — the composer, its menu, the
-plans card, and the line signing an answer. Omicron and Omega are marks rather
+plans card, and the line signing an answer. Alpha and Omega are marks rather
 than words of the interface: the reading face, bold, and tracked tighter than
 anything else in the app (-0.03em, against the wordmark's -0.012em), because two
 short names set in bold want the letters closer than a line of prose does. The
@@ -430,16 +431,18 @@ wordmark tells its tail apart in bold italic and that cannot be borrowed — an
 italic here means a book — so weight and tracking do it. Both cuts are already
 preloaded, so the mark is never painted in a fallback and re-set.
 
-**The tiers have an ink each, and it is one hue at two depths.** Every other hue
-in the file is spoken for — three verdicts, six authors, three makers — so a
-fourth system in a fourth hue would be a fourth thing colour means here, and the
-whole point of the rule is that it means two. So `--color-tier-omicron` and
-`--color-tier-omega` are one petrol at two depths: the pair reads as the family
-it is, and the greater tier is simply the deeper ink. Petrol is the one band the
-others leave free, a good 25° off verdigris and clear of the makers' terracotta,
-teal and blue. They sit under the same carve-out the maker marks do — colour
-inside the switcher, which is chrome, so a tier's ink never lands beside an
-author's. A tier out of reach loses its ink and is struck and faint instead: a
+**The tiers have an ink each: a green and a lapis.** They were one petrol at two
+depths, on the reasoning that every other hue here is spoken for — three
+verdicts, six authors, three makers — so a pair in two hues would be a fourth
+thing colour means. Two depths of one ink is also two depths of one ink: at the
+size a tier is set, the pair read as the same greyed blue twice and the order in
+them was not legible at a glance, which is the only job the ink has. So
+`--color-tier-alpha` is a green and `--color-tier-omega` a lapis. The rule
+survives because of where they are allowed to land, not because of how many they
+are: the same carve-out the maker marks sit under — colour inside the switcher,
+which is chrome, so a tier's ink never lands beside an author's. Both clear the
+5.5:1 the author inks hold against the paper, and the greater tier is still the
+darker ink. A tier out of reach loses its ink and is struck and faint instead: a
 colour on something unpickable reads as a state rather than as a name. A model
 with no tier — the admin's own — keeps its maker's ink and is never given one of
 these, because it is not a mark.
@@ -803,8 +806,8 @@ that is `untitled` — promising a name that is not coming is how `naming…` ca
 to sit in the rail for ever.
 
 **A reader chooses a tier, never a model.** `models/tiers.ts` holds the two —
-**Omicron** and **Omega**, Greek for *little O* and *great O*, so the order is
-in the names and nothing has to explain it — and each names the models it may
+**Alpha** and **Omega**, the first letter of the Greek alphabet and the last,
+so the order is in the names and nothing has to explain it — and each names the models it may
 stand for, best first. `ModelProvider` resolves a tier to the first of its
 models the worker has a key for; the row's `id` is still that real model id, so
 the wire and the saved answers never learn about tiers, and `labelFor()` maps a
@@ -826,7 +829,7 @@ is held back on cost — five times Luna's input and four
 times its output, for a lower score, and every step of the agent loop pays it
 again — so it is behind `isClaudeHaikuEnabled` rather than a constant: a
 decision about money changes more often than the code around it. It stands
-behind Luna inside Omicron, so the flag now decides which model that tier
+behind Luna inside Alpha, so the flag now decides which model that tier
 resolves to and never whether the tier is offered. The strike and the disabled
 row say _held back_ on their own: a _coming soon_ beside them was the same fact
 twice, and it is the one claim of the three that needs no words. _no key set_

@@ -8,15 +8,18 @@
  */
 
 /**
- * The day a month resets, in the reader's locale but in UTC. The server names
- * midnight UTC on the first, which is still the last day of the old month
- * anywhere west of Greenwich — so without the zone a reader in New York was
- * told their questions came back on 30 September.
+ * The day an allowance comes back, in the reader's locale but in UTC. The
+ * server names midnight UTC on Monday, which is still Sunday anywhere west of
+ * Greenwich — so without the zone a reader in New York was told their
+ * questions came back a day early.
+ *
+ * The weekday, not the date. The reset is always a Monday and never more than
+ * seven days out, and *Monday* is a thing a reader can hold without counting;
+ * *29 September* is a thing they have to look up.
  */
 const resetDay = (at: string) =>
 	new Date(at).toLocaleDateString(undefined, {
-		day: 'numeric',
-		month: 'long',
+		weekday: 'long',
 		timeZone: 'UTC',
 	});
 
@@ -373,15 +376,15 @@ export const COPY = {
 	plan: {
 		/** Only ever shown at two or fewer left. */
 		remaining: (left: number) =>
-			`${left} ${plural(left, 'question', 'questions')} left this month`,
-		spent: 'You have used this month’s questions.',
+			`${left} ${plural(left, 'question', 'questions')} left this week`,
+		spent: 'You have used this week’s questions.',
 		/** The month, in the reader’s own locale: the reset is a date, not a countdown. */
 		resets: (at: string) => `Resets ${resetDay(at)}.`,
 		/** What a paid plan is, said as what it gives rather than what it costs. */
-		offer: 'Pro gives you more questions each month, and the better model to ask them of.',
+		offer: 'Pro gives you more questions each week, and the better model to ask them of.',
 		see: 'See plans',
 		/** The refused turn, when the composer was not disabled in time. */
-		refused: 'That question was not asked — this month’s are used up.',
+		refused: 'That question was not asked — this week’s are used up.',
 		/** Under a spent month, on the home screen: what is still open. */
 		stillOpen:
 			'Your sessions and the shelves are still here to read in the meantime.',
@@ -391,8 +394,8 @@ export const COPY = {
 		/* The dialog a conversation raises, once, as the month runs down. */
 		nudge: {
 			lastFew: (left: number) =>
-				`${left} ${plural(left, 'question', 'questions')} left this month`,
-			spent: 'No questions left this month',
+				`${left} ${plural(left, 'question', 'questions')} left this week`,
+			spent: 'No questions left this week',
 			later: 'Not now',
 		},
 
@@ -408,13 +411,13 @@ export const COPY = {
 			/** Until there is a price. Never a made-up figure. */
 			priceLater: 'Price set at launch',
 			perMonth: (amount: string) => `${amount} a month`,
-			questions: 'questions a month',
+			questions: 'questions a week',
 			models: 'Models',
 			/** What a reader sees behind a citation, which differs by plan. */
 			sources: 'Behind each quotation',
 			sourceText: 'The passage it came from',
 			sourceScan: 'The passage, and the scanned page itself',
-			shared: 'On both plans, every quotation is checked against the page it cites, and questions reset on the 1st of each month.',
+			shared: 'On both plans, every quotation is checked against the page it cites, and questions reset every Monday.',
 			choose: 'Continue to payment',
 			/** Beside the button, not behind it. */
 			terms: 'Billed monthly · cancel anytime',
@@ -432,7 +435,7 @@ export const COPY = {
 		menu: 'Account',
 		email: 'Email',
 		plan: 'Plan',
-		month: 'This month',
+		week: 'This week',
 		signOut: 'Sign out',
 		signOutNote: 'Signs you out of Scribe on this browser.',
 		signingOut: 'Signing out…',
@@ -442,7 +445,7 @@ export const COPY = {
 			`${used} of ${limit} ${plural(limit, 'question', 'questions')}`,
 		/** On the menu's second line, where there is room for one short fact. */
 		summary: (plan: string, left: number | null) =>
-			left === null ? plan : `${plan} · ${left} left this month`,
+			left === null ? plan : `${plan} · ${left} left this week`,
 		renews: (at: string) => `Renews ${localDay(at)}`,
 		/** Cancelled, and still paid for until then. */
 		ends: (at: string) => `Pro until ${localDay(at)}, then Free`,
@@ -462,7 +465,13 @@ export const COPY = {
 	checkout: {
 		title: 'Pro',
 		questions: 'Questions',
-		perMonth: (count: number) => `${count} a month`,
+		/* Two periods meet on this screen — the price is billed monthly and the
+		   questions come back weekly — and this is the last screen before money
+		   changes hands, so the difference is said rather than left to be
+		   noticed. Both rows name their own period, and the note under them
+		   says the two are not the same period on purpose. */
+		perWeek: (count: number) => `${count} a week`,
+		periods: 'Billed once a month; questions come back every Monday.',
 		models: 'Models',
 		price: 'Price',
 		billing: 'Billing',
@@ -483,7 +492,7 @@ export const COPY = {
 	/* ---- back from paying ---- */
 	upgraded: {
 		title: 'You’re on Pro',
-		body: 'More questions each month, and every model in the switcher.',
+		body: 'More questions each week, and every model in the switcher.',
 		/** The webhook and the redirect race; say so rather than show Free. */
 		pending: 'It can take a minute for your account to show it.',
 		/** Said once the wait is longer than any webhook should take. */
@@ -621,7 +630,7 @@ export const COPY = {
 			lead: {
 				spent: 'You have asked your free questions. Sign in to keep going; what you have asked comes with you.',
 				blocked: 'Sign in to ask. It is free, and takes a moment.',
-				chosen: 'Sign in to keep your conversations and ask more each month.',
+				chosen: 'Sign in to keep your conversations and ask more each week.',
 			},
 			github: 'Continue with GitHub',
 			google: 'Continue with Google',

@@ -7,8 +7,8 @@ import { openDialog, useDialog } from '../state/dialog';
 const STORAGE_KEY = 'scribe:limit-nudged';
 
 /**
- * Which moments have already been raised: one key per month per standing, so
- * the dialog comes at two left and at none and never again that month — not
+ * Which moments have already been raised: one key per week per standing, so
+ * the dialog comes at two left and at none and never again that week — not
  * on the next answer, not on a reload. Storage is a convenience; where it is
  * refused, the tab remembers on its own.
  */
@@ -45,7 +45,7 @@ export const resetLimitNudge = () => {
 };
 
 /**
- * Raises the limit dialog inside a conversation as the month runs down.
+ * Raises the limit dialog inside a conversation as the week runs down.
  *
  * Only once an answer has finished — never over one being written, which is
  * the moment a reader is least able to take in anything else — and never over

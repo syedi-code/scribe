@@ -102,7 +102,7 @@ export function CheckoutDialog() {
 				<>
 					<dl className="border-paper-deep m-0 rounded-xl border px-4">
 						<Row label={COPY.checkout.questions}>
-							{COPY.checkout.perMonth(paid.turns_per_month)}
+							{COPY.checkout.perWeek(paid.turns_per_week)}
 						</Row>
 						<Row label={COPY.checkout.models}>
 							{tiersOf(paid.models).map((tier, at) => (
@@ -122,6 +122,12 @@ export function CheckoutDialog() {
 							</span>
 						</Row>
 					</dl>
+					{/* The price is monthly and the allowance is weekly. That
+					    is a trap on the one screen where it matters, so it is
+					    said directly under the two rows it is about. */}
+					<p className="font-app text-small text-ink-soft m-0 mt-3">
+						{COPY.checkout.periods}
+					</p>
 					<p className="font-app text-small text-ink-soft m-0 mt-4">
 						{COPY.checkout.cancel}
 					</p>

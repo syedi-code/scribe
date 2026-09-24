@@ -11,10 +11,10 @@ export const models: ModelState = {
 	choices: [
 		{
 			id: 'gpt-5.6-luna',
-			label: 'Omicron',
+			label: 'Alpha',
 			provider: 'openai',
 			acceptsFiles: true,
-			tier: 'omicron',
+			tier: 'alpha',
 			note: 'lower thinking',
 			available: true,
 			comingSoon: false,
@@ -34,17 +34,17 @@ export const models: ModelState = {
 	],
 	selected: {
 		id: 'gpt-5.6-luna',
-		label: 'Omicron',
+		label: 'Alpha',
 		provider: 'openai',
 		acceptsFiles: true,
-		tier: 'omicron',
+		tier: 'alpha',
 		note: 'lower thinking',
 		available: true,
 		comingSoon: false,
 		locked: false,
 	},
 	select: () => {},
-	labelFor: () => 'Omicron',
+	labelFor: () => 'Alpha',
 	loading: false,
 };
 

@@ -112,19 +112,22 @@
 	--color-google: #4a6fa5;
 
 	/* The two tiers, in the switcher and wherever a tier is named.
-	   Every other hue in this file is spoken for -- three verdicts, six
-	   authors, three makers -- so a fourth system in a fourth hue would be a
-	   fourth thing colour means here, and the whole point of the rule above is
-	   that it means two. So these are one hue at two depths rather than two
-	   hues: the pair reads as a family, which is what it is, and the greater
-	   tier is simply the deeper ink. Petrol, because it is the one band the
-	   others leave free -- a good 25 degrees off verdigris, and clear of the
-	   makers' terracotta, teal and blue.
-	   They live under the same carve-out the maker marks do: colour inside the
+	   These were one petrol at two depths, on the reasoning that every other
+	   hue here is spoken for -- three verdicts, six authors, three makers --
+	   so a pair in two hues would be a fourth thing colour means. Two depths
+	   of one ink is also two depths of one ink: at the size a tier is set,
+	   the pair read as the same greyed blue twice and the order in them was
+	   not legible at a glance, which is the only job the ink has.
+	   So: a green and a lapis. They are two hues, and the rule above survives
+	   because of where they are allowed to land, not because of how many they
+	   are -- the same carve-out the maker marks sit under. Colour inside the
 	   switcher, which is chrome, so a tier's ink never lands beside an
-	   author's. */
-	--color-tier-omicron: #5d8296;
-	--color-tier-omega: #1d5570;
+	   author's, and nothing in the reading surface is coloured by either.
+	   Both clear the 5.5:1 the author inks hold against the paper: the green
+	   at 5.8:1, the lapis at 9.4:1, which is also the order -- the greater
+	   tier is the darker ink, as it was before. */
+	--color-tier-alpha: #316838;
+	--color-tier-omega: #2b3878;
 
 	--color-edge: #cfc4ab;
 	/* What a matched passage is laid on. It was a slightly deeper cream and
@@ -419,15 +422,16 @@
 	font-synthesis: none;
 }
 
-/* A tier's name -- Omicron, Omega -- wherever it is printed: in the composer,
+/* A tier's name -- Alpha, Omega -- wherever it is printed: in the composer,
    in its menu, on the plans card, under an answer. Named here for the same
    reason a work's title is: the next decision about how a tier is set is made
    once rather than in four components.
 
    It is set the way the wordmark is, and for the same reason -- these are
-   marks, not words of the interface. The reading face, the weight the app is
-   set in, and the mark's own tracking; then the part that tells the two apart
-   a weight up, so `Om` reads as the family and the tail as the choice. The
+   marks, not words of the interface. The reading face, bold, and the mark's
+   own tracking. The two shared a stem when they were Omicron and Omega, and
+   the weight was carried by the tail alone; Alpha and Omega share nothing but
+   the alphabet they are the ends of, so the whole word is the mark. The
    wordmark distinguishes its tail in bold italic, which cannot be borrowed
    here: an italic in this app means a book.
 
@@ -448,8 +452,8 @@
 /* One class per tier. Plain rules for the same reason the author inks are:
    the class is built from the tier at run time, so Tailwind's scanner never
    sees the name and would emit no rule at all for it. */
-.tier-omicron {
-	color: var(--color-tier-omicron);
+.tier-alpha {
+	color: var(--color-tier-alpha);
 }
 .tier-omega {
 	color: var(--color-tier-omega);
