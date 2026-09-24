@@ -103,7 +103,11 @@ describe('the home screen', () => {
 		const count = await screen.findByText('105');
 		expect(count.className).toContain('font-bold');
 		expect(count.className).toContain('underline');
-		expect(count.parentElement?.textContent).toBe('with 105 works');
+		// Closing the subtitle's own line, rather than a line of its own.
+		const line = count.closest('p')?.textContent?.replace(/\s+/g, ' ');
+		expect(line).toBe(
+			'philosophical intelligence with citations, tuned for accuracy from 105 works'
+		);
 	});
 });
 

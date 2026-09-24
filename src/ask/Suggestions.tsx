@@ -68,7 +68,7 @@ export function Suggestions() {
 
 	return (
 		<div
-			className={`mt-4 grid w-full max-w-[30rem] ${settle.className}`}
+			className={`mt-10 grid w-full @max-compact:mt-8 max-w-[30rem] ${settle.className}`}
 			style={settle.style}
 		>
 			{questions.map((suggestion) => (

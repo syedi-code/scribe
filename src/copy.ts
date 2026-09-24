@@ -224,16 +224,19 @@ export const COPY = {
 		},
 	],
 	howManySuggestions: 3,
-	/** Split, because the count is the claim and is set apart in the line. */
+	/** Closes the subtitle. Split, because the number is set apart in it. */
 	library: (works: number) => ({
-		before: 'with ',
+		before: 'from ',
 		count: works === 1 ? 'one' : String(works),
 		after: works === 1 ? ' work' : ' works',
 	}),
 	home: 'Back to the home screen',
 	/** Under the wordmark on the home screen, and nowhere else. Two phrases,
 	    because the line may only break between them. */
-	subtitle: ['intelligence with citations,', 'tuned for accuracy'],
+	subtitle: [
+		'philosophical intelligence with citations,',
+		'tuned for accuracy',
+	],
 
 	/* ---- composer ---- */
 	askPlaceholder: 'Ask about the library',
