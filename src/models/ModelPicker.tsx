@@ -51,7 +51,15 @@ export function ModelPicker() {
 	const close = useCallback(() => setOpen(false), []);
 	useDismiss(host, open, close);
 
-	const name = selected?.label ?? (loading ? '…' : COPY.modelsEmpty);
+	// A reader who cannot use any tier is still owed the name of one. Nothing
+	// is selectable before a session exists — a visitor waiting on Turnstile, a
+	// roster that did not arrive — and naming the empty set instead printed
+	// *no models available* in the composer, which is this app describing its
+	// own plumbing to someone who came to read. The rows carry their own
+	// reasons (requires Pro, held back, no key set); the trigger only needs a
+	// name, and the first tier is the one a reader would land on anyway.
+	const name =
+		selected?.label ?? (loading ? '…' : (choices[0]?.label ?? COPY.modelsEmpty));
 
 	return (
 		<div ref={host} className="relative shrink-0">
