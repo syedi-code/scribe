@@ -173,6 +173,9 @@ functions/api/   proxy to alexandria, and the flags this app answers itself
   kept apart. Encode the key a path segment at a time.
 - **A conversation read once is kept** (`chat/threads.ts`), warmed on
   `pointerenter`, forgotten on every question asked.
+- **Every conversation has its own `Chat`** (`chat/chats.ts`). A stream writes
+  into its own conversation, never the one on screen — one shared chat pulled
+  the reader back to an answer still streaming.
 - **An answer is signed by whoever wrote it** — fall back to the switcher only
   while streaming.
 - **`naming…` only while actually polling**, else `untitled`.

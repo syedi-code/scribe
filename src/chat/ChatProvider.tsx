@@ -7,7 +7,6 @@ import {
 	type ReactNode,
 } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
 import { COPY } from '../copy';
 import { api, ApiError, describeApiError } from '../api/client';
 import { useModels } from '../models/context';
@@ -17,7 +16,7 @@ import { setDraft } from '../state/draft';
 import { closePage } from '../state/reader';
 import { readStanding } from '../state/visitor';
 import { ChatContext, type ChatState } from './context';
-import { refuseSpentMonth } from './refusal';
+import { chatFor, heldChat, homeChat } from './chats';
 import { forgetThread, loadThread, readThread, warmThread } from './threads';
 import type { Conversation } from '../api/types';
 import type { ScribeMessage } from './message';
@@ -25,10 +24,11 @@ import type { ScribeMessage } from './message';
 /**
  * The conversation: the thread list, the one that is open, and the stream.
  *
- * `useChat` owns the messages. This owns which conversation they belong to,
- * because a question asked from the home screen has to create a conversation
- * before it can be sent, and because the server names a conversation a beat
- * after its first question lands.
+ * Each conversation has a chat of its own (`chats.ts`), and `useChat` shows
+ * whichever is open. This owns which one that is, because a question asked
+ * from the home screen has to create a conversation before it can be sent,
+ * and because the server names a conversation a beat after its first
+ * question lands.
  *
  * What has been read once is kept by `threads.ts`, and the rail warms a
  * conversation as the pointer reaches it, so switching is usually a render
@@ -46,8 +46,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 	const [failure, setFailure] = useState<string | null>(null);
 	const [naming, setNaming] = useState<string[]>([]);
 
-	// The transport is built once; the conversation and the model are read at
-	// send time, so switching either never rebuilds the chat.
+	// Read when a question goes out, not while rendering: the conversation and
+	// the model are whatever is current *then*.
 	const target = useRef<{ id: string | null; modelId: string | null }>({
 		id: null,
 		modelId: null,
@@ -55,36 +55,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		target.current.modelId = selected?.id ?? null;
 	}, [selected]);
+	const model = useCallback(() => target.current.modelId, []);
 
-	// The closure below runs when a request goes out, not while rendering: what
-	// it needs is whatever conversation and model are current *then*.
-	const transport = useMemo(
-		() =>
-			// eslint-disable-next-line react-hooks/refs
-			new DefaultChatTransport<ScribeMessage>({
-				api: '/api/conversations',
-				prepareSendMessagesRequest: ({ messages }) => ({
-					api: `/api/conversations/${target.current.id}/chat`,
-					body: {
-						message: messages[messages.length - 1],
-						model_id: target.current.modelId,
-					},
-				}),
-				fetch: refuseSpentMonth,
-			}),
-		[]
-	);
-
-	const {
-		messages,
-		setMessages,
-		sendMessage,
-		status,
-		error,
-		clearError,
-		regenerate,
-		stop,
-	} = useChat<ScribeMessage>({ transport });
+	const [home] = useState(homeChat);
+	const [chat, setChat] = useState(home);
+	const { messages, status, error, regenerate, stop } =
+		useChat<ScribeMessage>({ chat });
 
 	/**
 	 * Every finished answer carries a fresher allowance than the roster did,
@@ -154,12 +130,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 					id = conversation.id;
 					target.current.id = id;
 					setActiveId(id);
+					setChat(chatFor(id, model));
 					setThreads((current) => [conversation, ...current]);
 					void pollTitle(id);
 				}
 				// This turn makes whatever was held for the conversation wrong.
 				forgetThread(id);
-				await sendMessage({ text });
+				await chatFor(id, model).sendMessage({ text });
 			};
 			// A conversation that could not be created is a question that never
 			// reached the model, and the reader is owed the reason. A 402 is
@@ -173,7 +150,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 				setFailure(describeApiError(error));
 			});
 		},
-		[pollTitle, sendMessage]
+		[model, pollTitle]
 	);
 
 	const openThread = useCallback(
@@ -181,8 +158,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			target.current.id = id;
 			setActiveId(id);
 			// Last conversation's failure is not this one's, and neither is
-			// the page left open over it.
-			clearError();
+			// the page left open over it. A chat's own error stays its own.
 			setFailure(null);
 			closePage();
 
@@ -193,30 +169,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 					)
 				);
 
+			// Held by this tab, perhaps still answering: exactly as it stands.
+			const held = heldChat(id);
+			if (held) return setChat(held);
+
 			// Already read: the switch is a render, and nothing blanks.
 			const inHand = readThread(id);
-			setMessages(inHand?.messages ?? []);
+			const opening = chatFor(id, model, inHand?.messages);
+			setChat(opening);
 			if (inHand) return name(inHand);
 
 			void loadThread(id)
 				.then((opened) => {
-					if (target.current.id !== id) return;
-					setMessages(opened.messages);
+					// A question asked before the page arrived is newer than it.
+					if (opening.messages.length === 0)
+						opening.messages = opened.messages;
 					name(opened);
 				})
 				.catch(() => undefined);
 		},
-		[clearError, setMessages]
+		[model]
 	);
 
 	const newQuestion = useCallback(() => {
 		target.current.id = null;
 		setActiveId(null);
-		setMessages([]);
-		clearError();
+		setChat(home);
 		setFailure(null);
 		closePage();
-	}, [clearError, setMessages]);
+	}, [home]);
 
 	const value = useMemo<ChatState>(
 		() => ({
