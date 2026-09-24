@@ -35,7 +35,13 @@ const plural = (count: number, one: string, many: string) =>
 
 export const COPY = {
 	/* ---- chrome ---- */
-	tabs: { ask: 'Ask', books: 'Books', add: 'Add a book', about: 'About' },
+	tabs: {
+		ask: 'Ask',
+		books: 'Books',
+		add: 'Add a book',
+		plans: 'Plans',
+		about: 'About',
+	},
 	/** The tab is shown struck through rather than removed: it is coming back. */
 	addLater: 'not yet — Scribe reads the library, it does not fill it',
 	sessions: 'Sessions',

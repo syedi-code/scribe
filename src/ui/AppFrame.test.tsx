@@ -12,6 +12,7 @@ import { closePage, openPage } from '../state/reader';
 import { ChatContext, type ChatState } from '../chat/context';
 import { ModelContext } from '../models/context';
 import { AppFrame } from './AppFrame';
+import { forgetPlans } from '../api/billing';
 
 /**
  * The shell, and the things reported broken on a phone: the rail would not go
@@ -68,6 +69,31 @@ describe('the tabs', () => {
 		renderApp(<AppFrame />, { state: withThreads() });
 		fireEvent.click(screen.getByRole('tab', { name: 'Books' }));
 		expect(screen.getByRole('searchbox')).toBeTruthy();
+	});
+
+	it('has a Plans tab, which is the ledger as a page', async () => {
+		forgetPlans();
+		const plan = (id: 'free' | 'paid', turns: number) => ({
+			id,
+			turns_per_month: turns * 4,
+			turns_per_week: turns,
+			models: [],
+			page_scans: id === 'paid',
+			price: null,
+		});
+		stubFetch({ plans: [plan('free', 3), plan('paid', 25)] });
+		renderApp(<AppFrame />, { state: withThreads() });
+		fireEvent.click(screen.getByRole('tab', { name: 'Plans' }));
+		expect(
+			screen
+				.getByRole('tab', { name: 'Plans' })
+				.getAttribute('aria-selected')
+		).toBe('true');
+		expect(await screen.findByRole('region', { name: 'Pro' })).toBeTruthy();
+		expect(screen.getByRole('region', { name: 'Free' })).toBeTruthy();
+		// A page, not the sheet: nothing was opened over it.
+		expect(document.querySelector('dialog[open]')).toBeNull();
+		forgetPlans();
 	});
 });
 

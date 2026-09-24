@@ -125,8 +125,8 @@ functions/api/   proxy to alexandria, and the flags this app answers itself
   list. The wire keeps real model ids. `ModelProvider.test.tsx` fails if a maker
   or model name reaches the menu.
 - **The plan is *Pro* to a reader; the wire and DB say `paid`.**
-- **Every paid offer goes through `seePlans()`.** Nobody is offered what they
-  already have.
+- **Every paid offer is the ledger** — the Plans tab, or `seePlans()` from
+  anywhere else. Nobody is offered what they already have.
 - `GET /plans` is the only source of what a plan gives. Never a made-up price.
 - **A limit is told before it is hit, and never before that** — nothing until two
   left. `limit: null` is the admin: no ceiling, never zero. A later figure wins,
@@ -155,7 +155,8 @@ functions/api/   proxy to alexandria, and the flags this app answers itself
 - **One modal at a time**, from `state/dialog.ts`, each a history entry — the
   back gesture must put a sheet away. Native `<dialog>` + `showModal()`; focus
   lands on the title; Escape via `cancel`.
-- **There is no Plans tab.** Tabs are where a reader reads.
+- **Plans is a tab** (`plan/PlansPanel.tsx`) and a sheet (`seePlans()`), both
+  drawing one ledger (`plan/PlansLedger.tsx`).
 - **Narrow, the header is two rows**; `Add a book` is hidden narrow.
 - **The switcher lives in the composer**, menu opening **upward**.
 - **The margin is stacked by a rule** (`ask/stack.ts`) — every note gets a place,
