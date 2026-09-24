@@ -20,7 +20,7 @@ export function Arrival({ children }: { children: ReactNode }) {
 
 	return (
 		<ArrivalContext value={value}>
-			<div className="row-span-full grid min-h-0 content-center justify-items-center px-5 pt-5 pb-[7vh] @max-compact:pb-[14vh]">
+			<div className="row-span-full grid min-h-0 content-center justify-items-center px-5 pt-5 pb-[7vh] @max-compact:pt-[max(1.5rem,5vh)] @max-compact:pb-[6vh]">
 				{children}
 			</div>
 		</ArrivalContext>

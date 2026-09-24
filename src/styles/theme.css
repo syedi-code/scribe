@@ -182,6 +182,8 @@
 	--container-doc: 44rem;
 	--container-drawer: 33rem;
 	--container-compact: 35rem; /* 560px: the rail goes, the header compresses */
+	/* 384px: five tabs and Sign in no longer share a row. */
+	--container-crowded: 24rem;
 	--container-fold: 65rem; /* 1040px: the margin folds into footnotes */
 
 	/* The stacking order of the whole app, written once. A number inline in a
