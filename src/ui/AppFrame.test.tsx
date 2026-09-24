@@ -239,6 +239,34 @@ describe('the header, folding', () => {
 		expect(fold.hasAttribute('inert')).toBe(true);
 	});
 
+	// Narrow at home, a row of their own held only the account, and pushed
+	// the tabs down against the big wordmark.
+	it('sets the tabs beside the account at home, narrow', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: chat() });
+		const tabs = screen.getByRole('tablist').className;
+		expect(tabs).toContain('@max-compact:row-start-1');
+		expect(tabs).not.toContain('@max-compact:row-start-2');
+	});
+
+	it('gives them their own row where the mark is back', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: withThreads() });
+		expect(screen.getByRole('tablist').className).toContain(
+			'@max-compact:row-start-2'
+		);
+	});
+
+	// Five tabs and Sign in ran 15px past a 360px phone, and the last tab
+	// scrolled half out of sight.
+	it('keeps five tabs on their own row where the header is crowded', () => {
+		stubFetch();
+		renderApp(<AppFrame />, { state: withThreads({ atHome: true }) });
+		const tabs = screen.getByRole('tablist').className;
+		expect(tabs).toContain('@max-crowded:row-start-2');
+		expect(tabs).toContain('@min-crowded:@max-compact:row-start-1');
+	});
+
 	it('unfolds it once there is a conversation', () => {
 		stubFetch();
 		const { container } = renderApp(<AppFrame />, {

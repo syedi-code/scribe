@@ -157,7 +157,9 @@ functions/api/   proxy to alexandria, and the flags this app answers itself
   lands on the title; Escape via `cancel`.
 - **Plans is a tab** (`plan/PlansPanel.tsx`) and a sheet (`seePlans()`), both
   drawing one ledger (`plan/PlansLedger.tsx`).
-- **Narrow, the header is two rows**; `Add a book` is hidden narrow.
+- **Narrow, the header is two rows** — except at home, where the mark has
+  folded away and the tabs sit beside the account (five only above
+  `--container-crowded`). `Add a book` is hidden narrow.
 - **The switcher lives in the composer**, menu opening **upward**.
 - **The margin is stacked by a rule** (`ask/stack.ts`) — every note gets a place,
   even unmeasured.

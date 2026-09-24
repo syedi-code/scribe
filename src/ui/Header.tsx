@@ -29,7 +29,8 @@ import type { Tab } from './tabs';
  * Four tabs, the account and the mark on one row ran past a 360px phone, and a
  * round stamp in a row of words read as one more tab. On the home screen the
  * mark folds away as it does wide and the account keeps its corner, so it
- * never moves between screens. The tab container is `contents` narrow, so the
+ * never moves between screens. There the tabs move up beside it, into the
+ * room the mark left (`TabBar`). The tab container is `contents` narrow, so the
  * tabs and the account are placed by the header's own grid.
  *
  * Leaving the home screen, the big mark does not vanish and reappear here: it
@@ -147,7 +148,12 @@ export function Header({
 				ref={tabs}
 				className="flex items-center gap-4 @max-compact:contents"
 			>
-				<TabBar tab={tab} onTab={onTab} railable={railable} />
+				<TabBar
+					tab={tab}
+					onTab={onTab}
+					railable={railable}
+					beside={bare}
+				/>
 				{account && (
 					<div className="pointer-events-auto @max-compact:col-start-2 @max-compact:row-start-1">
 						<AccountCorner />

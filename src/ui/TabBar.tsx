@@ -16,20 +16,41 @@ import type { Tab } from './tabs';
  * than wonder where it went. Narrow, it is not shown at all: a phone's header
  * is short of room, and a tab nobody can press is the one to go.
  *
- * Narrow, the tabs are centred on their own row — spread edge to edge they
+ * Narrow on the home screen, where the header's mark has folded away, the
+ * tabs take its place on the first row, set from the left opposite the
+ * account: a row of their own there held only the account, and pushed the
+ * tabs down against the big wordmark. Everywhere else the mark is back, and
+ * the tabs are centred on their own row — spread edge to edge they
  * read as four separate things rather than one control — and the row scrolls
  * sideways before it ever clips (`justify-center-safe`, so an overflowing row
  * starts at its first tab rather than cutting it off) — a fifth tab must never
  * push the account off the screen.
  */
+/** Narrow: centred on a row of their own, under the mark and the account. */
+const OWN_ROW =
+	'@max-compact:col-span-2 @max-compact:row-start-2 @max-compact:justify-center-safe @max-compact:gap-6';
+/** Narrow: on the account's row, from the left. */
+const BESIDE =
+	'@max-compact:col-start-1 @max-compact:row-start-1 @max-compact:justify-start @max-compact:gap-4';
+/**
+ * Five tabs beside *Sign in* need 330px, which a 360px phone does not have
+ * once the header's gutters are taken; below `--container-crowded` they keep a
+ * row of their own rather than scroll half a tab out of sight.
+ */
+const CROWDED =
+	'@max-crowded:col-span-2 @max-crowded:row-start-2 @max-crowded:justify-center-safe @max-crowded:gap-6 @min-crowded:@max-compact:col-start-1 @min-crowded:@max-compact:row-start-1 @min-crowded:@max-compact:justify-start @min-crowded:@max-compact:gap-4';
+
 export function TabBar({
 	tab,
 	onTab,
 	railable,
+	beside,
 }: {
 	tab: Tab;
 	onTab: (tab: Tab) => void;
 	railable: boolean;
+	/** Narrow, on the account's row rather than a row of their own. */
+	beside: boolean;
 }) {
 	const about = useFlag('isAboutShown');
 
@@ -58,7 +79,9 @@ export function TabBar({
 	return (
 		<div
 			role="tablist"
-			className="pointer-events-auto flex items-center gap-4 @max-compact:col-span-2 @max-compact:row-start-2 @max-compact:min-w-0 @max-compact:justify-center-safe @max-compact:gap-6 @max-compact:overflow-x-auto"
+			className={`pointer-events-auto flex items-center gap-4 @max-compact:min-w-0 @max-compact:overflow-x-auto ${
+				!beside ? OWN_ROW : railable ? CROWDED : BESIDE
+			}`}
 		>
 			{railable &&
 				named('sessions', COPY.sessions, 'hidden @max-compact:block')}
