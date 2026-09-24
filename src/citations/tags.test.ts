@@ -21,7 +21,9 @@ describe('the names a model marked', () => {
 	// The whole reason for asking: no rule of ours knows that Newton is a
 	// person and Sufism is not.
 	it('inks a person the library has never heard of', () => {
-		const inked = untag('<author>Newton</author> and <author>Fontenelle</author>')
+		const inked = untag(
+			'<author>Newton</author> and <author>Fontenelle</author>'
+		)
 			.filter((node) => node.kind === 'author')
 			.map((node) => (node.kind === 'author' ? node.text : ''));
 		expect(inked).toEqual(['Newton', 'Fontenelle']);
@@ -72,9 +74,9 @@ describe('a mark the model got wrong', () => {
 	});
 
 	it('leaves an empty mark out altogether', () => {
-		expect(untag('a <author></author> b').every((node) => node.kind === 'text')).toBe(
-			true
-		);
+		expect(
+			untag('a <author></author> b').every((node) => node.kind === 'text')
+		).toBe(true);
 	});
 
 	it('strips a mark from anywhere at all', () => {
@@ -122,5 +124,68 @@ describe('what the model marked and what the library knows', () => {
 		).filter((node) => node.kind === 'author');
 
 		expect(authors).toHaveLength(1);
+	});
+});
+
+describe('one person, one ink', () => {
+	// The model tags a name as it pleases, sometimes twice in one answer, and
+	// the whole of what it tagged was hashed: `Immanuel Kant` and `Kant` came
+	// out in two inks (#48).
+	const inksOf = (text: string) =>
+		untag(text).flatMap((node) =>
+			node.kind === 'author' ? [[node.text, node.ink] as const] : []
+		);
+	const sameInk = (...tagged: string[]) => {
+		const inks = tagged.flatMap((text) =>
+			inksOf(text).map(([, ink]) => ink)
+		);
+		expect(new Set(inks).size).toBe(1);
+		expect(inks[0]).toBeGreaterThanOrEqual(0);
+	};
+
+	it('however much of the name was tagged', () => {
+		sameInk(
+			'<author>Immanuel Kant</author>',
+			'Immanuel <author>Kant</author>',
+			'<author>Kant</author>'
+		);
+	});
+
+	it('through a particle, a suffix and an apostrophe', () => {
+		sameInk(
+			'<author>Simone de Beauvoir</author>',
+			'<author>de Beauvoir</author>'
+		);
+		sameInk(
+			'<author>Martin Luther King Jr.</author>',
+			'<author>King</author>'
+		);
+		sameInk("<author>Ibn 'Arabī</author>", '<author>Ibn ’Arabī</author>');
+	});
+
+	it('inks the surname and leaves the given name in prose ink', () => {
+		expect(
+			inksOf('<author>Immanuel Kant</author>').map(([name]) => name)
+		).toEqual(['Kant']);
+		expect(printedOf('<author>Immanuel Kant</author> says so.')).toBe(
+			'Immanuel Kant says so.'
+		);
+	});
+
+	it('matches the ink the catalogue gives the same surname', () => {
+		const text = '<author>Immanuel Kant</author> and Kant again.';
+		const inks = nodesIn(
+			segmentAnswer(text, markersFor(text, undefined), [], ['Kant'])
+		).flatMap((node) => (node.kind === 'author' ? [node.ink] : []));
+		expect(inks).toHaveLength(2);
+		expect(new Set(inks).size).toBe(1);
+	});
+
+	it('inks every name in a tag that names two people', () => {
+		expect(
+			inksOf('<author>Max Horkheimer & Theodor W. Adorno</author>').map(
+				([name]) => name
+			)
+		).toEqual(['Horkheimer', 'Adorno']);
 	});
 });
