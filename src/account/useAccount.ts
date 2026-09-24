@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { signOut } from '../api/client';
 import { COPY } from '../copy';
-import { remainingOf, useAllowance } from '../state/allowance';
+import { remainingOf, standingOf, useAllowance } from '../state/allowance';
 import { useIdentity } from '../state/identity';
 
 /**
@@ -37,7 +37,12 @@ export function useAccount() {
 		 */
 		offerPlans: !admin && plan !== 'paid' && !identity?.guest,
 		allowance,
-		left: remainingOf(allowance),
+		/** Only once it is nearly spent: before that, a count gives the allowance away. */
+		left:
+			standingOf(allowance) === 'last-few' ||
+			standingOf(allowance) === 'spent'
+				? remainingOf(allowance)
+				: null,
 		leaving,
 		signOut: () => {
 			setLeaving(true);

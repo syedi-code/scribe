@@ -14,8 +14,7 @@ import type { Tab } from './tabs';
  * `Add a book` is struck through and disabled rather than removed: it is
  * coming back, and a reader who remembers it should see that it is held rather
  * than wonder where it went. Narrow, it is not shown at all: a phone's header
- * holds four tabs and the account, and a tab nobody can press is the one to
- * go.
+ * is short of room, and a tab nobody can press is the one to go.
  *
  * Narrow, the tabs are centred on their own row — spread edge to edge they
  * read as four separate things rather than one control — and the row scrolls
@@ -75,6 +74,7 @@ export function TabBar({
 			>
 				{COPY.tabs.add}
 			</button>
+			{named('plans', COPY.tabs.plans)}
 			{about && named('about', COPY.tabs.about)}
 		</div>
 	);

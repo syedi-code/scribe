@@ -6,5 +6,7 @@
  * the rail beside the page, and the tab bar does not offer it.
  *
  * `about` is offered only behind `isAboutShown`.
+ *
+ * `plans` is the ledger as a page, for a reader who goes looking for it.
  */
-export type Tab = 'sessions' | 'ask' | 'books' | 'about';
+export type Tab = 'sessions' | 'ask' | 'books' | 'plans' | 'about';

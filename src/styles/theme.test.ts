@@ -75,7 +75,7 @@ const PRINTS_A_BOOK_NAME = [
  */
 const PRINTS_A_TIER_NAME = [
 	'src/models/ModelPicker.tsx', // in the composer, and in its menu
-	'src/plan/PlansDialog.tsx', // on the plans card
+	'src/plan/PlansLedger.tsx', // on the plans card
 	'src/plan/CheckoutDialog.tsx', // in the review before paying
 	'src/ask/AnswerFooter.tsx', // under an answer, signing it
 ];

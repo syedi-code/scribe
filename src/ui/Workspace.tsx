@@ -3,6 +3,7 @@ import { AskPanel } from '../ask/AskPanel';
 import { useConversation } from '../chat/context';
 import { BooksPanel } from '../books/BooksPanel';
 import { PageView } from '../page/PageView';
+import { PlansPanel } from '../plan/PlansPanel';
 import { Rail } from './Rail';
 import type { Tab } from './tabs';
 
@@ -49,6 +50,8 @@ export function Workspace({
 			>
 				{tab === 'books' ? (
 					<BooksPanel />
+				) : tab === 'plans' ? (
+					<PlansPanel />
 				) : tab === 'about' ? (
 					<AboutPanel />
 				) : (

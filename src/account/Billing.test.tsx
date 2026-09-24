@@ -339,7 +339,7 @@ describe('a checkout Stripe already has', () => {
 		app();
 		act(() => openDialog('checkout'));
 		// The button is there before the plans are, and disabled until they are.
-		await screen.findByText(COPY.checkout.perWeek(25));
+		await screen.findByText(COPY.checkout.perWeek(8));
 
 		fireEvent.click(
 			await screen.findByRole('button', { name: COPY.checkout.pay })
