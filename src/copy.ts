@@ -240,6 +240,11 @@ export const COPY = {
 
 	/* ---- composer ---- */
 	askPlaceholder: 'Ask about the library',
+	/** `@` in the composer: the books it could mean. */
+	mention: {
+		caption: 'Books in the library',
+		none: 'No book in the library by that name',
+	},
 	ask: 'Ask',
 	stop: 'Stop',
 	hint: 'Every quote is checked against the page it names. / to write, c to dim everything uncited.',
