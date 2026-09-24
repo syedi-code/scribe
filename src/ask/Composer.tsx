@@ -9,6 +9,7 @@ import { registerComposer } from '../state/composer';
 import { setDraft, useDraft } from '../state/draft';
 import { openSignIn } from '../state/dialog';
 import { useStanding } from '../state/visitor';
+import { useBookMention } from './useBookMention';
 
 /**
  * One composer.
@@ -39,6 +40,11 @@ export function Composer() {
 		(explained || Boolean(allowance?.guest)) &&
 		standingOf(allowance) === 'spent';
 	const standing = useStanding();
+	const mentions = useBookMention(
+		field,
+		draft,
+		useFlag('isBookMentionEnabled')
+	);
 
 	useEffect(() => {
 		registerComposer(field.current);
@@ -72,14 +78,21 @@ export function Composer() {
 			<div
 				className={`border-paper-deep focus-within:border-edge ${
 					spent ? 'bg-paper' : 'bg-paper-lift'
-				} flex flex-col gap-1 rounded-2xl border px-2 py-2 transition-[border-color,box-shadow,background-color] duration-200 focus-within:shadow-[0_6px_20px_-16px_rgba(36,31,26,0.8)]`}
+				} relative flex flex-col gap-1 rounded-2xl border px-2 py-2 transition-[border-color,box-shadow,background-color] duration-200 focus-within:shadow-[0_6px_20px_-16px_rgba(36,31,26,0.8)]`}
 			>
+				{mentions.menu}
 				<textarea
 					ref={field}
 					rows={1}
 					value={draft}
-					onChange={(event) => setDraft(event.target.value)}
+					{...mentions.fieldProps}
+					onChange={(event) => {
+						setDraft(event.target.value);
+						mentions.track();
+					}}
+					onSelect={mentions.track}
 					onKeyDown={(event) => {
+						if (mentions.onKeyDown(event)) return;
 						if (event.key === 'Enter' && !event.shiftKey) {
 							event.preventDefault();
 							submit();

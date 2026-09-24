@@ -51,7 +51,8 @@ export function Conversation() {
 		return turns;
 	}, [messages]);
 
-	useStickToBottom(scroll, [messages]);
+	// A question sent, or a conversation opened, is the reader asking for the end.
+	useStickToBottom(scroll, [messages], `${activeId}:${exchanges.length}`);
 
 	return (
 		<div

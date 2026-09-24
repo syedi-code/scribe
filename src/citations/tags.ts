@@ -1,4 +1,4 @@
-import { inkFor } from './authors';
+import { inkedName } from './authors';
 import type { AnswerNode } from './parse';
 
 /**
@@ -40,6 +40,17 @@ export const stripTags = (text: string) => text.replace(STRAY, '');
  */
 export const untagQuote = stripTags;
 
+/**
+ * A name the model marked, inked by its surname alone, as the catalogue inks
+ * one. The model tags a person as it pleases — `<author>Immanuel Kant</author>`
+ * here, `Immanuel <author>Kant</author>` a line later — and inking the whole
+ * of what it tagged wrote one man in two colours in one answer (#48).
+ */
+const named = (name: string): AnswerNode[] =>
+	inkedName(name).map(({ text, ink }) =>
+		ink < 0 ? { kind: 'text', text } : { kind: 'author', text, ink }
+	);
+
 /** Splits on what the model marked, leaving everything else to later passes. */
 export function untag(text: string): AnswerNode[] {
 	const nodes: AnswerNode[] = [];
@@ -56,11 +67,9 @@ export function untag(text: string): AnswerNode[] {
 		const spaced = match[2].length - match[2].trimStart().length;
 		if (spaced > 0) nodes.push({ kind: 'text', text: ' ' });
 		if (inner) {
-			nodes.push(
-				match[1] === 'title'
-					? { kind: 'title', text: inner }
-					: { kind: 'author', text: inner, ink: inkFor(inner) }
-			);
+			if (match[1] === 'title')
+				nodes.push({ kind: 'title', text: inner });
+			else nodes.push(...named(inner));
 		}
 		if (match[2].trimEnd().length < match[2].length) {
 			nodes.push({ kind: 'text', text: ' ' });

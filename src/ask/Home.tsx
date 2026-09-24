@@ -3,7 +3,6 @@ import { standingOf, useAllowance } from '../state/allowance';
 import { Arrival } from './Arrival';
 import { ComposerSlot } from './ComposerSlot';
 import { HomeFooter } from './HomeFooter';
-import { LibraryLine } from './LibraryLine';
 import { Opening } from './Opening';
 import { Subtitle } from './Subtitle';
 import { Suggestions } from './Suggestions';
@@ -39,7 +38,6 @@ export function Home({
 		<Arrival>
 			<Opening />
 			<Subtitle />
-			<LibraryLine />
 			<ComposerSlot slot={composerSlot} />
 			{!spent && <Suggestions />}
 			<HomeFooter />

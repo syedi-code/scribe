@@ -39,6 +39,8 @@ export interface Flags {
 	isVisitorModeEnabled: boolean;
 	/** Whether the sign-in dialog offers Google, once that Access app exists. */
 	isGoogleSignInShown: boolean;
+	/** Whether typing `@` in the composer offers the library's books (scribe#51). */
+	isBookMentionEnabled: boolean;
 }
 
 interface Flag {
@@ -71,6 +73,10 @@ export const FLAGS: Record<keyof Flags, Flag> = {
 	},
 	isGoogleSignInShown: {
 		env: 'FLAG_IS_GOOGLE_SIGN_IN_SHOWN',
+		fallback: false,
+	},
+	isBookMentionEnabled: {
+		env: 'FLAG_IS_BOOK_MENTION_ENABLED',
 		fallback: false,
 	},
 };
