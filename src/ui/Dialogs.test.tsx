@@ -215,20 +215,31 @@ describe('a modal and the back button', () => {
 });
 
 describe('the plans', () => {
-	it('sets the number that differs large, and names the tiers', async () => {
+	it('says Pro as a multiple of Free, and names the tiers', async () => {
 		reportAllowance(month(2));
 		app({ atHome: true });
 		act(() => openDialog('plans'));
 		const paid = await screen.findByRole('region', {
 			name: COPY.plan.plans.paid,
 		});
-		expect(paid.textContent).toContain('25');
+		// 25 against 3: the ratio is said, the allowance never is. It is
+		// tuned week to week, and a number here would be a broken promise.
+		expect(paid.textContent).toContain('About 8 times as many');
+		expect(dialog()?.textContent).not.toMatch(/\b(25|3) (a|questions)/);
+		expect(dialog()?.textContent).not.toContain('108');
 		// The card sells the tier the switcher offers, never the model
 		// underneath it, or the abstraction leaks where it matters most.
 		expect(paid.textContent).toContain('Omega');
 		expect(paid.textContent).not.toContain('Sonnet');
 		const free = screen.getByRole('region', { name: COPY.plan.plans.free });
 		expect(free.textContent).toContain(COPY.plan.plans.current);
+	});
+
+	it('says the allowance as a multiple at checkout too', async () => {
+		app({ atHome: true });
+		act(() => openDialog('checkout'));
+		await screen.findByText(COPY.checkout.perWeek(8));
+		expect(dialog()?.textContent).not.toMatch(/\b25\b/);
 	});
 
 	it('says what each plan shows behind a quotation', async () => {
@@ -268,7 +279,7 @@ describe('checkout', () => {
 		});
 		app({ atHome: true });
 		act(() => openDialog('checkout'));
-		await screen.findByText(COPY.checkout.perWeek(25));
+		await screen.findByText(COPY.checkout.perWeek(8));
 		press(COPY.checkout.pay);
 		expect(await screen.findByRole('status')).toBeTruthy();
 		expect(screen.getByRole('status').textContent).toBe(
@@ -286,7 +297,7 @@ describe('checkout', () => {
 		vi.stubGlobal('location', { ...window.location, assign });
 		app({ atHome: true });
 		act(() => openDialog('checkout'));
-		await screen.findByText(COPY.checkout.perWeek(25));
+		await screen.findByText(COPY.checkout.perWeek(8));
 		press(COPY.checkout.pay);
 		await waitFor(() =>
 			expect(assign).toHaveBeenCalledWith(
@@ -314,27 +325,39 @@ describe('the account', () => {
 		).toContain(COPY.plan.plans.free);
 	});
 
-	it('says who is signed in and what they have left, from the menu', () => {
+	it('says who is signed in, and no count while plenty is left', () => {
 		reportAllowance(month(2));
 		app({ atHome: true });
 		openMenu();
 		const menu = screen.getByRole('menu');
 		expect(menu.textContent).toContain(MEMBER.email);
-		expect(menu.textContent).toContain('Free · 3 left this week');
+		expect(menu.textContent).toContain('Free');
+		expect(menu.textContent).not.toContain('left this week');
 	});
 
-	it('opens the account sheet with the month measured', () => {
-		reportAllowance(month(2));
+	it('says what is left from the menu once only a few are', () => {
+		reportAllowance(month(3));
+		app({ atHome: true });
+		openMenu();
+		expect(screen.getByRole('menu').textContent).toContain(
+			'Free · 2 left this week'
+		);
+	});
+
+	it('measures the week on the account sheet, never as a count of it', () => {
+		reportAllowance(month(2, 10));
 		app({ atHome: true });
 		openMenu();
 		fireEvent.click(
 			screen.getByRole('menuitem', { name: COPY.account.menu })
 		);
 		expect(dialog()?.textContent).toContain(MEMBER.email);
-		expect(dialog()?.textContent).toContain('2 of 5 questions');
-		expect(screen.getByRole('meter').getAttribute('aria-valuenow')).toBe(
-			'2'
-		);
+		expect(dialog()?.textContent).toContain(COPY.account.plenty);
+		expect(dialog()?.textContent).not.toMatch(/\b10\b/);
+		const meter = screen.getByRole('meter');
+		expect(meter.getAttribute('aria-valuenow')).toBe('20');
+		expect(meter.getAttribute('aria-valuemax')).toBe('100');
+		expect(meter.getAttribute('aria-valuetext')).toBe(COPY.account.plenty);
 	});
 
 	it('names the admin as the admin, and offers them nothing', () => {

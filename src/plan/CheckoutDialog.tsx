@@ -8,7 +8,7 @@ import { tiersOf } from '../models/tiers';
 import { backDialog } from '../state/dialog';
 import { refreshRoster } from '../state/roster';
 import { Modal } from '../ui/Modal';
-import { priceOf, usePlans } from './usePlans';
+import { priceOf, timesFree, usePlans } from './usePlans';
 
 type Step =
 	| { kind: 'ready' }
@@ -33,6 +33,7 @@ export function CheckoutDialog() {
 	const account = useAccount();
 	const [step, setStep] = useState<Step>({ kind: 'ready' });
 	const paid = plans.value?.find((plan) => plan.id === 'paid');
+	const free = plans.value?.find((plan) => plan.id === 'free');
 
 	const pay = async () => {
 		setStep({ kind: 'opening' });
@@ -92,7 +93,7 @@ export function CheckoutDialog() {
 
 	return (
 		<Modal title={COPY.checkout.title} onBack={backDialog} footer={footer}>
-			{!paid ? (
+			{!paid || !free ? (
 				<p className="font-app text-small text-ink-faint m-0">
 					{plans.error
 						? COPY.plan.plans.unreachable
@@ -102,7 +103,7 @@ export function CheckoutDialog() {
 				<>
 					<dl className="border-paper-deep m-0 rounded-xl border px-4">
 						<Row label={COPY.checkout.questions}>
-							{COPY.checkout.perWeek(paid.turns_per_week)}
+							{COPY.checkout.perWeek(timesFree(free, paid))}
 						</Row>
 						<Row label={COPY.checkout.models}>
 							{tiersOf(paid.models).map((tier, at) => (

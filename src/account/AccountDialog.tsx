@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 import { COPY } from '../copy';
+import { remainingOf, standingOf } from '../state/allowance';
 import { seePlans } from '../state/dialog';
 import { Modal } from '../ui/Modal';
 import { Billing } from './Billing';
 import { useAccount } from './useAccount';
+import type { Allowance } from '../api/types';
 
 /**
  * The account, as a settings sheet: a label on the left, the fact on the
@@ -11,9 +13,10 @@ import { useAccount } from './useAccount';
  * give their settings, because a reader scanning for one fact reads down the
  * left and across once.
  *
- * The month is shown here in full, as a count and a measure, though the rest
- * of the app says nothing about it until two questions are left. A reader who
- * opens their account has asked.
+ * The week is shown here as a measure and a word, though the rest of the app
+ * says nothing about it until two questions are left. A reader who opens their
+ * account has asked — but never as a count out of the allowance, which is
+ * tuned week to week and is not a number the app promises.
  */
 export function AccountDialog() {
 	const account = useAccount();
@@ -49,17 +52,12 @@ export function AccountDialog() {
 						) : (
 							<>
 								<span className="block">
-									{COPY.account.used(
-										Math.min(
-											allowance.used,
-											allowance.limit
-										),
-										allowance.limit
-									)}
+									{standingIn(allowance)}
 								</span>
 								<Measure
 									used={allowance.used}
 									limit={allowance.limit}
+									label={standingIn(allowance)}
 								/>
 								{allowance.resets_at && (
 									<span className="font-app text-small text-ink-faint mt-1.5 block">
@@ -105,14 +103,23 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
  * nearly spent is not *not found*, and rubric here would be the first place
  * that colour meant two things.
  */
-function Measure({ used, limit }: { used: number; limit: number }) {
+function Measure({
+	used,
+	limit,
+	label,
+}: {
+	used: number;
+	limit: number;
+	label: string;
+}) {
 	const share = limit === 0 ? 1 : Math.min(1, used / limit);
 	return (
 		<span
 			role="meter"
 			aria-valuemin={0}
-			aria-valuemax={limit}
-			aria-valuenow={Math.min(used, limit)}
+			aria-valuemax={100}
+			aria-valuenow={Math.round(share * 100)}
+			aria-valuetext={label}
 			aria-label={COPY.account.week}
 			className="bg-paper-deep mt-2 block h-1 overflow-hidden rounded-full"
 		>
@@ -122,4 +129,13 @@ function Measure({ used, limit }: { used: number; limit: number }) {
 			/>
 		</span>
 	);
+}
+
+/** How the week stands, in words; a count only once there are two or fewer. */
+function standingIn(allowance: Allowance): string {
+	const standing = standingOf(allowance);
+	if (standing === 'spent') return COPY.account.spent;
+	if (standing === 'last-few')
+		return COPY.plan.remaining(remainingOf(allowance) ?? 0);
+	return COPY.account.plenty;
 }

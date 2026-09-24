@@ -399,28 +399,42 @@ export const COPY = {
 			later: 'Not now',
 		},
 
-		/* Free beside Pro. A card says only what differs; what both share is
-		   said once, under them. */
+		/* Free beside Pro, row for row. What both share is said once, under
+		   them.
+
+		   The allowance is never a number here. It is tuned week to week
+		   against what the models cost, and a figure printed on the page that
+		   sells the plan is a promise the next tuning breaks. What holds still
+		   is the ratio — Free is derived from Pro — so that is what is said. */
 		plans: {
 			title: 'Plans',
 			current: 'Your plan',
 			free: 'Free',
 			paid: 'Pro',
-			/** Not the plan's name again: what free actually means here. */
-			freePrice: 'No card needed',
+			/** The line under each price: who the plan is for. */
+			freeFor: 'For trying Scribe out. No card needed.',
+			paidFor: 'For reading closely, every week.',
 			/** Until there is a price. Never a made-up figure. */
 			priceLater: 'Price set at launch',
 			perMonth: (amount: string) => `${amount} a month`,
-			questions: 'questions a week',
+			/** Beside the large figure, which carries the amount alone. */
+			aMonth: 'a month',
+			questions: 'Questions each week',
+			freeQuestions: 'Enough to try it out',
+			/** Pro's allowance as a multiple of Free's; the number itself is never shown. */
+			paidQuestions: (times: number) =>
+				times >= 2 ? `About ${times} times as many` : 'More than Free',
 			models: 'Models',
-			/** What a reader sees behind a citation, which differs by plan. */
-			sources: 'Behind each quotation',
-			sourceText: 'The passage it came from',
-			sourceScan: 'The passage, and the scanned page itself',
-			shared: 'On both plans, every quotation is checked against the page it cites, and questions reset every Monday.',
-			choose: 'Continue to payment',
+			freeModels: 'Quick, lighter thinking.',
+			paidModels: 'Omega thinks longer, for harder questions.',
+			/** Whether a quote opens onto the scan of the printed page. */
+			sources: 'Original pages',
+			sourceText: 'Quotes open as text only',
+			sourceScan: 'See the scanned book page behind any quote',
+			shared: 'Both plans: every quote is checked against the page it cites, across the whole library. Questions come back every Monday.',
+			choose: 'Get Pro',
 			/** Beside the button, not behind it. */
-			terms: 'Billed monthly · cancel anytime',
+			terms: 'Billed monthly · Cancel anytime',
 			loading: 'reading the plans…',
 			unreachable: 'The plans could not be fetched just now.',
 		},
@@ -441,9 +455,11 @@ export const COPY = {
 		signingOut: 'Signing out…',
 		admin: 'Admin',
 		unlimited: 'No limit',
-		used: (used: number, limit: number) =>
-			`${used} of ${limit} ${plural(limit, 'question', 'questions')}`,
-		/** On the menu's second line, where there is room for one short fact. */
+		/** The week in words, never as a count of the allowance; see `plan.plans`. */
+		plenty: 'Plenty left',
+		spent: 'All used',
+		/** On the menu's second line, where there is room for one short fact.
+		    `left` is null until the last few, so it never tells the allowance. */
 		summary: (plan: string, left: number | null) =>
 			left === null ? plan : `${plan} · ${left} left this week`,
 		renews: (at: string) => `Renews ${localDay(at)}`,
@@ -470,7 +486,11 @@ export const COPY = {
 		   changes hands, so the difference is said rather than left to be
 		   noticed. Both rows name their own period, and the note under them
 		   says the two are not the same period on purpose. */
-		perWeek: (count: number) => `${count} a week`,
+		/** Never the count itself: see `plan.plans`. */
+		perWeek: (times: number) =>
+			times >= 2
+				? `About ${times} times Free, each week`
+				: 'More than Free, each week',
 		periods: 'Billed once a month; questions come back every Monday.',
 		models: 'Models',
 		price: 'Price',
