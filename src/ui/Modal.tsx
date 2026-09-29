@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { COPY } from '../copy';
 import { closeDialog } from '../state/dialog';
+import { useVisibleArea } from './useVisibleArea';
 
 /** How far a sheet has to be pulled down before letting go puts it away. */
 const DISMISS_AT = 80;
@@ -21,6 +22,9 @@ const DISMISS_AT = 80;
  * Wide, it sits in the middle at the width of a letter. One tree; the
  * container query decides, and the handle is only there to hold where it is
  * drawn.
+ *
+ * A sheet is pinned to the bottom of what the reader can *see*, which on a
+ * phone is not always the bottom of the viewport (`useVisibleArea`).
  */
 export function Modal({
 	title,
@@ -41,6 +45,7 @@ export function Modal({
 	const sheet = useRef<HTMLDialogElement>(null);
 	const pull = useRef<{ from: number; by: number } | null>(null);
 	const heading = useId();
+	useVisibleArea(sheet);
 
 	useEffect(() => {
 		const element = sheet.current;
@@ -75,7 +80,7 @@ export function Modal({
 			onClick={(event) => {
 				if (event.target === event.currentTarget) closeDialog();
 			}}
-			className={`bg-paper-lift text-ink border-paper-deep animate-rise m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-2xl border p-0 shadow-[0_24px_60px_-30px_rgba(36,31,26,0.9)] transition-[translate] duration-300 ease-paper backdrop:bg-ink/25 open:flex @max-compact:animate-sheet @max-compact:mb-0 @max-compact:max-h-[calc(100dvh-1.5rem)] @max-compact:w-full @max-compact:max-w-none @max-compact:rounded-b-none @max-compact:border-b-0 ${
+			className={`bg-paper-lift text-ink border-paper-deep animate-rise m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-2xl border p-0 shadow-[0_24px_60px_-30px_rgba(36,31,26,0.9)] transition-[translate] duration-300 ease-paper backdrop:bg-ink/25 open:flex @max-compact:animate-sheet @max-compact:mb-[var(--hidden-below,0px)] @max-compact:max-h-[calc(var(--seen-height,100dvh)-1.5rem)] @max-compact:w-full @max-compact:max-w-none @max-compact:rounded-b-none @max-compact:border-b-0 ${
 				wide ? 'max-w-[40rem]' : 'max-w-[26rem]'
 			}`}
 		>

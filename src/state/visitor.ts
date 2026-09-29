@@ -18,7 +18,7 @@ export const readStanding = () => standing.get();
 export const reportStanding = (next: Standing) => standing.set(next);
 
 /** Why the sign-in dialog was opened, so it can say so in its first line. */
-export type SignInReason = 'spent' | 'blocked' | 'chosen';
+export type SignInReason = 'spent' | 'blocked' | 'chosen' | 'plans';
 
 const reason = createStore<SignInReason>('chosen');
 
