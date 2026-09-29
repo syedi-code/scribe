@@ -313,6 +313,19 @@ export const COPY = {
 	noCitations: 'nothing in this answer is cited to a page',
 	/** A turn that searched and read and then stopped without writing anything. */
 	noAnswer: 'Scribe stopped before it wrote an answer.',
+	/**
+	 * An answer written twice. The first draft quoted its pages without
+	 * marking which, so nothing in it could be checked; the reader watched it
+	 * stream, and is told why it went rather than seeing it vanish.
+	 */
+	redraft: {
+		writing:
+			'The first draft quoted its pages without marking them, so it is being written again with every quote marked and checked.',
+		done: 'Written a second time, so that every quote could be marked and checked.',
+		unchecked:
+			'Written a second time, and its quotes still could not be marked, so none of them was checked against its page.',
+		draft: 'First draft',
+	},
 	onlyCited: "Only what's cited",
 	onlyCitedHint: 'Fade every sentence no citation supports',
 
