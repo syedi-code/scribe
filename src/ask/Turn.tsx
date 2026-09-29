@@ -18,6 +18,7 @@ import { Answer } from './Answer';
 import { AnswerFooter } from './AnswerFooter';
 import { Apparatus } from './Apparatus';
 import { MarginNotes } from './MarginNotes';
+import { Redraft } from './Redraft';
 import { Waiting } from './Waiting';
 
 /**
@@ -125,6 +126,14 @@ export function Turn({
 				)}
 
 				{!read && streaming && <Waiting />}
+
+				{read?.redraft && (
+					<Redraft
+						draft={read.redraft.draft}
+						writing={streaming && !answered}
+						unchecked={read.redraft.unchecked}
+					/>
+				)}
 
 				{answered && read && (
 					<>

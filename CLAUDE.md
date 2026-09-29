@@ -75,6 +75,9 @@ functions/api/   proxy to alexandria, and the flags this app answers itself
   `trimHalfWrittenCitation`, or the doubling paints.
 - **The answer is the text after the final `step-start`** (`chat/message.ts`).
   Everything before is apparatus.
+- **A second draft is said out loud.** alexandria writes `data-redraft` before
+  it streams one; `Redraft.tsx` says why and folds the first draft away where it
+  can still be read. Never let a draft vanish from under the reader.
 - **Apparatus is tool calls, never narration.** A failed call says why.
 - **Pending is not unknown.** Only `unknown_handle` may say the page was never
   shown; `chat/shown.ts` names the book from the first render.

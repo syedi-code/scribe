@@ -26,6 +26,63 @@ const search = (query: string, output?: unknown) =>
 		output,
 	}) as unknown as ScribeMessage['parts'][number];
 
+// On 29 September a whole answer streamed in, then was replaced mid-stream
+// by a second draft with no word of why. The second draft is now announced
+// (`data-redraft`), and the first is kept.
+describe('an answer written twice', () => {
+	const draft = 'He calls it “monumental history”.';
+	const before: ScribeMessage['parts'] = [
+		{ type: 'step-start' },
+		{ type: 'text', text: draft },
+		{ type: 'data-redraft', data: { reason: 'uncited' } },
+	];
+
+	it('keeps the first draft, and does not show it as the answer', () => {
+		const read = readMessage(message(before), true);
+		expect(read.answer).toBe('');
+		expect(read.redraft).toEqual({ draft, unchecked: false });
+	});
+
+	it('shows the second draft as the answer once it arrives', () => {
+		const read = readMessage(
+			message([
+				...before,
+				{ type: 'step-start' },
+				{
+					type: 'text',
+					text: 'He calls it <cite P1>monumental history</cite>.',
+				},
+			]),
+			false
+		);
+		expect(read.answer).toBe(
+			'He calls it <cite P1>monumental history</cite>.'
+		);
+		expect(read.redraft?.draft).toBe(draft);
+	});
+
+	it('says when the second draft could not be checked either', () => {
+		const read = readMessage(
+			message([
+				...before,
+				{ type: 'step-start' },
+				{ type: 'text', text: 'Still unmarked.' },
+				{ type: 'data-unchecked', data: { reason: 'uncited' } },
+			]),
+			false
+		);
+		expect(read.redraft?.unchecked).toBe(true);
+	});
+
+	it('is not claimed of an answer written once', () => {
+		const read = readMessage(
+			message([{ type: 'step-start' }, { type: 'text', text: 'Once.' }]),
+			false
+		);
+		expect(read.redraft).toBeNull();
+	});
+});
+
 describe('readMessage', () => {
 	it('takes the answer from after the last step boundary', () => {
 		const read = readMessage(

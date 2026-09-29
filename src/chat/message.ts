@@ -22,7 +22,13 @@ import type { Allowance, AnswerCitation } from '../api/types';
 
 export type ScribeMessage = UIMessage<
 	{ model_id?: string; allowance?: Allowance },
-	{ citations: AnswerCitation[] }
+	{
+		citations: AnswerCitation[];
+		/** The first draft could not be checked, and a second is on its way. */
+		redraft: { reason: string };
+		/** The second draft could not be checked either. */
+		unchecked: { reason: string };
+	}
 >;
 
 type Part = ScribeMessage['parts'][number];
@@ -60,6 +66,12 @@ export interface ReadMessage {
 	summary: string;
 	citations: AnswerCitation[] | undefined;
 	modelId: string | undefined;
+	/**
+	 * The answer was written twice: the first draft quoted pages without
+	 * marking them, so none of it could be checked. The draft is kept so a
+	 * reader who watched it stream can still find it.
+	 */
+	redraft: { draft: string; unchecked: boolean } | null;
 }
 
 const isText = (part: Part): part is Part & { type: 'text'; text: string } =>
@@ -212,11 +224,16 @@ export function readMessage(
 			part.type === 'data-citations'
 	)?.data;
 
-	const answer = answerParts
-		.filter(isText)
-		.map((part) => part.text)
-		.join('\n')
-		.trim();
+	const redraft = redraftIn(message.parts);
+	// Between the notice and the second draft's first step, the last step
+	// is still the draft's — and it is no longer the answer.
+	const answer = answerParts.some((part) => part.type === 'data-redraft')
+		? ''
+		: answerParts
+				.filter(isText)
+				.map((part) => part.text)
+				.join('\n')
+				.trim();
 
 	return {
 		answer,
@@ -224,5 +241,23 @@ export function readMessage(
 		summary: summarise(work, message.parts),
 		citations,
 		modelId: message.metadata?.model_id,
+		redraft,
+	};
+}
+
+/** The draft is the text of the step the `data-redraft` notice closes. */
+function redraftIn(parts: readonly Part[]): ReadMessage['redraft'] {
+	const at = parts.findIndex((part) => part.type === 'data-redraft');
+	if (at === -1) return null;
+	const before = parts.slice(0, at);
+	const from = before.map((part) => part.type).lastIndexOf('step-start');
+	return {
+		draft: before
+			.slice(from + 1)
+			.filter(isText)
+			.map((part) => part.text)
+			.join('\n')
+			.trim(),
+		unchecked: parts.some((part) => part.type === 'data-unchecked'),
 	};
 }
