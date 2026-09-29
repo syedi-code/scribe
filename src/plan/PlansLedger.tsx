@@ -3,7 +3,7 @@ import { COPY } from '../copy';
 import { useAccount } from '../account/useAccount';
 import { TierMark } from '../models/TierMark';
 import { tiersOf } from '../models/tiers';
-import { openDialog } from '../state/dialog';
+import { openDialog, openSignIn } from '../state/dialog';
 import { LegalLinks } from '../ui/LegalLinks';
 import { amountOf, nothingIn, timesFree, usePlans } from './usePlans';
 import type { PlanOffer } from '../api/types';
@@ -53,7 +53,11 @@ export function PlansLedger() {
 							note={COPY.plan.plans.freeFor}
 							questions={COPY.plan.plans.freeQuestions}
 							modelsNote={COPY.plan.plans.freeModels}
-							current={account.plan === 'free' && !account.admin}
+							current={
+								account.plan === 'free' &&
+								!account.admin &&
+								!account.visitor
+							}
 						/>
 						<Card
 							plan={paid}
@@ -68,11 +72,15 @@ export function PlansLedger() {
 							current={account.plan === 'paid'}
 							forward
 						>
-							{account.offerPlans && (
+							{(account.offerPlans || account.visitor) && (
 								<>
 									<button
 										type="button"
-										onClick={() => openDialog('checkout')}
+										onClick={() =>
+											account.visitor
+												? openSignIn('plans')
+												: openDialog('checkout')
+										}
 										className="font-app text-ask bg-ink text-paper w-full rounded-full px-4 py-3.5 leading-none transition-opacity hover:opacity-85"
 									>
 										{COPY.plan.plans.choose}

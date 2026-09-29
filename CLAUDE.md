@@ -125,6 +125,8 @@ functions/api/   proxy to alexandria, and the flags this app answers itself
   list. The wire keeps real model ids. `ModelProvider.test.tsx` fails if a maker
   or model name reaches the menu.
 - **The plan is *Pro* to a reader; the wire and DB say `paid`.**
+- **A visitor is offered Pro by way of sign-in** (reason `plans`, back to
+  `#plans`); only an account reaches checkout.
 - **Every paid offer is the ledger** — the Plans tab, or `seePlans()` from
   anywhere else. Nobody is offered what they already have.
 - `GET /plans` is the only source of what a plan gives. Never a made-up price.
@@ -154,7 +156,8 @@ functions/api/   proxy to alexandria, and the flags this app answers itself
 
 - **One modal at a time**, from `state/dialog.ts`, each a history entry — the
   back gesture must put a sheet away. Native `<dialog>` + `showModal()`; focus
-  lands on the title; Escape via `cancel`.
+  lands on the title; Escape via `cancel`. Narrow, a sheet sits on the bottom
+  of what is *seen* (`ui/useVisibleArea.ts`), not of the layout viewport.
 - **Plans is a tab** (`plan/PlansPanel.tsx`) and a sheet (`seePlans()`), both
   drawing one ledger (`plan/PlansLedger.tsx`).
 - **Narrow, the header is two rows** — except at home, where the mark has

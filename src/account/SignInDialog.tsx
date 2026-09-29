@@ -1,12 +1,16 @@
 import { COPY } from '../copy';
 import { useFlag } from '../flags/context';
 import { keepDraftForSignIn } from '../state/draft';
-import { useSignInReason } from '../state/visitor';
+import { useSignInReason, type SignInReason } from '../state/visitor';
 import { Modal } from '../ui/Modal';
 
-/** Where a sign-in comes back to: here, exactly, less the dialog's own hash. */
-const here = () =>
-	`${window.location.pathname}${window.location.search}` || '/';
+/**
+ * Where a sign-in comes back to: here, exactly, less the dialog's own hash —
+ * or, for a reader who came for Pro, the plans, which are a tab and not an
+ * address, so the sheet of them is what opens.
+ */
+const here = (reason: SignInReason) =>
+	`${window.location.pathname}${window.location.search}${reason === 'plans' ? '#plans' : ''}`;
 
 /**
  * Signing in, in our words and our design rather than Cloudflare's picker.
@@ -24,7 +28,7 @@ const here = () =>
 export function SignInDialog() {
 	const reason = useSignInReason();
 	const google = useFlag('isGoogleSignInShown');
-	const next = encodeURIComponent(here());
+	const next = encodeURIComponent(here(reason));
 
 	return (
 		<Modal title={COPY.visitor.dialog.title}>
@@ -42,7 +46,9 @@ export function SignInDialog() {
 				)}
 			</div>
 			<p className="font-app text-small text-ink-faint m-0 mt-4">
-				{COPY.visitor.dialog.free} {COPY.visitor.dialog.kept}
+				{reason === 'plans'
+					? COPY.visitor.dialog.forPlans
+					: `${COPY.visitor.dialog.free} ${COPY.visitor.dialog.kept}`}
 			</p>
 		</Modal>
 	);

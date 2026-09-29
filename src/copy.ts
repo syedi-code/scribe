@@ -665,12 +665,15 @@ export const COPY = {
 				spent: 'You have asked your free questions. Sign in to keep going; what you have asked comes with you.',
 				blocked: 'Sign in to ask. It is free, and takes a moment.',
 				chosen: 'Sign in to keep your conversations and ask more each week.',
+				plans: 'Pro belongs to an account, so sign in first. You will come back to the plans, one step from checkout.',
 			},
 			github: 'Continue with GitHub',
 			google: 'Continue with Google',
 			/** Beside the buttons, so nobody wonders what signing in costs. */
 			free: 'Free, with an account you already have. No card.',
 			kept: 'What you have typed will be here when you come back.',
+			/** In place of the two above when the reader came for Pro: no card to sign in, but one after. */
+			forPlans: 'Signing in is free, with an account you already have.',
 		},
 	},
 

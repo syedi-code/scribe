@@ -3,6 +3,7 @@ import { signOut } from '../api/client';
 import { COPY } from '../copy';
 import { remainingOf, standingOf, useAllowance } from '../state/allowance';
 import { useIdentity } from '../state/identity';
+import { useStanding } from '../state/visitor';
 
 /**
  * Who is signed in and what they are on, said the same way in the menu and in
@@ -16,11 +17,14 @@ import { useIdentity } from '../state/identity';
  */
 export function useAccount() {
 	const identity = useIdentity();
+	const standing = useStanding();
 	const allowance = useAllowance();
 	const [leaving, setLeaving] = useState(false);
 
 	const admin = identity?.role === 'admin';
 	const plan = allowance?.plan ?? identity?.plan ?? 'free';
+	// A guest session, or none at all: Pro belongs to an account.
+	const visitor = standing !== 'account' || identity?.guest === true;
 
 	return {
 		email: identity?.email ?? '',
@@ -35,7 +39,12 @@ export function useAccount() {
 		 * Nobody is offered what they already have, or what the admin never
 		 * needs; a visitor is asked to sign in first, not sold a plan.
 		 */
-		offerPlans: !admin && plan !== 'paid' && !identity?.guest,
+		offerPlans: !admin && plan !== 'paid' && !visitor,
+		/**
+		 * A visitor is not on any plan yet, and choosing Pro starts with
+		 * signing in: the plans offer them that instead of checkout.
+		 */
+		visitor,
 		allowance,
 		/** Only once it is nearly spent: before that, a count gives the allowance away. */
 		left:
